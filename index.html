@@ -296,8 +296,8 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 .cat-chk{width:18px;height:18px;accent-color:var(--g2);cursor:pointer;flex-shrink:0;}
 .cat-nom{font-size:14px;flex:1;}
 .cat-inputs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px;padding-left:28px;}
-.cat-inputs input{display:none;}
-.cat-item.checked .cat-inputs input{display:block;}
+.cat-inputs input,.cat-inputs select,.cat-inputs div{display:none;}
+.cat-item.checked .cat-inputs input,.cat-item.checked .cat-inputs select,.cat-item.checked .cat-inputs div{display:block;}
 
 /* ── SYNC INDICATOR ── */
 .sync-dot{
@@ -857,8 +857,15 @@ function renderCatalogue() {
             <label class="cat-nom" for="cat-${v.id}">${v.nom}</label>
           </div>
           <div class="cat-inputs">
-            <input class="finput" type="number" id="kg-${v.id}" placeholder="Kg dispo" min="0" step="0.5">
-            <input class="finput" type="number" id="px-${v.id}" placeholder="€/kg" min="0" step="0.1" value="${v.prix_defaut !== null && v.prix_defaut !== undefined ? v.prix_defaut : ''}">
+            ${(() => {
+              const unites = (v.unites||'kg').split(',');
+              const u = unites.length > 1
+                ? `<select class="finput" id="ut-${v.id}" style="padding:8px 6px;"><option value="kg">kg</option><option value="botte">botte</option></select>`
+                : `<div class="finput" style="background:var(--g7);color:var(--tl);text-align:center;padding:8px;">${unites[0]}</div><input type="hidden" id="ut-${v.id}" value="${unites[0]}">`;
+              return u;
+            })()}
+            <input class="finput" type="number" id="kg-${v.id}" placeholder="Quantité" min="0" step="0.5">
+            <input class="finput" type="number" id="px-${v.id}" placeholder="Prix/unité" min="0" step="0.1" value="${v.prix_defaut !== null && v.prix_defaut !== undefined ? v.prix_defaut : ''}" style="grid-column:1/-1;">
           </div>
         </div>`).join('')}
     </div>`).join('');
@@ -881,9 +888,10 @@ async function addVeggies() {
       const kg = parseFloat(document.getElementById('kg-'+id).value);
       const prix = parseFloat(document.getElementById('px-'+id).value);
       if (isNaN(kg)) { showToast('Quantité manquante pour ' + chk.value); continue; }
-      const rows = await sbPost('legumes', {nom: chk.value, kg_dispo: kg, prix_kg: isNaN(prix)?null:prix, semaine: state.semaine});
+      const unite = document.getElementById('ut-'+id)?.value || 'kg';
+      const rows = await sbPost('legumes', {nom: chk.value, kg_dispo: kg, prix_kg: isNaN(prix)?null:prix, semaine: state.semaine, unite});
       const r = rows[0];
-      state.veggies.push({id: r.id, nom: r.nom, kg: r.kg_dispo, prix: r.prix_kg});
+      state.veggies.push({id: r.id, nom: r.nom, kg: r.kg_dispo, prix: r.prix_kg, unite: r.unite||'kg'});
       // Mémoriser le prix dans le catalogue
       if (!isNaN(prix)) {
         const catItem = catalogue.find(c => c.nom === chk.value);
@@ -960,7 +968,7 @@ function renderVeggies() {
     <div class="veg-row">
       <div class="veg-dot"></div>
       <div class="veg-name">${v.nom}</div>
-      <div class="veg-info">${v.kg}kg</div>
+      <div class="veg-info">${v.kg} ${v.unite||'kg'}</div>
       <div class="veg-info" style="margin-left:6px;">${v.prix!==null?v.prix.toFixed(2)+' €/kg':'NC'}</div>
       <button class="btn-rm" onclick="removeVeggie(${v.id})">✕</button>
     </div>`).join('');
