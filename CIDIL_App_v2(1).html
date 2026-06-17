@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>CIDIL — Maraîchage</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --g0:#0d2818;--g1:#1a3d2b;--g2:#2d6a4f;--g3:#40916c;--g4:#74c69d;--g5:#b7e4c7;--g6:#d8f3dc;--g7:#f0faf3;
+  --e:#6b4226;--el:#f5f0ea;
+  --cream:#faf7f2;--white:#fff;
+  --text:#1c2b22;--tm:#4a6358;--tl:#8aab97;--tx:#c5d9cc;
+  --bd:#ddeee4;
+  --amb:#e9a03a;--amb-bg:#fdf3e1;
+  --red:#c0392b;--red-bg:#fdeaea;
+  --blue:#2563eb;--blue-bg:#eff6ff;
+  --sh:0 2px 8px rgba(13,40,24,.08);
+  --sh2:0 8px 32px rgba(13,40,24,.14);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background:var(--cream);color:var(--text);-webkit-tap-highlight-color:transparent;}
+
+/* ── ÉCRAN DE CONNEXION ── */
+#screen-login{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:100vh;padding:24px;
+  background:linear-gradient(160deg,var(--g1) 0%,var(--g0) 100%);
+}
+.login-logo{
+  width:56px;height:56px;background:var(--g4);border-radius:16px;
+  display:flex;align-items:center;justify-content:center;margin-bottom:16px;
+}
+.login-logo svg{width:30px;height:30px;stroke:#0d2818;stroke-width:2.2;fill:none;}
+.login-title{color:#fff;font-size:22px;font-weight:500;letter-spacing:-.02em;margin-bottom:4px;}
+.login-sub{color:rgba(255,255,255,.4);font-size:13px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.06em;margin-bottom:40px;}
+
+.role-cards{display:flex;flex-direction:column;gap:12px;width:100%;max-width:340px;}
+.role-card{
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);
+  border-radius:14px;padding:18px 20px;cursor:pointer;
+  display:flex;align-items:center;gap:14px;
+  transition:all .15s;
+}
+.role-card:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.25);}
+.role-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.role-icon svg{width:20px;height:20px;fill:none;stroke-width:1.8;}
+.role-name{font-size:15px;font-weight:500;color:#fff;}
+.role-desc{font-size:12px;color:rgba(255,255,255,.45);margin-top:2px;}
+.role-arrow{margin-left:auto;color:rgba(255,255,255,.25);font-size:18px;}
+
+/* ── PIN ── */
+#screen-pin{
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  min-height:100vh;padding:24px;
+  background:linear-gradient(160deg,var(--g1) 0%,var(--g0) 100%);
+}
+.pin-back{
+  position:absolute;top:20px;left:20px;
+  color:rgba(255,255,255,.5);font-size:13px;cursor:pointer;
+  display:flex;align-items:center;gap:5px;
+  background:none;border:none;font-family:'DM Sans',sans-serif;
+}
+.pin-back:hover{color:#fff;}
+.pin-title{color:#fff;font-size:18px;font-weight:500;margin-bottom:6px;}
+.pin-sub{color:rgba(255,255,255,.4);font-size:13px;margin-bottom:32px;}
+.pin-dots{display:flex;gap:12px;margin-bottom:28px;}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.3);transition:all .15s;}
+.pin-dot.filled{background:var(--g4);border-color:var(--g4);}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:240px;}
+.pin-btn{
+  aspect-ratio:1;border-radius:50%;border:1px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.08);color:#fff;
+  font-size:20px;font-weight:400;cursor:pointer;
+  font-family:'DM Sans',sans-serif;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .1s;
+}
+.pin-btn:active{background:rgba(255,255,255,.2);transform:scale(.95);}
+.pin-error{color:#f87171;font-size:13px;margin-top:12px;height:18px;}
+
+/* ── APP SHELL ── */
+#screen-app{display:none;min-height:100vh;flex-direction:column;}
+
+/* mobile topbar */
+.app-topbar{
+  background:var(--g1);padding:12px 16px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:50;
+}
+.app-topbar-title{color:#fff;font-size:15px;font-weight:500;}
+.app-topbar-role{
+  font-size:11px;color:rgba(255,255,255,.45);
+  font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.05em;
+}
+.btn-logout{
+  background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.6);
+  border-radius:7px;padding:5px 10px;font-size:12px;cursor:pointer;
+  font-family:'DM Sans',sans-serif;
+}
+
+/* bottom nav */
+.bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;
+  background:var(--white);border-top:1px solid var(--bd);
+  display:flex;z-index:50;padding-bottom:env(safe-area-inset-bottom);
+}
+.bn-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  padding:9px 4px 7px;cursor:pointer;border:none;background:none;
+  color:var(--tl);font-size:10px;font-family:'DM Sans',sans-serif;
+  transition:color .12s;gap:3px;
+}
+.bn-item svg{width:22px;height:22px;stroke:currentColor;stroke-width:1.7;fill:none;}
+.bn-item.active{color:var(--g2);}
+.bn-item.active svg{stroke:var(--g2);}
+
+/* page content */
+.page-content{
+  flex:1;padding:16px;padding-bottom:80px;
+  overflow-y:auto;
+}
+.page{display:none;}
+.page.active{display:block;}
+
+/* ── COMPOSANTS COMMUNS ── */
+.section-title{font-size:16px;font-weight:500;margin-bottom:14px;color:var(--text);}
+.card{background:var(--white);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:10px;box-shadow:var(--sh);}
+.empty-msg{text-align:center;padding:28px 16px;color:var(--tl);font-size:13px;}
+
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500;font-family:'DM Mono',monospace;}
+.b-rco{background:var(--g6);color:var(--g1);}
+.b-com{background:var(--amb-bg);color:#7a4f0e;}
+.b-mar{background:#e8f0fe;color:#1a4abf;}
+
+/* stats */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.stat-card{background:var(--white);border:1px solid var(--bd);border-radius:12px;padding:14px;}
+.stat-num{font-size:28px;font-weight:500;font-family:'DM Mono',monospace;color:var(--text);letter-spacing:-.02em;}
+.stat-lbl{font-size:12px;color:var(--tl);margin-top:2px;}
+
+/* progress */
+.prog-wrap{background:var(--g7);border-radius:4px;height:5px;margin-top:6px;}
+.prog-bar{height:100%;background:var(--g3);border-radius:4px;transition:width .3s;}
+
+/* client card */
+.cc{background:var(--white);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:10px;box-shadow:var(--sh);}
+.cc.done{opacity:.45;}
+.cc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
+.cc-name{font-size:14px;font-weight:500;color:var(--text);margin-bottom:4px;}
+.cc-line{font-size:12px;color:var(--tl);margin-bottom:2px;display:flex;align-items:center;gap:4px;}
+.cc-line svg{width:12px;height:12px;flex-shrink:0;}
+.cc-actions{display:flex;gap:8px;margin-top:10px;align-items:center;}
+.btn-gps{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:7px 12px;background:var(--g1);color:#fff;
+  border-radius:8px;font-size:13px;font-weight:500;
+  text-decoration:none;border:none;cursor:pointer;flex:1;justify-content:center;
+}
+.btn-done{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:7px 12px;background:var(--cream);color:var(--tm);
+  border-radius:8px;font-size:13px;border:1px solid var(--bd);
+  cursor:pointer;font-family:'DM Sans',sans-serif;
+}
+.btn-done.ok{background:var(--g6);color:var(--g1);border-color:var(--g5);font-weight:500;}
+.km-tag{font-size:11px;color:var(--tl);font-family:'DM Mono',monospace;background:var(--cream);padding:2px 6px;border-radius:4px;border:1px solid var(--bd);}
+.note-tag{font-size:11px;color:#7a4f0e;background:var(--amb-bg);border-radius:6px;padding:3px 8px;margin-top:6px;display:inline-block;}
+
+/* filtre */
+.filters{display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px;}
+.filters::-webkit-scrollbar{display:none;}
+.flt{padding:6px 14px;border-radius:20px;border:1px solid var(--bd);background:var(--white);color:var(--tm);font-size:13px;cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif;flex-shrink:0;}
+.flt.active{background:var(--g2);color:#fff;border-color:var(--g2);}
+
+/* ── ENCADRANT ── */
+.week-bar{
+  background:var(--g6);border:1px solid var(--g5);border-radius:10px;
+  padding:12px 14px;margin-bottom:16px;
+  display:flex;align-items:center;gap:10px;
+}
+.week-bar label{font-size:13px;color:var(--g1);font-weight:500;}
+.week-bar input{
+  border:1px solid var(--g5);background:var(--white);border-radius:7px;
+  padding:5px 10px;font-size:13px;font-family:'DM Sans',sans-serif;
+  color:var(--text);flex:1;outline:none;
+}
+
+.add-form{background:var(--white);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:14px;box-shadow:var(--sh);}
+.add-form-title{font-size:13px;font-weight:500;color:var(--g1);margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+.form-grid{display:grid;grid-template-columns:1fr 72px 72px;gap:8px;margin-bottom:10px;}
+.flabel{font-size:11px;color:var(--tl);margin-bottom:3px;display:block;font-weight:500;text-transform:uppercase;letter-spacing:.03em;}
+.finput{
+  padding:8px 10px;border:1px solid var(--bd);border-radius:8px;
+  font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text);
+  background:var(--white);width:100%;outline:none;
+}
+.finput:focus{border-color:var(--g4);}
+.btn-primary{
+  width:100%;padding:10px;background:var(--g1);color:#fff;
+  border:none;border-radius:8px;font-size:14px;font-weight:500;
+  cursor:pointer;font-family:'DM Sans',sans-serif;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.btn-primary:active{background:var(--g2);}
+
+.veg-row{
+  display:flex;align-items:center;gap:10px;
+  background:var(--white);border:1px solid var(--bd);border-radius:10px;
+  padding:12px;margin-bottom:8px;
+}
+.veg-dot{width:8px;height:8px;border-radius:50%;background:var(--g4);flex-shrink:0;}
+.veg-name{flex:1;font-size:14px;font-weight:500;}
+.veg-info{font-size:12px;color:var(--tl);font-family:'DM Mono',monospace;}
+.btn-rm{
+  width:28px;height:28px;border-radius:7px;border:1px solid var(--bd);
+  background:var(--white);color:var(--tl);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:13px;
+  flex-shrink:0;
+}
+.btn-rm:active{background:var(--red-bg);color:var(--red);border-color:#f5c6c6;}
+
+/* ── COMMANDES (modal-style page) ── */
+.client-order-list{}
+.co-card{background:var(--white);border:1px solid var(--bd);border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:var(--sh);}
+.co-head{background:var(--g7);padding:11px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--bd);}
+.co-name{font-size:14px;font-weight:500;}
+.btn-order-open{
+  padding:5px 12px;border-radius:20px;
+  background:var(--g2);color:#fff;border:none;
+  font-size:12px;font-weight:500;cursor:pointer;
+  font-family:'DM Sans',sans-serif;
+}
+.co-body{padding:12px 14px;}
+.co-line{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;border-bottom:1px solid var(--g7);}
+.co-line:last-child{border-bottom:none;}
+.co-total{display:flex;justify-content:flex-end;font-size:13px;font-weight:500;color:var(--g1);padding-top:6px;margin-top:4px;border-top:1px solid var(--bd);font-family:'DM Mono',monospace;}
+
+/* modal commande */
+.modal{
+  display:none;position:fixed;inset:0;z-index:200;
+  background:rgba(13,40,24,.45);overflow-y:auto;
+}
+.modal.open{display:block;}
+.modal-box{
+  background:var(--white);border-radius:18px 18px 0 0;
+  position:fixed;bottom:0;left:0;right:0;
+  max-height:88vh;overflow-y:auto;
+  padding:0 0 env(safe-area-inset-bottom);
+}
+.modal-handle{width:36px;height:4px;background:var(--tx);border-radius:2px;margin:10px auto 0;}
+.modal-head{background:var(--g1);padding:16px 18px;}
+.modal-head-name{font-size:16px;font-weight:500;color:#fff;}
+.modal-head-week{font-size:11px;color:rgba(255,255,255,.45);font-family:'DM Mono',monospace;margin-top:2px;}
+.modal-body{padding:14px 18px;}
+.modal-foot{padding:12px 18px;border-top:1px solid var(--bd);display:flex;gap:8px;}
+.btn-cancel{flex:1;padding:11px;border-radius:9px;border:1px solid var(--bd);background:var(--cream);color:var(--tm);font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.btn-save{flex:2;padding:11px;border-radius:9px;border:none;background:var(--g1);color:#fff;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;}
+
+.order-row{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--g7);}
+.order-row:last-child{border-bottom:none;}
+.order-chk{width:18px;height:18px;accent-color:var(--g2);cursor:pointer;}
+.order-veg-name{font-size:14px;font-weight:500;}
+.order-veg-dispo{font-size:11px;color:var(--tl);}
+.order-qty-wrap{display:flex;align-items:center;gap:4px;}
+.order-qty{width:58px;padding:5px 6px;border:1px solid var(--bd);border-radius:7px;font-size:13px;font-family:'DM Mono',monospace;text-align:right;outline:none;background:var(--white);color:var(--text);}
+.order-qty:focus{border-color:var(--g4);}
+.order-unit{font-size:11px;color:var(--tl);}
+
+/* ── RÉCAP ── */
+.recap-veg-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
+.recap-veg-card{background:var(--white);border:1px solid var(--bd);border-radius:12px;padding:14px;}
+.rvn{font-size:13px;font-weight:500;margin-bottom:4px;}
+.rvk{font-size:24px;font-weight:500;font-family:'DM Mono',monospace;color:var(--g1);}
+.rvs{font-size:12px;color:var(--tl);}
+
+/* toast */
+.toast{
+  position:fixed;bottom:72px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--g0);color:#fff;padding:9px 18px;border-radius:20px;
+  font-size:13px;opacity:0;transition:all .2s;z-index:300;white-space:nowrap;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ── SYNC INDICATOR ── */
+.sync-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--g4);display:inline-block;
+  animation:pulse 2s infinite;
+}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── LIVE BADGE ── */
+.live-tag{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:11px;color:var(--g3);font-family:'DM Mono',monospace;
+  background:var(--g7);padding:2px 8px;border-radius:10px;
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════ ÉCRAN LOGIN ══════════════════════ -->
+<div id="screen-login">
+  <div class="login-logo">
+    <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M8 12l2.5 2.5L16 9"/></svg>
+  </div>
+  <div class="login-title">CIDIL Maraîchage</div>
+  <div class="login-sub">Chantier d'insertion agricole</div>
+
+  <div class="role-cards">
+    <div class="role-card" onclick="selectRole('livreur')">
+      <div class="role-icon" style="background:rgba(116,198,157,.15);">
+        <svg viewBox="0 0 24 24" stroke="var(--g4)"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+      </div>
+      <div>
+        <div class="role-name">Livreur</div>
+        <div class="role-desc">Tournée GPS · Suivi livraisons</div>
+      </div>
+      <div class="role-arrow">›</div>
+    </div>
+
+    <div class="role-card" onclick="selectRole('encadrant')">
+      <div class="role-icon" style="background:rgba(233,160,58,.15);">
+        <svg viewBox="0 0 24 24" stroke="var(--amb)"><path d="M3 6h18M3 12h18M3 18h18"/><circle cx="8" cy="6" r="2" fill="var(--amb)" stroke="none"/><circle cx="14" cy="12" r="2" fill="var(--amb)" stroke="none"/><circle cx="10" cy="18" r="2" fill="var(--amb)" stroke="none"/></svg>
+      </div>
+      <div>
+        <div class="role-name">Encadrant technique</div>
+        <div class="role-desc">Légumes disponibles · Commandes</div>
+      </div>
+      <div class="role-arrow">›</div>
+    </div>
+
+    <div class="role-card" onclick="selectRole('gestionnaire')">
+      <div class="role-icon" style="background:rgba(37,99,235,.12);">
+        <svg viewBox="0 0 24 24" stroke="#2563eb"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+      </div>
+      <div>
+        <div class="role-name">Gestionnaire</div>
+        <div class="role-desc">Récap · Clients · Stats</div>
+      </div>
+      <div class="role-arrow">›</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ ÉCRAN PIN ══════════════════════ -->
+<div id="screen-pin" style="position:relative;">
+  <button class="pin-back" onclick="backToLogin()">‹ Retour</button>
+  <div class="pin-title" id="pin-role-title">Code PIN</div>
+  <div class="pin-sub">Entrez votre code à 4 chiffres</div>
+  <div class="pin-dots" id="pin-dots">
+    <div class="pin-dot" id="pd0"></div><div class="pin-dot" id="pd1"></div>
+    <div class="pin-dot" id="pd2"></div><div class="pin-dot" id="pd3"></div>
+  </div>
+  <div class="pin-pad">
+    <button class="pin-btn" onclick="pinPress('1')">1</button>
+    <button class="pin-btn" onclick="pinPress('2')">2</button>
+    <button class="pin-btn" onclick="pinPress('3')">3</button>
+    <button class="pin-btn" onclick="pinPress('4')">4</button>
+    <button class="pin-btn" onclick="pinPress('5')">5</button>
+    <button class="pin-btn" onclick="pinPress('6')">6</button>
+    <button class="pin-btn" onclick="pinPress('7')">7</button>
+    <button class="pin-btn" onclick="pinPress('8')">8</button>
+    <button class="pin-btn" onclick="pinPress('9')">9</button>
+    <button class="pin-btn" style="font-size:13px;" onclick="pinClear()">✕</button>
+    <button class="pin-btn" onclick="pinPress('0')">0</button>
+    <button class="pin-btn" style="font-size:18px;" onclick="pinDel()">⌫</button>
+  </div>
+  <div class="pin-error" id="pin-error"></div>
+  <div style="margin-top:20px;font-size:11px;color:rgba(255,255,255,.25);font-family:'DM Mono',monospace;" id="pin-hint"></div>
+</div>
+
+<!-- ══════════════════════ APP ══════════════════════ -->
+<div id="screen-app" style="display:none;flex-direction:column;min-height:100vh;">
+  <div class="app-topbar">
+    <div>
+      <div class="app-topbar-title" id="app-title">CIDIL</div>
+      <div class="app-topbar-role" id="app-role-badge"></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span class="live-tag"><span class="sync-dot"></span>En ligne</span>
+      <button class="btn-logout" onclick="logout()">Quitter</button>
+    </div>
+  </div>
+
+  <div class="page-content">
+
+    <!-- PAGE TOURNÉE -->
+    <div class="page" id="page-tournee">
+      <div class="stats-grid">
+        <div class="stat-card" style="border-left:3px solid var(--g3);">
+          <div class="stat-num" id="s-total">0</div>
+          <div class="stat-lbl">Clients</div>
+          <div class="prog-wrap"><div class="prog-bar" id="s-prog" style="width:0%"></div></div>
+        </div>
+        <div class="stat-card" style="border-left:3px solid var(--g3);">
+          <div class="stat-num" id="s-done">0</div>
+          <div class="stat-lbl">Livrés <span style="font-size:10px;font-family:'DM Mono',monospace;" id="s-pct">(0%)</span></div>
+        </div>
+        <div class="stat-card" style="border-left:3px solid var(--amb);">
+          <div class="stat-num" id="s-km">—</div>
+          <div class="stat-lbl">Km tournée</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="s-cmd">0</div>
+          <div class="stat-lbl">Commandes</div>
+        </div>
+      </div>
+      <div class="filters" id="flt-cat">
+        <button class="flt active" onclick="filterCat('Tous')">Tous</button>
+        <button class="flt" onclick="filterCat('Restau Co')">Restau Co</button>
+        <button class="flt" onclick="filterCat('Commerce')">Commerce</button>
+        <button class="flt" onclick="filterCat('Maraichage')">Maraîchage</button>
+      </div>
+      <div id="client-list"></div>
+    </div>
+
+    <!-- PAGE LÉGUMES (encadrant) -->
+    <div class="page" id="page-legumes">
+      <div class="week-bar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--g1)" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <label>Semaine du</label>
+        <input type="date" id="sem-input" onchange="updateSemaine()" />
+      </div>
+
+      <div class="add-form">
+        <div class="add-form-title">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--g2)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          Ajouter un légume disponible
+        </div>
+        <div class="form-grid">
+          <div>
+            <label class="flabel">Légume</label>
+            <input class="finput" type="text" id="nv-nom" placeholder="Tomates cerises" />
+          </div>
+          <div>
+            <label class="flabel">Kg</label>
+            <input class="finput" type="number" id="nv-kg" placeholder="30" min="0" />
+          </div>
+          <div>
+            <label class="flabel">€/kg</label>
+            <input class="finput" type="number" id="nv-prix" placeholder="3.5" step="0.1" min="0" />
+          </div>
+        </div>
+        <button class="btn-primary" onclick="addVeggie()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Publier ce légume
+        </button>
+      </div>
+
+      <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>Légumes cette semaine</span>
+        <span class="live-tag"><span class="sync-dot"></span>visible livreur</span>
+      </div>
+      <div id="veg-list"><div class="empty-msg">Aucun légume saisi · Ajoutez-en un ci-dessus</div></div>
+    </div>
+
+    <!-- PAGE COMMANDES (encadrant) -->
+    <div class="page" id="page-commandes">
+      <div style="margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
+        <div class="section-title" style="margin:0;">Saisir une commande</div>
+        <select class="finput" id="client-sel" style="width:auto;max-width:180px;font-size:13px;">
+          <option value="">— Client —</option>
+        </select>
+      </div>
+      <button class="btn-primary" style="margin-bottom:20px;" onclick="openOrderModal()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Ouvrir fiche commande
+      </button>
+
+      <div class="section-title">Commandes validées</div>
+      <div id="orders-list"><div class="empty-msg">Aucune commande cette semaine</div></div>
+    </div>
+
+    <!-- PAGE RÉCAP (gestionnaire) -->
+    <div class="page" id="page-recap">
+      <div class="stats-grid" style="grid-template-columns:1fr 1fr 1fr;gap:10px;">
+        <div class="stat-card" style="border-left:3px solid var(--g3);">
+          <div class="stat-num" id="rc-cmd">0</div>
+          <div class="stat-lbl">Commandes</div>
+        </div>
+        <div class="stat-card" style="border-left:3px solid var(--amb);">
+          <div class="stat-num" id="rc-kg">0</div>
+          <div class="stat-lbl">Kg total</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="rc-ca">—</div>
+          <div class="stat-lbl">CA (€)</div>
+        </div>
+      </div>
+      <div class="section-title">Par légume</div>
+      <div class="recap-veg-grid" id="rc-vegs"><div class="empty-msg" style="grid-column:1/-1;">Aucune commande</div></div>
+      <div class="section-title">Par client</div>
+      <div id="rc-clients"><div class="empty-msg">Aucune commande</div></div>
+    </div>
+
+    <!-- PAGE CLIENTS (gestionnaire) -->
+    <div class="page" id="page-clients">
+      <div class="filters" id="flt-cat2">
+        <button class="flt active" onclick="filterCat2('Tous')">Tous</button>
+        <button class="flt" onclick="filterCat2('Restau Co')">Restau Co</button>
+        <button class="flt" onclick="filterCat2('Commerce')">Commerce</button>
+        <button class="flt" onclick="filterCat2('Maraichage')">Maraîchage</button>
+      </div>
+      <div id="client-list2"></div>
+    </div>
+
+  </div><!-- /page-content -->
+
+  <!-- BOTTOM NAV (dynamique selon rôle) -->
+  <nav class="bottom-nav" id="bottom-nav"></nav>
+</div>
+
+<!-- MODAL COMMANDE -->
+<div class="modal" id="modal-order">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <div class="modal-head-name" id="mo-name">Client</div>
+      <div class="modal-head-week" id="mo-week"></div>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:12px;color:var(--tl);margin-bottom:12px;">Cochez les légumes et indiquez la quantité souhaitée (kg).</div>
+      <div id="mo-rows"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+      <button class="btn-save" onclick="saveOrder()">Valider ✓</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════ SUPABASE ══════
+const SUPA_URL = 'https://sfmgkuerwgpirykuxixl.supabase.co';
+const SUPA_KEY = 'sb_publishable_sxQyGvI5mNiIYC9EV6PH4A_-IKMlVn4';
+
+async function sbGet(table, params='') {
+  const res = await fetch(`${SUPA_URL}/rest/v1/${table}?${params}`, {
+    headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+async function sbPost(table, body) {
+  const res = await fetch(`${SUPA_URL}/rest/v1/${table}`, {
+    method: 'POST',
+    headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+async function sbDelete(table, id) {
+  const res = await fetch(`${SUPA_URL}/rest/v1/${table}?id=eq.${id}`, {
+    method: 'DELETE',
+    headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+  });
+  if (!res.ok) throw new Error(await res.text());
+}
+
+// ══════ DATA ══════
+const PINS = { livreur:'1234', encadrant:'5678', gestionnaire:'9012' };
+const ROLE_LABELS = { livreur:'Livreur', encadrant:'Encadrant technique', gestionnaire:'Gestionnaire' };
+const ROLE_ICONS = { livreur:'🚚', encadrant:'🌿', gestionnaire:'📋' };
+
+const clients = [
+  {cat:'Restau Co',nom:'Collège Montbron gestionnaire',contact:'Mme Henry',role:'gestionnaire',tel:'688991722',email:'int.0160030w@ac-poitiers.fr',adresse:'43 bis Rue de Limoges, Montbron',km:5},
+  {cat:'Restau Co',nom:'Cuisine centrale La Rochefoucauld',contact:'Fabrice Harant',role:'Cuisinier collège',tel:'674596653',email:'fharant@lacharente.fr',adresse:null,km:null},
+  {cat:'Restau Co',nom:'Cantine Dignac',contact:'Nicolas',role:'Chef de cuisine',tel:'545248803',email:'cantine@dignac.fr',adresse:null,km:null},
+  {cat:'Restau Co',nom:'Restauration scolaire Bouex',contact:'Corinne',role:'Responsable achat',tel:'634358433',email:'restaurationscolzire@bouex.fr',adresse:null,km:null},
+  {cat:'Restau Co',nom:'Collège Montbron',contact:'Goursot',role:'Cuisinier collège',tel:'683252858',email:'w.goursot@lacharente.fr',adresse:null,km:null},
+  {cat:'Restau Co',nom:'EHPAD Fléac',contact:null,tel:'545910604',email:'burger.ehpadfleac@orange.fr',adresse:'4 Av. des Sports, Fleac',km:82},
+  {cat:'Restau Co',nom:'EHPAD Marthon – Vallée du Bandiat',contact:'Boux Celia',tel:'545702223',email:'valleedubandiat@pavonis.fr',adresse:'Grand Plantier et Garenne, Marthon',km:20},
+  {cat:'Restau Co',nom:'EHPAD Montbron',contact:'Château Laurent',tel:'445704560',email:'laurent.chateau@ehpas-montbron.fr',adresse:'1 Le Benetou, Montbron',km:2.8},
+  {cat:'Restau Co',nom:'Service périscolaire Garat',contact:'Thomazeau Linda',tel:'756198083',email:null,adresse:null,km:null},
+  {cat:'Commerce',nom:"Resto l'Atelier Cauzette",contact:'Cauzot Léa',tel:null,email:'lateliercauzette@gmail.com',adresse:"Rue d'Angoulême, Montbron",km:4.8,note:'Fermé maternité jusque fin août'},
+  {cat:'Commerce',nom:"Restau Johnny's",contact:null,tel:'652501533',email:null,adresse:'Rue Maginot, Montbron',km:3.8},
+  {cat:'Commerce',nom:'Restau le Quartier G',contact:null,tel:'545396766',email:'lequartier@gmail.com',adresse:'106 Av. de la République, Chasseneuil',km:38},
+  {cat:'Commerce',nom:'Asso Pégase (restau)',contact:'Beduit Philippe',tel:null,email:'restaurant@lepatio-ruffec.fr',adresse:'Cassiopée, 4 Rue des Fontaines, Ruffec',km:112},
+  {cat:'Commerce',nom:'Restau le Chambon',contact:'Lavauzelle Sébastien',tel:'631407157',email:'se.lavauzelle@lechambon.fr',adresse:'861 Rue de la Tardoire, Montbron',km:18.2},
+  {cat:'Commerce',nom:'Local 24 (magasin)',contact:null,tel:'622383361',email:null,adresse:'5 Rue de Ribérac, Rochebeaucourt',km:60},
+  {cat:'Commerce',nom:'Intermarché Montbron',contact:'Monika',tel:'628931168',email:'pdv09118@mousquetaires.com',adresse:"Pl. de l'Hôtel de Ville, Montbron",km:4.8},
+  {cat:'Commerce',nom:'Leclerc La Rochefoucauld',contact:'Omar',tel:null,email:'omar.aouissi@rivieres.leclerc',adresse:'Péruzet, Rte de Limoges, Rivières',km:29.2},
+  {cat:'Commerce',nom:'BIOCOOP Nontron',contact:null,tel:null,email:'fel.biocoop.nontron@orange.fr',adresse:null,km:null},
+  {cat:'Commerce',nom:'La Vie Claire',contact:null,tel:'545921392',email:null,adresse:"34 Rue d'Epagnac, Soyaux",km:35.2},
+  {cat:'Commerce',nom:'COOP Superette',contact:null,tel:'602543543',email:'larochefoucauld@coop-proximite.fr',adresse:'22 Rue des Halles, La Rochefoucauld',km:27.4},
+  {cat:'Commerce',nom:'Cave St Sornin',contact:null,tel:'602543543',email:'au16survins@gmail.com',adresse:'1 Route de Montbron, Saint Sornin',km:10.4},
+  {cat:'Commerce',nom:'La Grange de Champagnac',contact:null,tel:'749437663',email:'grangechampagnac@outlook.fr',adresse:'Champagnac Lieu dit, Yvrac-et-Malleyrand',km:14.2},
+  {cat:'Commerce',nom:'Tabac-Civette de Marthon',contact:null,tel:'545635996',email:'lacivettedemarthon@gmail.com',adresse:'2 Pl. du Pigeonnier, Marthon',km:22},
+  {cat:'Maraichage',nom:'ACI ARU Trois-Palis',contact:'Amélie Blanquart',role:'Eti',tel:null,email:'amelie.blanquart@aru-angouleme.fr',adresse:"Imp. des Cressonnières, Trois-Palis",km:93},
+  {cat:'Maraichage',nom:'ACI MAIA Croix Rouge',contact:'Patricia',role:'Eti',tel:null,email:null,adresse:'226 route de Royan, St Yrieix',km:74.8},
+  {cat:'Maraichage',nom:'Marché de Léopold',contact:'Barbot Laurie',tel:null,email:'laurie.barbot@lemarchedeleopold.com',adresse:'120 Rte de Paris, Gond Pontouvre',km:65.8},
+  {cat:'Maraichage',nom:"Ferme du champ de l'œil",contact:'Teddy, Louise, Renaud',role:'Responsable exploit.',tel:'665303943',email:null,adresse:"2982 L'Echanleuil, Sainte-Croix-de-Mareuil",km:68.2},
+  {cat:'Maraichage',nom:"L'Unis vers des sens",contact:'Angélique & Natasha',role:'Responsable exploit.',tel:'686575663',email:null,adresse:'Lieu dit la couture, Goût Rossignol',km:74.6},
+  {cat:'Maraichage',nom:'Le champ du Rossignol',contact:'Perrine Ducoup',role:'Responsable exploit.',tel:null,email:null,adresse:null,km:null},
+  {cat:'Maraichage',nom:'Les Jardins du Grand Pâ',contact:'Alex',role:'Responsable exploit.',tel:null,email:null,adresse:null,km:null},
+  {cat:'Maraichage',nom:'Un jardin à 4 mains',contact:'Aurélie & Thierry',role:'Responsable exploit.',tel:null,email:null,adresse:null,km:null,note:'Création AMAP Montbron mai 2025'},
+];
+
+// Shared state
+let state = {
+  veggies: [],
+  orders: {},
+  delivered: {},
+  semaine: '',
+};
+let nextVid = 10;
+
+// Session
+let currentRole = null;
+let currentCat = 'Tous';
+let currentCat2 = 'Tous';
+let currentPage = null;
+let pinBuffer = '';
+let pendingRole = null;
+let modalClientIdx = null;
+
+// Nav configs
+const NAV_CONFIG = {
+  livreur: [
+    {id:'tournee',label:'Tournée',icon:'<svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>'},
+  ],
+  encadrant: [
+    {id:'legumes',label:'Légumes',icon:'<svg viewBox="0 0 24 24"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0112 2a8 8 0 018 8.2c0 7.3-8 11.8-8 11.8z"/><path d="M12 2v20M4.8 9.6h14.4"/></svg>'},
+    {id:'commandes',label:'Commandes',icon:'<svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>'},
+  ],
+  gestionnaire: [
+    {id:'recap',label:'Récap',icon:'<svg viewBox="0 0 24 24"><path d="M3 3h18v18H3z" fill="none"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>'},
+    {id:'clients',label:'Clients',icon:'<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>'},
+    {id:'legumes',label:'Légumes',icon:'<svg viewBox="0 0 24 24"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0112 2a8 8 0 018 8.2c0 7.3-8 11.8-8 11.8z"/></svg>'},
+    {id:'commandes',label:'Commandes',icon:'<svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>'},
+  ],
+};
+
+// ══════ AUTH ══════
+function selectRole(role) {
+  pendingRole = role;
+  pinBuffer = '';
+  document.getElementById('pin-role-title').textContent = ROLE_ICONS[role] + ' ' + ROLE_LABELS[role];
+  document.getElementById('pin-error').textContent = '';
+  document.getElementById('pin-hint').textContent = 'Démo — PIN : ' + PINS[role];
+  updatePinDots();
+  document.getElementById('screen-login').style.display = 'none';
+  document.getElementById('screen-pin').style.display = 'flex';
+}
+
+function backToLogin() {
+  document.getElementById('screen-pin').style.display = 'none';
+  document.getElementById('screen-login').style.display = 'flex';
+}
+
+function pinPress(d) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += d;
+  updatePinDots();
+  if (pinBuffer.length === 4) {
+    setTimeout(() => {
+      if (pinBuffer === PINS[pendingRole]) {
+        enterApp(pendingRole);
+      } else {
+        document.getElementById('pin-error').textContent = 'Code incorrect, réessayez';
+        pinBuffer = '';
+        updatePinDots();
+      }
+    }, 200);
+  }
+}
+function pinDel() { pinBuffer = pinBuffer.slice(0,-1); updatePinDots(); }
+function pinClear() { pinBuffer = ''; updatePinDots(); }
+function updatePinDots() {
+  for (let i=0;i<4;i++) document.getElementById('pd'+i).className='pin-dot'+(i<pinBuffer.length?' filled':'');
+}
+
+function enterApp(role) {
+  currentRole = role;
+  document.getElementById('screen-pin').style.display = 'none';
+  document.getElementById('screen-app').style.display = 'flex';
+  document.getElementById('app-title').textContent = 'CIDIL · ' + ROLE_LABELS[role];
+  document.getElementById('app-role-badge').textContent = ROLE_ICONS[role] + ' ' + ROLE_LABELS[role];
+  buildNav(role);
+  const defaultPage = NAV_CONFIG[role][0].id;
+  showPage(defaultPage);
+  initPage(defaultPage);
+  populateClientSel();
+  initSemaine();
+}
+
+function logout() {
+  currentRole = null;
+  document.getElementById('screen-app').style.display = 'none';
+  document.getElementById('screen-login').style.display = 'flex';
+  document.getElementById('bottom-nav').innerHTML = '';
+}
+
+// ══════ NAV ══════
+function buildNav(role) {
+  const nav = document.getElementById('bottom-nav');
+  nav.innerHTML = NAV_CONFIG[role].map(item => `
+    <button class="bn-item" id="bn-${item.id}" onclick="navTo('${item.id}')">
+      ${item.icon}
+      ${item.label}
+    </button>`).join('');
+}
+
+function navTo(id) {
+  document.querySelectorAll('.bn-item').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('bn-'+id);
+  if (btn) btn.classList.add('active');
+  showPage(id);
+  initPage(id);
+}
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const p = document.getElementById('page-'+id);
+  if (p) p.classList.add('active');
+  currentPage = id;
+}
+
+function initPage(id) {
+  if (id==='tournee') renderClients();
+  if (id==='legumes') loadVeggies();
+  if (id==='commandes') { loadVeggies().then(()=>renderOrders()); }
+  if (id==='recap') renderRecap();
+  if (id==='clients') renderClients2();
+}
+
+// ══════ SEMAINE ══════
+function initSemaine() {
+  if (!state.semaine) {
+    const d = new Date();
+    d.setDate(d.getDate()-d.getDay()+1);
+    state.semaine = d.toISOString().split('T')[0];
+  }
+  const si = document.getElementById('sem-input');
+  if (si) si.value = state.semaine;
+}
+function updateSemaine() {
+  state.semaine = document.getElementById('sem-input').value;
+  showToast('Semaine mise à jour');
+}
+function semaineLabel() {
+  if (!state.semaine) return '';
+  const d = new Date(state.semaine);
+  const fin = new Date(d); fin.setDate(d.getDate()+6);
+  const fmt = v => v.toLocaleDateString('fr-FR',{day:'numeric',month:'short'});
+  return 'Semaine du '+fmt(d)+' au '+fmt(fin);
+}
+
+// ══════ TOURNÉE ══════
+function filterCat(cat) {
+  currentCat = cat;
+  document.querySelectorAll('#flt-cat .flt').forEach(b => {
+    b.classList.toggle('active', b.textContent.trim()===(cat==='Tous'?'Tous':cat==='Maraichage'?'Maraîchage':cat));
+  });
+  renderClients();
+}
+
+function renderClients() {
+  const el = document.getElementById('client-list');
+  if (!el) return;
+  const filtered = clients.filter(c => currentCat==='Tous' || c.cat===currentCat);
+  const doneCount = Object.keys(state.delivered).filter(k=>state.delivered[k]).length;
+  const total = clients.length;
+  const pct = total ? Math.round(doneCount/total*100) : 0;
+  document.getElementById('s-total').textContent = total;
+  document.getElementById('s-done').textContent = doneCount;
+  document.getElementById('s-pct').textContent = '('+pct+'%)';
+  document.getElementById('s-prog').style.width = pct+'%';
+  document.getElementById('s-cmd').textContent = Object.keys(state.orders).length;
+  const kmArr = clients.filter(c=>c.km).map(c=>c.km);
+  document.getElementById('s-km').textContent = kmArr.length ? Math.round(kmArr.reduce((a,b)=>a+b,0)) : '—';
+
+  el.innerHTML = filtered.map(c => {
+    const idx = clients.indexOf(c);
+    const done = !!state.delivered[idx];
+    const hasOrder = !!state.orders[idx];
+    const bc = c.cat==='Restau Co'?'b-rco':c.cat==='Commerce'?'b-com':'b-mar';
+    const bl = c.cat==='Maraichage'?'Maraîchage':c.cat;
+    return `<div class="cc ${done?'done':''}">
+      <div class="cc-top">
+        <span class="badge ${bc}">${bl}</span>
+        <div style="display:flex;gap:6px;align-items:center;">
+          ${c.km?`<span class="km-tag">${c.km}km</span>`:''}
+          ${hasOrder?`<span style="font-size:10px;background:var(--g6);color:var(--g1);padding:2px 7px;border-radius:10px;font-weight:500;">📦 Commandé</span>`:''}
+        </div>
+      </div>
+      <div class="cc-name">${c.nom}</div>
+      ${c.contact?`<div class="cc-line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>${c.contact}${c.role?' · <span style="color:var(--tl)">'+c.role+'</span>':''}</div>`:''}
+      ${c.tel?`<div class="cc-line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 16.92v3a2 2 0 01-2.18 2A19.79 19.79 0 013.09 4.18 2 2 0 015.09 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L9.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>${c.tel}</div>`:''}
+      ${c.adresse?`<div class="cc-line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg><span style="font-size:12px;">${c.adresse}</span></div>`:''}
+      ${c.note?`<div class="note-tag">⚠ ${c.note}</div>`:''}
+      <div class="cc-actions">
+        ${c.adresse?`<a class="btn-gps" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c.adresse)}" target="_blank">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>GPS
+        </a>`:`<span style="font-size:11px;color:var(--tl);">Adresse à compléter</span>`}
+        <button class="btn-done ${done?'ok':''}" onclick="toggleDone(${idx})">
+          ${done?'✓ Livré':'Livré ?'}
+        </button>
+      </div>
+    </div>`;
+  }).join('') || '<div class="empty-msg">Aucun client</div>';
+}
+
+function toggleDone(idx) {
+  state.delivered[idx] = !state.delivered[idx];
+  if (!state.delivered[idx]) delete state.delivered[idx];
+  renderClients();
+  showToast(state.delivered[idx]===undefined ? 'Livraison annulée' : '✓ Livraison enregistrée');
+}
+
+// ══════ LÉGUMES ══════
+async function loadVeggies() {
+  try {
+    const semLundi = state.semaine;
+    const rows = await sbGet('legumes', `semaine=eq.${semLundi}&order=id.asc`);
+    state.veggies = rows.map(r => ({id:r.id, nom:r.nom, kg:r.kg_dispo, prix:r.prix_kg}));
+  } catch(e) {
+    showToast('Erreur chargement légumes');
+    console.error(e);
+  }
+  renderVeggies();
+}
+
+async function addVeggie() {
+  const nom = document.getElementById('nv-nom').value.trim();
+  const kg = parseFloat(document.getElementById('nv-kg').value);
+  const prix = parseFloat(document.getElementById('nv-prix').value);
+  if (!nom || isNaN(kg)) return showToast('Nom et quantité requis');
+  try {
+    const rows = await sbPost('legumes', {nom, kg_dispo:kg, prix_kg:isNaN(prix)?null:prix, semaine:state.semaine});
+    const r = rows[0];
+    state.veggies.push({id:r.id, nom:r.nom, kg:r.kg_dispo, prix:r.prix_kg});
+    document.getElementById('nv-nom').value='';
+    document.getElementById('nv-kg').value='';
+    document.getElementById('nv-prix').value='';
+    renderVeggies();
+    showToast('🌿 '+nom+' publié — visible par le livreur');
+  } catch(e) {
+    showToast('Erreur : ' + e.message);
+  }
+}
+
+async function removeVeggie(id) {
+  try {
+    await sbDelete('legumes', id);
+    state.veggies = state.veggies.filter(v=>v.id!==id);
+    Object.keys(state.orders).forEach(k=>{
+      if(state.orders[k][id]){delete state.orders[k][id];}
+      if(!Object.keys(state.orders[k]).length) delete state.orders[k];
+    });
+    renderVeggies();
+    renderOrders();
+    showToast('Légume retiré');
+  } catch(e) {
+    showToast('Erreur suppression');
+  }
+}
+
+function renderVeggies() {
+  const el = document.getElementById('veg-list');
+  if (!el) return;
+  if (!state.veggies.length) { el.innerHTML='<div class="empty-msg">Aucun légume · Ajoutez-en ci-dessus</div>'; return; }
+  el.innerHTML = state.veggies.map(v=>`
+    <div class="veg-row">
+      <div class="veg-dot"></div>
+      <div class="veg-name">${v.nom}</div>
+      <div class="veg-info">${v.kg}kg</div>
+      <div class="veg-info" style="margin-left:6px;">${v.prix!==null?v.prix.toFixed(2)+' €/kg':'NC'}</div>
+      <button class="btn-rm" onclick="removeVeggie(${v.id})">✕</button>
+    </div>`).join('');
+}
+
+// ══════ COMMANDES ══════
+function populateClientSel() {
+  const sel = document.getElementById('client-sel');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— Client —</option>' +
+    clients.map((c,i)=>`<option value="${i}">${c.nom}</option>`).join('');
+}
+
+function openOrderModal() {
+  const idx = parseInt(document.getElementById('client-sel').value);
+  if (isNaN(idx)) return showToast('Sélectionnez un client');
+  if (!state.veggies.length) return showToast('Ajoutez des légumes d\'abord');
+  modalClientIdx = idx;
+  document.getElementById('mo-name').textContent = clients[idx].nom;
+  document.getElementById('mo-week').textContent = semaineLabel();
+  const ex = state.orders[idx]||{};
+  document.getElementById('mo-rows').innerHTML = state.veggies.map(v=>{
+    const q=ex[v.id]||'';
+    return `<div class="order-row">
+      <input type="checkbox" class="order-chk" id="ck-${v.id}" ${q>0?'checked':''} onchange="chkChange(${v.id})"/>
+      <div><div class="order-veg-name">${v.nom}</div><div class="order-veg-dispo">Dispo : ${v.kg} kg${v.prix?' · '+v.prix.toFixed(2)+' €/kg':''}</div></div>
+      <div class="order-qty-wrap">
+        <input type="number" class="order-qty" id="oq-${v.id}" value="${q}" min="0" max="${v.kg}" step="0.5" placeholder="0"/>
+        <span class="order-unit">kg</span>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('modal-order').classList.add('open');
+}
+
+function chkChange(vid) {
+  const chk=document.getElementById('ck-'+vid);
+  const qty=document.getElementById('oq-'+vid);
+  if(chk.checked&&(!qty.value||qty.value==0)) qty.value=1;
+  if(!chk.checked) qty.value='';
+}
+
+function closeModal() { document.getElementById('modal-order').classList.remove('open'); }
+
+function saveOrder() {
+  const od={};
+  state.veggies.forEach(v=>{
+    const q=parseFloat(document.getElementById('oq-'+v.id)?.value);
+    if(!isNaN(q)&&q>0) od[v.id]=q;
+  });
+  if(Object.keys(od).length) state.orders[modalClientIdx]=od;
+  else delete state.orders[modalClientIdx];
+  closeModal();
+  renderOrders();
+  renderClients();
+  showToast('✓ Commande enregistrée');
+}
+
+function renderOrders() {
+  const el = document.getElementById('orders-list');
+  if (!el) return;
+  const keys = Object.keys(state.orders);
+  if (!keys.length) { el.innerHTML='<div class="empty-msg">Aucune commande cette semaine</div>'; return; }
+  el.innerHTML = keys.map(idx=>{
+    const c=clients[idx]; const od=state.orders[idx];
+    let total=0,hasP=false;
+    const lines=Object.entries(od).map(([vid,qty])=>{
+      const v=state.veggies.find(v=>v.id==vid);
+      if(!v) return '';
+      const sub=v.prix?v.prix*qty:null;
+      if(sub!==null){total+=sub;hasP=true;}
+      return `<div class="co-line"><span>${v.nom}</span><span style="font-family:'DM Mono',monospace;">${qty}kg${sub?' · '+(sub.toFixed(2))+' €':''}</span></div>`;
+    }).filter(Boolean).join('');
+    return `<div class="co-card">
+      <div class="co-head">
+        <span class="co-name">${c.nom}</span>
+        <span class="badge ${c.cat==='Restau Co'?'b-rco':c.cat==='Commerce'?'b-com':'b-mar'}">${c.cat==='Maraichage'?'Maraîchage':c.cat}</span>
+      </div>
+      <div class="co-body">${lines}${hasP?`<div class="co-total">Total : ${total.toFixed(2)} €</div>`:''}</div>
+    </div>`;
+  }).join('');
+}
+
+// ══════ RÉCAP ══════
+function renderRecap() {
+  const keys=Object.keys(state.orders);
+  let tKg=0,tCA=0,hasCA=false;
+  const byV={};
+  keys.forEach(idx=>{
+    Object.entries(state.orders[idx]).forEach(([vid,qty])=>{
+      const v=state.veggies.find(v=>v.id==vid); if(!v) return;
+      tKg+=qty;
+      if(v.prix){tCA+=v.prix*qty;hasCA=true;}
+      byV[vid]=byV[vid]||{nom:v.nom,kg:0,ca:0};
+      byV[vid].kg+=qty;
+      if(v.prix) byV[vid].ca+=v.prix*qty;
+    });
+  });
+  document.getElementById('rc-cmd').textContent=keys.length;
+  document.getElementById('rc-kg').textContent=Math.round(tKg*10)/10;
+  document.getElementById('rc-ca').textContent=hasCA?tCA.toFixed(2)+'€':'—';
+
+  const rvg=document.getElementById('rc-vegs');
+  rvg.innerHTML=Object.values(byV).length?Object.values(byV).map(b=>`
+    <div class="recap-veg-card">
+      <div class="rvn">${b.nom}</div>
+      <div class="rvk">${Math.round(b.kg*10)/10} <span style="font-size:14px;font-weight:400;">kg</span></div>
+      ${b.ca?`<div class="rvs">${b.ca.toFixed(2)} €</div>`:''}
+    </div>`).join(''):'<div class="empty-msg" style="grid-column:1/-1;">Aucune commande</div>';
+
+  const rcl=document.getElementById('rc-clients');
+  rcl.innerHTML=keys.length?keys.map(idx=>{
+    const c=clients[idx],od=state.orders[idx];
+    const pills=Object.entries(od).map(([vid,qty])=>{
+      const v=state.veggies.find(v=>v.id==vid);
+      return v?`<span style="font-size:12px;background:var(--g6);color:var(--g1);padding:3px 9px;border-radius:10px;font-family:'DM Mono',monospace;">${v.nom} ${qty}kg</span>`:'';
+    }).filter(Boolean).join(' ');
+    return `<div class="card" style="margin-bottom:8px;">
+      <div style="font-size:14px;font-weight:500;margin-bottom:6px;">${c.nom}</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;">${pills}</div>
+    </div>`;
+  }).join(''):'<div class="empty-msg">Aucune commande</div>';
+}
+
+// ══════ CLIENTS (gestionnaire) ══════
+function filterCat2(cat) {
+  currentCat2=cat;
+  document.querySelectorAll('#flt-cat2 .flt').forEach(b=>{
+    b.classList.toggle('active',b.textContent.trim()===(cat==='Tous'?'Tous':cat==='Maraichage'?'Maraîchage':cat));
+  });
+  renderClients2();
+}
+function renderClients2() {
+  const el=document.getElementById('client-list2'); if(!el) return;
+  const filtered=clients.filter(c=>currentCat2==='Tous'||c.cat===currentCat2);
+  el.innerHTML=filtered.map(c=>{
+    const bc=c.cat==='Restau Co'?'b-rco':c.cat==='Commerce'?'b-com':'b-mar';
+    const bl=c.cat==='Maraichage'?'Maraîchage':c.cat;
+    return `<div class="cc">
+      <div class="cc-top"><span class="badge ${bc}">${bl}</span>${c.km?`<span class="km-tag">${c.km}km</span>`:''}</div>
+      <div class="cc-name">${c.nom}</div>
+      ${c.contact?`<div class="cc-line">${c.contact}${c.role?' · '+c.role:''}</div>`:''}
+      ${c.tel?`<div class="cc-line">📞 ${c.tel}</div>`:''}
+      ${c.email?`<div class="cc-line" style="font-size:11px;">✉ ${c.email}</div>`:''}
+      ${c.adresse?`<div class="cc-line">📍 ${c.adresse}</div>`:'<div class="cc-line" style="color:var(--tl);">Adresse à compléter</div>'}
+      ${c.note?`<div class="note-tag">⚠ ${c.note}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ══════ TOAST ══════
+function showToast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// Init
+(()=>{
+  const d=new Date(); d.setDate(d.getDate()-d.getDay()+1);
+  state.semaine=d.toISOString().split('T')[0];
+})();
+</script>
+</body>
+</html>
