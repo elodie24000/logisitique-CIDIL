@@ -290,10 +290,14 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 /* ── CATALOGUE LÉGUMES ── */
 .famille-group{margin-bottom:12px;}
 .famille-label{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--g2);padding:4px 0;border-bottom:1px solid var(--g6);margin-bottom:6px;}
-.cat-item{display:flex;align-items:center;gap:10px;padding:7px 4px;border-bottom:1px solid var(--g7);}
+.cat-item{padding:8px 4px;border-bottom:1px solid var(--g7);}
 .cat-item:last-child{border-bottom:none;}
+.cat-item-top{display:flex;align-items:center;gap:10px;}
 .cat-chk{width:18px;height:18px;accent-color:var(--g2);cursor:pointer;flex-shrink:0;}
 .cat-nom{font-size:14px;flex:1;}
+.cat-inputs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px;padding-left:28px;}
+.cat-inputs input{display:none;}
+.cat-item.checked .cat-inputs input{display:block;}
 
 /* ── SYNC INDICATOR ── */
 .sync-dot{
@@ -443,17 +447,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
           Sélectionner les légumes disponibles
         </div>
         <div id="catalogue-list"><div class="empty-msg">Chargement du catalogue...</div></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;">
-          <div>
-            <label class="flabel">Quantité (kg)</label>
-            <input class="finput" type="number" id="nv-kg" placeholder="30" min="0" />
-          </div>
-          <div>
-            <label class="flabel">Prix (€/kg)</label>
-            <input class="finput" type="number" id="nv-prix" placeholder="3.5" step="0.1" min="0" />
-          </div>
-        </div>
-        <div style="font-size:11px;color:var(--tl);margin-top:6px;">Cochez les légumes puis indiquez la quantité et le prix, et publiez.</div>
+        <div style="font-size:11px;color:var(--tl);margin-top:6px;">Cochez un légume → entrez sa quantité et son prix → publiez.</div>
         <button class="btn-primary" style="margin-top:12px;" onclick="addVeggies()">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Publier les légumes cochés
@@ -849,30 +843,47 @@ function renderCatalogue() {
     <div class="famille-group">
       <div class="famille-label">${fam}</div>
       ${vegs.map(v => `
-        <div class="cat-item">
-          <input type="checkbox" class="cat-chk" id="cat-${v.id}" value="${v.nom}">
-          <label class="cat-nom" for="cat-${v.id}">${v.nom}</label>
+        <div class="cat-item" id="item-${v.id}">
+          <div class="cat-item-top">
+            <input type="checkbox" class="cat-chk" id="cat-${v.id}" value="${v.nom}" onchange="toggleItem(${v.id})">
+            <label class="cat-nom" for="cat-${v.id}">${v.nom}</label>
+          </div>
+          <div class="cat-inputs">
+            <input class="finput" type="number" id="kg-${v.id}" placeholder="Kg dispo" min="0" step="0.5">
+            <input class="finput" type="number" id="px-${v.id}" placeholder="€/kg" min="0" step="0.1">
+          </div>
         </div>`).join('')}
     </div>`).join('');
+}
+
+function toggleItem(id) {
+  const chk = document.getElementById('cat-'+id);
+  const item = document.getElementById('item-'+id);
+  item.classList.toggle('checked', chk.checked);
+  if (chk.checked) document.getElementById('kg-'+id).focus();
 }
 
 async function addVeggies() {
   const checked = [...document.querySelectorAll('.cat-chk:checked')];
   if (!checked.length) return showToast('Cochez au moins un légume');
-  const kg = parseFloat(document.getElementById('nv-kg').value);
-  const prix = parseFloat(document.getElementById('nv-prix').value);
-  if (isNaN(kg)) return showToast('Quantité requise');
+  let count = 0;
   try {
     for (const chk of checked) {
+      const id = chk.id.replace('cat-','');
+      const kg = parseFloat(document.getElementById('kg-'+id).value);
+      const prix = parseFloat(document.getElementById('px-'+id).value);
+      if (isNaN(kg)) { showToast('Quantité manquante pour ' + chk.value); continue; }
       const rows = await sbPost('legumes', {nom: chk.value, kg_dispo: kg, prix_kg: isNaN(prix)?null:prix, semaine: state.semaine});
       const r = rows[0];
       state.veggies.push({id: r.id, nom: r.nom, kg: r.kg_dispo, prix: r.prix_kg});
       chk.checked = false;
+      document.getElementById('item-'+id).classList.remove('checked');
+      document.getElementById('kg-'+id).value = '';
+      document.getElementById('px-'+id).value = '';
+      count++;
     }
-    document.getElementById('nv-kg').value = '';
-    document.getElementById('nv-prix').value = '';
     renderVeggies();
-    showToast('✓ ' + checked.length + ' légume(s) publiés');
+    showToast('✓ ' + count + ' légume(s) publiés');
   } catch(e) {
     showToast('Erreur : ' + e.message);
   }
