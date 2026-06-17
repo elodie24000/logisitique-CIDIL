@@ -287,6 +287,14 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 }
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
+/* ── CATALOGUE LÉGUMES ── */
+.famille-group{margin-bottom:12px;}
+.famille-label{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--g2);padding:4px 0;border-bottom:1px solid var(--g6);margin-bottom:6px;}
+.cat-item{display:flex;align-items:center;gap:10px;padding:7px 4px;border-bottom:1px solid var(--g7);}
+.cat-item:last-child{border-bottom:none;}
+.cat-chk{width:18px;height:18px;accent-color:var(--g2);cursor:pointer;flex-shrink:0;}
+.cat-nom{font-size:14px;flex:1;}
+
 /* ── SYNC INDICATOR ── */
 .sync-dot{
   width:7px;height:7px;border-radius:50%;
@@ -432,25 +440,23 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
       <div class="add-form">
         <div class="add-form-title">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--g2)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-          Ajouter un légume disponible
+          Sélectionner les légumes disponibles
         </div>
-        <div class="form-grid">
+        <div id="catalogue-list"><div class="empty-msg">Chargement du catalogue...</div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;">
           <div>
-            <label class="flabel">Légume</label>
-            <input class="finput" type="text" id="nv-nom" placeholder="Tomates cerises" />
-          </div>
-          <div>
-            <label class="flabel">Kg</label>
+            <label class="flabel">Quantité (kg)</label>
             <input class="finput" type="number" id="nv-kg" placeholder="30" min="0" />
           </div>
           <div>
-            <label class="flabel">€/kg</label>
+            <label class="flabel">Prix (€/kg)</label>
             <input class="finput" type="number" id="nv-prix" placeholder="3.5" step="0.1" min="0" />
           </div>
         </div>
-        <button class="btn-primary" onclick="addVeggie()">
+        <div style="font-size:11px;color:var(--tl);margin-top:6px;">Cochez les légumes puis indiquez la quantité et le prix, et publiez.</div>
+        <button class="btn-primary" style="margin-top:12px;" onclick="addVeggies()">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Publier ce légume
+          Publier les légumes cochés
         </button>
       </div>
 
@@ -728,7 +734,7 @@ function showPage(id) {
 
 function initPage(id) {
   if (id==='tournee') renderClients();
-  if (id==='legumes') loadVeggies();
+  if (id==='legumes') { loadCatalogue(); loadVeggies(); }
   if (id==='commandes') { loadVeggies().then(()=>renderOrders()); }
   if (id==='recap') renderRecap();
   if (id==='clients') renderClients2();
@@ -816,6 +822,60 @@ function toggleDone(idx) {
   if (!state.delivered[idx]) delete state.delivered[idx];
   renderClients();
   showToast(state.delivered[idx]===undefined ? 'Livraison annulée' : '✓ Livraison enregistrée');
+}
+
+// ══════ CATALOGUE ══════
+let catalogue = [];
+
+async function loadCatalogue() {
+  try {
+    const rows = await sbGet('catalogue', 'order=famille.asc,nom.asc');
+    catalogue = rows;
+    renderCatalogue();
+  } catch(e) {
+    document.getElementById('catalogue-list').innerHTML = '<div class="empty-msg">Erreur chargement catalogue</div>';
+  }
+}
+
+function renderCatalogue() {
+  const el = document.getElementById('catalogue-list');
+  if (!el) return;
+  const familles = {};
+  catalogue.forEach(v => {
+    if (!familles[v.famille]) familles[v.famille] = [];
+    familles[v.famille].push(v);
+  });
+  el.innerHTML = Object.entries(familles).map(([fam, vegs]) => `
+    <div class="famille-group">
+      <div class="famille-label">${fam}</div>
+      ${vegs.map(v => `
+        <div class="cat-item">
+          <input type="checkbox" class="cat-chk" id="cat-${v.id}" value="${v.nom}">
+          <label class="cat-nom" for="cat-${v.id}">${v.nom}</label>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+async function addVeggies() {
+  const checked = [...document.querySelectorAll('.cat-chk:checked')];
+  if (!checked.length) return showToast('Cochez au moins un légume');
+  const kg = parseFloat(document.getElementById('nv-kg').value);
+  const prix = parseFloat(document.getElementById('nv-prix').value);
+  if (isNaN(kg)) return showToast('Quantité requise');
+  try {
+    for (const chk of checked) {
+      const rows = await sbPost('legumes', {nom: chk.value, kg_dispo: kg, prix_kg: isNaN(prix)?null:prix, semaine: state.semaine});
+      const r = rows[0];
+      state.veggies.push({id: r.id, nom: r.nom, kg: r.kg_dispo, prix: r.prix_kg});
+      chk.checked = false;
+    }
+    document.getElementById('nv-kg').value = '';
+    document.getElementById('nv-prix').value = '';
+    renderVeggies();
+    showToast('✓ ' + checked.length + ' légume(s) publiés');
+  } catch(e) {
+    showToast('Erreur : ' + e.message);
+  }
 }
 
 // ══════ LÉGUMES ══════
