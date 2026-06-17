@@ -299,6 +299,45 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 .cat-inputs input,.cat-inputs select,.cat-inputs div{display:none;}
 .cat-item.checked .cat-inputs input,.cat-item.checked .cat-inputs select,.cat-item.checked .cat-inputs div{display:block;}
 
+/* ── PAGE COMMANDE CLIENT ── */
+#screen-commande-client{display:none;min-height:100vh;background:var(--cream);}
+.cmd-hero{background:linear-gradient(160deg,var(--g1) 0%,var(--g2) 100%);padding:28px 20px 36px;text-align:center;}
+.cmd-hero-logo{width:52px;height:52px;background:rgba(255,255,255,.12);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;}
+.cmd-hero-logo svg{width:28px;height:28px;stroke:#fff;fill:none;stroke-width:1.8;}
+.cmd-hero-title{color:#fff;font-size:20px;font-weight:500;margin-bottom:4px;}
+.cmd-hero-sub{color:rgba(255,255,255,.55);font-size:13px;}
+.cmd-week-tag{display:inline-block;background:rgba(255,255,255,.12);color:rgba(255,255,255,.8);font-size:11px;font-family:'DM Mono',monospace;padding:4px 12px;border-radius:20px;margin-top:10px;}
+.cmd-body{padding:20px 16px 100px;}
+.cmd-select-wrap{background:var(--white);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:20px;box-shadow:var(--sh);}
+.cmd-select-label{font-size:12px;font-weight:500;color:var(--tl);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;}
+.cmd-client-sel{width:100%;padding:10px 12px;border:1.5px solid var(--g5);border-radius:9px;font-size:15px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--white);outline:none;}
+.cmd-client-sel:focus{border-color:var(--g3);}
+.cmd-famille-title{font-size:13px;font-weight:500;color:var(--g2);text-transform:uppercase;letter-spacing:.04em;margin:20px 0 8px;padding-bottom:6px;border-bottom:2px solid var(--g6);}
+.cmd-veg-card{background:var(--white);border:1.5px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:8px;box-shadow:var(--sh);transition:border-color .15s,box-shadow .15s;}
+.cmd-veg-card.selected{border-color:var(--g3);box-shadow:0 0 0 3px rgba(64,145,108,.12);}
+.cmd-veg-top{display:flex;align-items:center;gap:12px;cursor:pointer;}
+.cmd-veg-chk{width:22px;height:22px;accent-color:var(--g2);cursor:pointer;flex-shrink:0;}
+.cmd-veg-info{flex:1;}
+.cmd-veg-name{font-size:15px;font-weight:500;color:var(--text);}
+.cmd-veg-prix{font-size:12px;color:var(--tl);font-family:'DM Mono',monospace;margin-top:2px;}
+.cmd-veg-dispo{font-size:11px;background:var(--g6);color:var(--g1);padding:2px 8px;border-radius:10px;font-weight:500;}
+.cmd-veg-qty{display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--g7);display:none;align-items:center;gap:10px;}
+.cmd-veg-card.selected .cmd-veg-qty{display:flex;}
+.cmd-qty-label{font-size:13px;color:var(--tm);flex:1;}
+.cmd-qty-input{width:80px;padding:8px 10px;border:1.5px solid var(--g5);border-radius:8px;font-size:16px;font-family:'DM Mono',monospace;text-align:center;outline:none;}
+.cmd-qty-input:focus{border-color:var(--g3);}
+.cmd-qty-unit{font-size:13px;color:var(--tl);}
+.cmd-footer{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--bd);padding:14px 16px calc(14px + env(safe-area-inset-bottom));box-shadow:0 -4px 20px rgba(0,0,0,.08);}
+.cmd-total{font-size:13px;color:var(--tl);margin-bottom:8px;text-align:center;}
+.cmd-total strong{color:var(--text);}
+.btn-commander{width:100%;padding:14px;background:var(--g1);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn-commander:active{background:var(--g2);}
+.cmd-success{display:none;text-align:center;padding:40px 20px;}
+.cmd-success-icon{width:64px;height:64px;background:var(--g6);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;}
+.cmd-success-icon svg{width:32px;height:32px;stroke:var(--g1);fill:none;stroke-width:2;}
+.cmd-success-title{font-size:20px;font-weight:500;color:var(--text);margin-bottom:8px;}
+.cmd-success-sub{font-size:14px;color:var(--tl);}
+
 /* ── SYNC INDICATOR ── */
 .sync-dot{
   width:7px;height:7px;border-radius:50%;
@@ -537,6 +576,43 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- ══════════════════════ PAGE COMMANDE CLIENT ══════════════════════ -->
+<div id="screen-commande-client">
+  <div class="cmd-hero">
+    <div class="cmd-hero-logo">
+      <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M8 12l2.5 2.5L16 9"/></svg>
+    </div>
+    <div class="cmd-hero-title">CIDIL Maraîchage</div>
+    <div class="cmd-hero-sub">Passez votre commande de la semaine</div>
+    <div class="cmd-week-tag" id="cmd-week-tag"></div>
+  </div>
+  <div class="cmd-body">
+    <div class="cmd-select-wrap">
+      <div class="cmd-select-label">Qui êtes-vous ?</div>
+      <select class="cmd-client-sel" id="cmd-client-sel" onchange="cmdClientChange()">
+        <option value="">— Sélectionnez votre nom —</option>
+      </select>
+    </div>
+    <div id="cmd-legumes-wrap" style="display:none;">
+      <div id="cmd-legumes-list"></div>
+    </div>
+    <div class="cmd-success" id="cmd-success">
+      <div class="cmd-success-icon">
+        <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+      </div>
+      <div class="cmd-success-title">Commande envoyée !</div>
+      <div class="cmd-success-sub" id="cmd-success-sub">Merci, votre commande a bien été enregistrée.</div>
+    </div>
+  </div>
+  <div class="cmd-footer" id="cmd-footer" style="display:none;">
+    <div class="cmd-total" id="cmd-total"></div>
+    <button class="btn-commander" onclick="submitClientOrder()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>
+      Valider ma commande
+    </button>
+  </div>
+</div>
 
 <script>
 // ══════ SUPABASE ══════
@@ -1131,10 +1207,135 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js');
 }
 
+// ══════ PAGE COMMANDE CLIENT ══════
+async function initCommandeClient() {
+  document.getElementById('screen-login').style.display = 'none';
+  document.getElementById('screen-commande-client').style.display = 'block';
+
+  // Semaine courante
+  const d = new Date(); d.setDate(d.getDate() - d.getDay() + 1);
+  const semaine = d.toISOString().split('T')[0];
+  const fin = new Date(d); fin.setDate(d.getDate() + 6);
+  const fmt = v => v.toLocaleDateString('fr-FR', {day:'numeric', month:'long'});
+  document.getElementById('cmd-week-tag').textContent = 'Semaine du ' + fmt(d) + ' au ' + fmt(fin);
+
+  // Remplir liste clients
+  const sel = document.getElementById('cmd-client-sel');
+  clients.forEach((c, i) => {
+    const opt = document.createElement('option');
+    opt.value = i; opt.textContent = c.nom;
+    sel.appendChild(opt);
+  });
+
+  // Charger légumes disponibles cette semaine
+  try {
+    const rows = await sbGet('legumes', `semaine=eq.${semaine}&order=id.asc`);
+    window._cmdVeggies = rows;
+    renderCmdLegumes(rows);
+  } catch(e) {
+    document.getElementById('cmd-legumes-list').innerHTML = '<div class="empty-msg">Aucun légume disponible cette semaine</div>';
+  }
+}
+
+function renderCmdLegumes(veggies) {
+  const wrap = document.getElementById('cmd-legumes-list');
+  if (!veggies.length) { wrap.innerHTML = '<div class="empty-msg">Aucun légume disponible cette semaine</div>'; return; }
+  const familles = {};
+  veggies.forEach(v => {
+    const fam = v.famille || 'Autres';
+    if (!familles[fam]) familles[fam] = [];
+    familles[fam].push(v);
+  });
+  wrap.innerHTML = Object.entries(familles).map(([fam, vegs]) => `
+    <div class="cmd-famille-title">${fam}</div>
+    ${vegs.map(v => `
+      <div class="cmd-veg-card" id="cmdcard-${v.id}">
+        <div class="cmd-veg-top" onclick="toggleCmdVeg(${v.id})">
+          <input type="checkbox" class="cmd-veg-chk" id="cmdchk-${v.id}" onclick="event.stopPropagation();toggleCmdVeg(${v.id})">
+          <div class="cmd-veg-info">
+            <div class="cmd-veg-name">${v.nom}</div>
+            <div class="cmd-veg-prix">${v.prix_kg ? v.prix_kg.toFixed(2) + ' €/' + (v.unite||'kg') : 'Prix sur devis'}</div>
+          </div>
+          <span class="cmd-veg-dispo">${v.kg_dispo} ${v.unite||'kg'} dispo</span>
+        </div>
+        <div class="cmd-veg-qty">
+          <span class="cmd-qty-label">Quantité souhaitée</span>
+          <input type="number" class="cmd-qty-input" id="cmdqty-${v.id}" min="0" step="${(v.unite||'kg')==='kg'?'0.5':'1'}" placeholder="0" oninput="updateCmdTotal()">
+          <span class="cmd-qty-unit">${v.unite||'kg'}</span>
+        </div>
+      </div>`).join('')}
+  `).join('');
+}
+
+function cmdClientChange() {
+  const idx = document.getElementById('cmd-client-sel').value;
+  document.getElementById('cmd-legumes-wrap').style.display = idx !== '' ? 'block' : 'none';
+  document.getElementById('cmd-footer').style.display = idx !== '' ? 'block' : 'none';
+  updateCmdTotal();
+}
+
+function toggleCmdVeg(id) {
+  const chk = document.getElementById('cmdchk-'+id);
+  const card = document.getElementById('cmdcard-'+id);
+  chk.checked = !chk.checked;
+  card.classList.toggle('selected', chk.checked);
+  if (chk.checked) document.getElementById('cmdqty-'+id).focus();
+  updateCmdTotal();
+}
+
+function updateCmdTotal() {
+  const veggies = window._cmdVeggies || [];
+  let total = 0, hasPrice = false, lines = 0;
+  veggies.forEach(v => {
+    const chk = document.getElementById('cmdchk-'+v.id);
+    const qty = parseFloat(document.getElementById('cmdqty-'+v.id)?.value);
+    if (chk?.checked && qty > 0) {
+      lines++;
+      if (v.prix_kg) { total += v.prix_kg * qty; hasPrice = true; }
+    }
+  });
+  const el = document.getElementById('cmd-total');
+  if (lines === 0) { el.textContent = ''; return; }
+  el.innerHTML = `<strong>${lines} article(s)</strong>${hasPrice ? ' · Total estimé : <strong>' + total.toFixed(2) + ' €</strong>' : ''}`;
+}
+
+async function submitClientOrder() {
+  const idx = parseInt(document.getElementById('cmd-client-sel').value);
+  if (isNaN(idx)) return showToast('Sélectionnez votre nom');
+  const veggies = window._cmdVeggies || [];
+  const items = [];
+  veggies.forEach(v => {
+    const chk = document.getElementById('cmdchk-'+v.id);
+    const qty = parseFloat(document.getElementById('cmdqty-'+v.id)?.value);
+    if (chk?.checked && qty > 0) items.push({legume_id: v.id, nom: v.nom, quantite: qty, unite: v.unite||'kg', prix_kg: v.prix_kg});
+  });
+  if (!items.length) return showToast('Sélectionnez au moins un légume');
+  const d = new Date(); d.setDate(d.getDate() - d.getDay() + 1);
+  const semaine = d.toISOString().split('T')[0];
+  try {
+    await sbPost('commandes_clients', {
+      client_nom: clients[idx].nom,
+      client_idx: idx,
+      semaine,
+      items: JSON.stringify(items),
+      total: items.reduce((s,i) => s + (i.prix_kg||0)*i.quantite, 0)
+    });
+    document.getElementById('cmd-legumes-wrap').style.display = 'none';
+    document.getElementById('cmd-footer').style.display = 'none';
+    document.getElementById('cmd-select-wrap') && (document.querySelector('.cmd-select-wrap').style.display = 'none');
+    document.getElementById('cmd-success').style.display = 'block';
+    document.getElementById('cmd-success-sub').textContent = 'Merci ' + clients[idx].nom + ', votre commande a bien été enregistrée pour la semaine du ' + document.getElementById('cmd-week-tag').textContent.replace('Semaine du ','') + '.';
+  } catch(e) {
+    showToast('Erreur envoi commande');
+    console.error(e);
+  }
+}
+
 // Init
 (()=>{
   const d=new Date(); d.setDate(d.getDate()-d.getDay()+1);
   state.semaine=d.toISOString().split('T')[0];
+  if (window.location.search.includes('commande')) initCommandeClient();
 })();
 </script>
 </body>
