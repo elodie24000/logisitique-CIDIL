@@ -559,6 +559,14 @@ async function sbPost(table, body) {
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
+async function sbPatch(table, id, body) {
+  const res = await fetch(`${SUPA_URL}/rest/v1/${table}?id=eq.${id}`, {
+    method: 'PATCH',
+    headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error(await res.text());
+}
 async function sbDelete(table, id) {
   const res = await fetch(`${SUPA_URL}/rest/v1/${table}?id=eq.${id}`, {
     method: 'DELETE',
@@ -850,7 +858,7 @@ function renderCatalogue() {
           </div>
           <div class="cat-inputs">
             <input class="finput" type="number" id="kg-${v.id}" placeholder="Kg dispo" min="0" step="0.5">
-            <input class="finput" type="number" id="px-${v.id}" placeholder="€/kg" min="0" step="0.1">
+            <input class="finput" type="number" id="px-${v.id}" placeholder="€/kg" min="0" step="0.1" value="${v.prix_defaut !== null && v.prix_defaut !== undefined ? v.prix_defaut : ''}">
           </div>
         </div>`).join('')}
     </div>`).join('');
@@ -876,10 +884,17 @@ async function addVeggies() {
       const rows = await sbPost('legumes', {nom: chk.value, kg_dispo: kg, prix_kg: isNaN(prix)?null:prix, semaine: state.semaine});
       const r = rows[0];
       state.veggies.push({id: r.id, nom: r.nom, kg: r.kg_dispo, prix: r.prix_kg});
+      // Mémoriser le prix dans le catalogue
+      if (!isNaN(prix)) {
+        const catItem = catalogue.find(c => c.nom === chk.value);
+        if (catItem) {
+          catItem.prix_defaut = prix;
+          await sbPatch('catalogue', catItem.id, {prix_defaut: prix});
+        }
+      }
       chk.checked = false;
       document.getElementById('item-'+id).classList.remove('checked');
       document.getElementById('kg-'+id).value = '';
-      document.getElementById('px-'+id).value = '';
       count++;
     }
     renderVeggies();
