@@ -271,7 +271,7 @@ function renderVeggies() {
         : `<span class="qty-unit">${unite}</span>`;
       return `<div class="veg-card" id="vc-${v.id}" onclick="toggleVeg(${v.id})">
         <div class="veg-top">
-          <input type="checkbox" class="veg-chk" id="chk-${v.id}" onclick="event.stopPropagation();toggleVeg(${v.id})">
+          <input type="checkbox" class="veg-chk" id="chk-${v.id}" onclick="event.stopPropagation();toggleVeg(${v.id},true)">
           <div class="veg-info">
             <div class="veg-name">${v.nom}</div>
             <div class="veg-meta">
@@ -294,10 +294,10 @@ function renderVeggies() {
   `).join('');
 }
 
-function toggleVeg(id) {
+function toggleVeg(id, fromCheckbox) {
   const chk = document.getElementById('chk-'+id);
   const card = document.getElementById('vc-'+id);
-  chk.checked = !chk.checked;
+  if (!fromCheckbox) chk.checked = !chk.checked;
   card.classList.toggle('selected', chk.checked);
   if (chk.checked) {
     const inp = document.getElementById('qty-'+id);
