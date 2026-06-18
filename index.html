@@ -1103,10 +1103,11 @@ async function addVeggies() {
 async function loadVeggies() {
   try {
     const semLundi = state.semaine;
+    if (!semLundi) return;
     const rows = await sbGet('legumes', `semaine=eq.${semLundi}&order=id.asc`);
-    state.veggies = rows.map(r => ({id:r.id, nom:r.nom, kg:r.kg_dispo, prix:r.prix_kg}));
+    state.veggies = rows.map(r => ({id:r.id, nom:r.nom, kg:r.kg_dispo, prix:r.prix_kg, unite:r.unite||'kg', famille:r.famille||''}));
   } catch(e) {
-    showToast('Erreur chargement légumes');
+    showToast('Erreur chargement légumes : ' + e.message);
     console.error(e);
   }
   renderVeggies();
