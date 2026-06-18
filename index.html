@@ -1057,35 +1057,45 @@ function renderCatalogue() {
     if (!familles[v.famille]) familles[v.famille] = [];
     familles[v.famille].push(v);
   });
-  el.innerHTML = Object.entries(familles).map(([fam, vegs]) => `
+  // Pour les légumes multi-unités, on crée une ligne par unité
+  const lignes = [];
+  catalogue.forEach(v => {
+    const unites = (v.unites||'kg').split(',').map(u => u.trim());
+    unites.forEach((unite, ui) => {
+      lignes.push({...v, _unite: unite, _uid: `${v.id}_${ui}`});
+    });
+  });
+
+  const famillesL = {};
+  lignes.forEach(l => {
+    if (!famillesL[l.famille]) famillesL[l.famille] = [];
+    famillesL[l.famille].push(l);
+  });
+
+  el.innerHTML = Object.entries(famillesL).map(([fam, items]) => `
     <div class="famille-group">
       <div class="famille-label">${fam}</div>
-      ${vegs.map(v => `
-        <div class="cat-item" id="item-${v.id}">
+      ${items.map(v => `
+        <div class="cat-item" id="item-${v._uid}">
           <div class="cat-item-top">
-            <input type="checkbox" class="cat-chk" id="cat-${v.id}" value="${v.nom}" onchange="toggleItem(${v.id})">
-            <label class="cat-nom" for="cat-${v.id}">${v.nom}</label>
+            <input type="checkbox" class="cat-chk" id="cat-${v._uid}" value="${v.nom}" data-unite="${v._unite}" data-id="${v.id}" onchange="toggleItem('${v._uid}')">
+            <label class="cat-nom" for="cat-${v._uid}">${v.nom} <span style="font-size:11px;color:var(--tl);font-weight:400;">(${v._unite})</span></label>
           </div>
           <div class="cat-inputs">
-            ${(() => {
-              const unites = (v.unites||'kg').split(',');
-              const u = unites.length > 1
-                ? `<select class="finput" id="ut-${v.id}" style="padding:8px 6px;"><option value="kg">kg</option><option value="botte">botte</option></select>`
-                : `<div class="finput" style="background:var(--g7);color:var(--tl);text-align:center;padding:8px;">${unites[0]}</div><input type="hidden" id="ut-${v.id}" value="${unites[0]}">`;
-              return u;
-            })()}
-            <input class="finput" type="number" id="kg-${v.id}" placeholder="Quantité" min="0" step="0.5">
-            <input class="finput" type="number" id="px-${v.id}" placeholder="Prix/unité" min="0" step="0.1" value="${v.prix_defaut !== null && v.prix_defaut !== undefined ? v.prix_defaut : ''}" style="grid-column:1/-1;">
+            <div class="finput" style="background:var(--g7);color:var(--tl);text-align:center;padding:8px;">${v._unite}</div>
+            <input type="hidden" id="ut-${v._uid}" value="${v._unite}">
+            <input class="finput" type="number" id="kg-${v._uid}" placeholder="Quantité" min="0" step="${v._unite==='kg'?'0.5':'1'}">
+            <input class="finput" type="number" id="px-${v._uid}" placeholder="Prix/unité" min="0" step="0.1" value="${v.prix_defaut ?? ''}" style="grid-column:1/-1;">
           </div>
         </div>`).join('')}
     </div>`).join('');
 }
 
-function toggleItem(id) {
-  const chk = document.getElementById('cat-'+id);
-  const item = document.getElementById('item-'+id);
+function toggleItem(uid) {
+  const chk = document.getElementById('cat-'+uid);
+  const item = document.getElementById('item-'+uid);
   item.classList.toggle('checked', chk.checked);
-  if (chk.checked) document.getElementById('kg-'+id).focus();
+  if (chk.checked) document.getElementById('kg-'+uid).focus();
 }
 
 async function addVeggies() {
@@ -1094,25 +1104,26 @@ async function addVeggies() {
   let count = 0;
   try {
     for (const chk of checked) {
-      const id = chk.id.replace('cat-','');
-      const kg = parseFloat(document.getElementById('kg-'+id).value);
-      const prix = parseFloat(document.getElementById('px-'+id).value);
+      const uid = chk.id.replace('cat-','');
+      const kg = parseFloat(document.getElementById('kg-'+uid).value);
+      const prix = parseFloat(document.getElementById('px-'+uid).value);
       if (isNaN(kg)) { showToast('Quantité manquante pour ' + chk.value); continue; }
-      const unite = document.getElementById('ut-'+id)?.value || 'kg';
+      const unite = document.getElementById('ut-'+uid)?.value || 'kg';
+      const catId = chk.dataset.id;
       const rows = await sbPost('legumes', {nom: chk.value, kg_dispo: kg, prix_kg: isNaN(prix)?null:prix, semaine: state.semaine, unite});
       const r = rows[0];
       state.veggies.push({id: r.id, nom: r.nom, kg: r.kg_dispo, prix: r.prix_kg, unite: r.unite||'kg'});
       // Mémoriser le prix dans le catalogue
-      if (!isNaN(prix)) {
-        const catItem = catalogue.find(c => c.nom === chk.value);
+      if (!isNaN(prix) && catId) {
+        const catItem = catalogue.find(c => c.id == catId);
         if (catItem) {
           catItem.prix_defaut = prix;
           await sbPatch('catalogue', catItem.id, {prix_defaut: prix});
         }
       }
       chk.checked = false;
-      document.getElementById('item-'+id).classList.remove('checked');
-      document.getElementById('kg-'+id).value = '';
+      document.getElementById('item-'+uid).classList.remove('checked');
+      document.getElementById('kg-'+uid).value = '';
       count++;
     }
     renderVeggies();
