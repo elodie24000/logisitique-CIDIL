@@ -857,7 +857,7 @@ function initSemaine() {
   if (!state.semaine) {
     const d = new Date();
     d.setDate(d.getDate()-d.getDay()+1);
-    state.semaine = d.toISOString().split('T')[0];
+    state.semaine = [d.getFullYear(), String(d.getMonth()+1).padStart(2,'0'), String(d.getDate()).padStart(2,'0')].join('-');
   }
   const si = document.getElementById('sem-input');
   if (si) si.value = state.semaine;
@@ -1326,7 +1326,7 @@ async function initCommandeClient() {
 
   // Semaine courante
   const d = new Date(); d.setDate(d.getDate() - d.getDay() + 1);
-  const semaine = d.toISOString().split('T')[0];
+  const semaine = [d.getFullYear(), String(d.getMonth()+1).padStart(2,'0'), String(d.getDate()).padStart(2,'0')].join('-');
   const fin = new Date(d); fin.setDate(d.getDate() + 6);
   const fmt = v => v.toLocaleDateString('fr-FR', {day:'numeric', month:'long'});
   document.getElementById('cmd-week-tag').textContent = 'Semaine du ' + fmt(d) + ' au ' + fmt(fin);
@@ -1423,7 +1423,7 @@ async function submitClientOrder() {
   });
   if (!items.length) return showToast('Sélectionnez au moins un légume');
   const d = new Date(); d.setDate(d.getDate() - d.getDay() + 1);
-  const semaine = d.toISOString().split('T')[0];
+  const semaine = [d.getFullYear(), String(d.getMonth()+1).padStart(2,'0'), String(d.getDate()).padStart(2,'0')].join('-');
   try {
     await sbPost('commandes_clients', {
       client_nom: clients[idx].nom,
@@ -1446,7 +1446,7 @@ async function submitClientOrder() {
 // Init
 (()=>{
   const d=new Date(); d.setDate(d.getDate()-d.getDay()+1);
-  state.semaine=d.toISOString().split('T')[0];
+  state.semaine=[d.getFullYear(), String(d.getMonth()+1).padStart(2,'0'), String(d.getDate()).padStart(2,'0')].join('-');
   if (window.location.search.includes('commande')) initCommandeClient();
 })();
 </script>
