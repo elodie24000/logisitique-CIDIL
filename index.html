@@ -859,6 +859,14 @@ function initPage(id) {
   if (id==='clients') renderClients2();
 }
 
+function pluriel(qty, unite) {
+  const u = (unite||'kg').toLowerCase();
+  if (qty <= 1) return u;
+  if (u === 'botte') return 'bottes';
+  if (u === 'piece' || u === 'pièce') return 'pièces';
+  return u; // kg reste kg
+}
+
 // ══════ SEMAINE ══════
 function initSemaine() {
   if (!state.semaine) {
@@ -1171,8 +1179,8 @@ function renderVeggies() {
     <div class="veg-row">
       <div class="veg-dot"></div>
       <div class="veg-name">${v.nom}</div>
-      <div class="veg-info">${v.kg} ${v.unite||'kg'}</div>
-      <div class="veg-info" style="margin-left:6px;">${v.prix!==null?v.prix.toFixed(2)+' €/kg':'NC'}</div>
+      <div class="veg-info">${v.kg} ${pluriel(v.kg, v.unite)}</div>
+      <div class="veg-info" style="margin-left:6px;">${v.prix!==null?v.prix.toFixed(2)+' €/'+( v.unite||'kg'):'NC'}</div>
       <button class="btn-rm" onclick="removeVeggie(${v.id})">✕</button>
     </div>`).join('');
 }
@@ -1197,10 +1205,10 @@ function openOrderModal() {
     const q=ex[v.id]||'';
     return `<div class="order-row">
       <input type="checkbox" class="order-chk" id="ck-${v.id}" ${q>0?'checked':''} onchange="chkChange(${v.id})"/>
-      <div><div class="order-veg-name">${v.nom}</div><div class="order-veg-dispo">Dispo : ${v.kg} kg${v.prix?' · '+v.prix.toFixed(2)+' €/kg':''}</div></div>
+      <div><div class="order-veg-name">${v.nom}</div><div class="order-veg-dispo">Dispo : ${v.kg} ${pluriel(v.kg, v.unite)}${v.prix?' · '+v.prix.toFixed(2)+' €/'+(v.unite||'kg'):''}</div></div>
       <div class="order-qty-wrap">
-        <input type="number" class="order-qty" id="oq-${v.id}" value="${q}" min="0" max="${v.kg}" step="0.5" placeholder="0"/>
-        <span class="order-unit">kg</span>
+        <input type="number" class="order-qty" id="oq-${v.id}" value="${q}" min="0" max="${v.kg}" step="${(v.unite||'kg')==='kg'?'0.5':'1'}" placeholder="0"/>
+        <span class="order-unit">${v.unite||'kg'}</span>
       </div>
     </div>`;
   }).join('');
@@ -1383,7 +1391,7 @@ function renderCmdLegumes(veggies) {
             <div class="cmd-veg-name">${v.nom}</div>
             <div class="cmd-veg-prix">${v.prix_kg ? v.prix_kg.toFixed(2) + ' €/' + (v.unite||'kg') : 'Prix sur devis'}</div>
           </div>
-          <span class="cmd-veg-dispo">${v.kg_dispo} ${v.unite||'kg'} dispo</span>
+          <span class="cmd-veg-dispo">${v.kg_dispo} ${pluriel(v.kg_dispo, v.unite)} dispo</span>
         </div>
         <div class="cmd-veg-qty">
           <span class="cmd-qty-label">Quantité souhaitée</span>
