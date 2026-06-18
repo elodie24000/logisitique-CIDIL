@@ -33,10 +33,10 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
   background:linear-gradient(160deg,var(--g1) 0%,var(--g0) 100%);
 }
 .login-logo{
-  width:56px;height:56px;background:var(--g4);border-radius:16px;
-  display:flex;align-items:center;justify-content:center;margin-bottom:16px;
+  width:160px;height:auto;margin-bottom:16px;border-radius:12px;overflow:hidden;background:#fff;padding:8px 12px;
+  display:flex;align-items:center;justify-content:center;
 }
-.login-logo svg{width:30px;height:30px;stroke:#0d2818;stroke-width:2.2;fill:none;}
+.login-logo img{width:140px;height:auto;display:block;}
 .login-title{color:#fff;font-size:22px;font-weight:500;letter-spacing:-.02em;margin-bottom:4px;}
 .login-sub{color:rgba(255,255,255,.4);font-size:13px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.06em;margin-bottom:40px;}
 
@@ -228,6 +228,10 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 /* ── COMMANDES (modal-style page) ── */
 .client-order-list{}
 .co-card{background:var(--white);border:1px solid var(--bd);border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:var(--sh);}
+.co-week-acc{border:1px solid var(--bd);border-radius:12px;margin-bottom:10px;overflow:hidden;background:var(--white);}
+.co-week-head{padding:12px 14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;background:var(--cream);font-size:13px;font-weight:500;}
+.co-week-head:hover{background:var(--g7);}
+.co-week-body{padding:10px 10px 2px;}
 .co-head{background:var(--g7);padding:11px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--bd);}
 .co-name{font-size:14px;font-weight:500;}
 .btn-order-open{
@@ -373,9 +377,8 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 <!-- ══════════════════════ ÉCRAN LOGIN ══════════════════════ -->
 <div id="screen-login" style="display:flex">
   <div class="login-logo">
-    <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M8 12l2.5 2.5L16 9"/></svg>
+    <img src="logo.jpg" alt="CIDIL — Jardins du Bandiat"/>
   </div>
-  <div class="login-title">CIDIL Maraîchage</div>
   <div class="login-sub">Chantier d'insertion agricole</div>
 
   <div class="role-cards">
@@ -734,6 +737,7 @@ const clients = [
 let state = {
   veggies: [],
   orders: {},
+  pastOrders: [],  // [{semaine, records:[{id,client_nom,client_idx,items,total}]}]
   delivered: {},
   semaine: '',
 };
@@ -853,7 +857,7 @@ function showPage(id) {
 function initPage(id) {
   if (id==='tournee') renderClients();
   if (id==='legumes') { loadCatalogue(); loadVeggies(); }
-  if (id==='commandes') { loadVeggies().then(()=>renderOrders()); }
+  if (id==='commandes') { loadVeggies().then(()=>loadCommandes()); }
   if (id==='tarifs') loadTarifs();
   if (id==='recap') renderRecap();
   if (id==='clients') renderClients2();
@@ -1197,6 +1201,39 @@ function renderVeggies() {
 }
 
 // ══════ COMMANDES ══════
+async function loadCommandes() {
+  // Fenêtre glissante de 10 jours
+  const now = new Date();
+  const d10 = new Date(now); d10.setDate(d10.getDate() - 10);
+  const since = [d10.getFullYear(), String(d10.getMonth()+1).padStart(2,'0'), String(d10.getDate()).padStart(2,'0')].join('-');
+  try {
+    const rows = await sbGet('commandes_clients', `semaine=gte.${since}&order=semaine.desc,client_nom.asc`);
+    // Semaine courante → state.orders
+    state.orders = {};
+    const byWeek = {};
+    rows.forEach(r => {
+      if (r.semaine === state.semaine) {
+        const items = typeof r.items === 'string' ? JSON.parse(r.items) : (r.items||[]);
+        const od = {};
+        items.forEach(it => { od[it.legume_id] = it.quantite; });
+        state.orders[r.client_idx] = od;
+        // stocker l'id Supabase pour pouvoir faire un PATCH
+        state.orders[r.client_idx]._sbId = r.id;
+      } else {
+        if (!byWeek[r.semaine]) byWeek[r.semaine] = [];
+        byWeek[r.semaine].push(r);
+      }
+    });
+    // Semaines passées (sans la semaine courante)
+    state.pastOrders = Object.entries(byWeek)
+      .sort((a,b) => b[0].localeCompare(a[0]))
+      .map(([semaine, records]) => ({semaine, records}));
+  } catch(e) {
+    console.error('Erreur chargement commandes:', e);
+  }
+  renderOrders();
+}
+
 function populateClientSel() {
   const sel = document.getElementById('client-sel');
   if (!sel) return;
@@ -1235,43 +1272,110 @@ function chkChange(vid) {
 
 function closeModal() { document.getElementById('modal-order').classList.remove('open'); }
 
-function saveOrder() {
+async function saveOrder() {
   const od={};
   state.veggies.forEach(v=>{
     const q=parseFloat(document.getElementById('oq-'+v.id)?.value);
     if(!isNaN(q)&&q>0) od[v.id]=q;
   });
+  const sbId = state.orders[modalClientIdx]?._sbId;
   if(Object.keys(od).length) state.orders[modalClientIdx]=od;
   else delete state.orders[modalClientIdx];
   closeModal();
   renderOrders();
   renderClients();
   showToast('✓ Commande enregistrée');
+  // Persistance Supabase
+  try {
+    const c = clients[modalClientIdx];
+    const items = state.veggies
+      .filter(v=>od[v.id]>0)
+      .map(v=>({legume_id:v.id, nom:v.nom, quantite:od[v.id], unite:v.unite||'kg', prix_kg:v.prix||null}));
+    const total = items.reduce((s,i)=>s+(i.prix_kg||0)*i.quantite, 0);
+    const payload = {
+      client_nom: c.nom, client_idx: modalClientIdx,
+      semaine: state.semaine, items: JSON.stringify(items), total
+    };
+    if (sbId) {
+      await sbPatch('commandes_clients', sbId, payload);
+    } else if (items.length) {
+      const [row] = await sbPost('commandes_clients', payload);
+      if (state.orders[modalClientIdx]) state.orders[modalClientIdx]._sbId = row.id;
+    } else if (sbId) {
+      await sbDelete('commandes_clients', sbId);
+    }
+  } catch(e) { console.error('Erreur sauvegarde commande:', e); showToast('Attention : erreur sauvegarde réseau'); }
+}
+
+function fmtSemaine(s) {
+  if (!s) return '';
+  const d = new Date(s + 'T00:00:00');
+  const fin = new Date(d); fin.setDate(d.getDate() + 5);
+  const opt = {day:'numeric', month:'long'};
+  return `Semaine du ${d.toLocaleDateString('fr-FR', opt)} au ${fin.toLocaleDateString('fr-FR', opt)}`;
 }
 
 function renderOrders() {
   const el = document.getElementById('orders-list');
   if (!el) return;
-  const keys = Object.keys(state.orders);
-  if (!keys.length) { el.innerHTML='<div class="empty-msg">Aucune commande cette semaine</div>'; return; }
-  el.innerHTML = keys.map(idx=>{
-    const c=clients[idx]; const od=state.orders[idx];
-    let total=0,hasP=false;
-    const lines=Object.entries(od).map(([vid,qty])=>{
-      const v=state.veggies.find(v=>v.id==vid);
-      if(!v) return '';
-      const sub=v.prix?v.prix*qty:null;
-      if(sub!==null){total+=sub;hasP=true;}
-      return `<div class="co-line"><span>${v.nom}</span><span style="font-family:'DM Mono',monospace;">${qty}kg${sub?' · '+(sub.toFixed(2))+' €':''}</span></div>`;
+  const keys = Object.keys(state.orders).filter(k=>k!=='_sbId');
+
+  // Semaine courante
+  let html = '<div class="section-title" style="margin-top:0;">Cette semaine</div>';
+  if (!keys.length) {
+    html += '<div class="empty-msg">Aucune commande cette semaine</div>';
+  } else {
+    html += keys.map(idx=>{
+      const c=clients[idx]; if(!c) return '';
+      const od=state.orders[idx];
+      let total=0,hasP=false;
+      const lines=Object.entries(od).filter(([k])=>k!=='_sbId').map(([vid,qty])=>{
+        const v=state.veggies.find(v=>v.id==vid);
+        if(!v) return '';
+        const sub=v.prix?v.prix*qty:null;
+        if(sub!==null){total+=sub;hasP=true;}
+        return `<div class="co-line"><span>${v.nom}</span><span style="font-family:'DM Mono',monospace;">${qty} ${pluriel(qty,v.unite||'kg')}${sub?' · '+(sub.toFixed(2))+' €':''}</span></div>`;
+      }).filter(Boolean).join('');
+      const bc=c.cat==='Restau Co'?'b-rco':c.cat==='Commerce'?'b-com':'b-mar';
+      const bl=c.cat==='Maraichage'?'Maraîchage':c.cat;
+      return `<div class="co-card">
+        <div class="co-head"><span class="co-name">${c.nom}</span><span class="badge ${bc}">${bl}</span></div>
+        <div class="co-body">${lines}${hasP?`<div class="co-total">Total : ${total.toFixed(2)} €</div>`:''}</div>
+      </div>`;
     }).filter(Boolean).join('');
-    return `<div class="co-card">
-      <div class="co-head">
-        <span class="co-name">${c.nom}</span>
-        <span class="badge ${c.cat==='Restau Co'?'b-rco':c.cat==='Commerce'?'b-com':'b-mar'}">${c.cat==='Maraichage'?'Maraîchage':c.cat}</span>
-      </div>
-      <div class="co-body">${lines}${hasP?`<div class="co-total">Total : ${total.toFixed(2)} €</div>`:''}</div>
-    </div>`;
-  }).join('');
+  }
+
+  // Semaines passées (accordéon)
+  if (state.pastOrders.length) {
+    html += '<div class="section-title" style="margin-top:20px;">Historique (10 jours)</div>';
+    state.pastOrders.forEach((pw, pi) => {
+      html += `<div class="co-week-acc">
+        <div class="co-week-head" onclick="togglePastWeek(this)">
+          <span>${fmtSemaine(pw.semaine)}</span>
+          <span style="font-size:12px;color:var(--g3);">${pw.records.length} commande(s) <span class="pw-chev" style="display:inline-block;transition:transform .2s;">▼</span></span>
+        </div>
+        <div class="co-week-body" style="display:none;">`;
+      pw.records.forEach(r => {
+        const items = typeof r.items === 'string' ? JSON.parse(r.items) : (r.items||[]);
+        const lines = items.map(it=>`<div class="co-line"><span>${it.nom}</span><span style="font-family:'DM Mono',monospace;">${it.quantite} ${pluriel(it.quantite,it.unite||'kg')}${it.prix_kg?' · '+(it.prix_kg*it.quantite).toFixed(2)+' €':''}</span></div>`).join('');
+        html += `<div class="co-card" style="margin-bottom:8px;">
+          <div class="co-head"><span class="co-name">${r.client_nom}</span></div>
+          <div class="co-body">${lines}${r.total?`<div class="co-total">Total : ${Number(r.total).toFixed(2)} €</div>`:''}</div>
+        </div>`;
+      });
+      html += `</div></div>`;
+    });
+  }
+
+  el.innerHTML = html;
+}
+
+function togglePastWeek(head) {
+  const body = head.nextElementSibling;
+  const chev = head.querySelector('.pw-chev');
+  const open = body.style.display === 'none';
+  body.style.display = open ? 'block' : 'none';
+  chev.style.transform = open ? 'rotate(180deg)' : '';
 }
 
 // ══════ RÉCAP ══════
