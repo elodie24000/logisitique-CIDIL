@@ -55,6 +55,7 @@ html,body{font-family:'DM Sans',sans-serif;font-size:15px;background:var(--cream
 .qty-input{width:64px;padding:6px;border:1.5px solid var(--g5);border-radius:9px;font-size:16px;font-family:'DM Mono',monospace;text-align:center;outline:none;color:var(--text);}
 .qty-input:focus{border-color:var(--g3);}
 .qty-unit{font-size:13px;color:var(--tl);font-family:'DM Mono',monospace;}
+.qty-unit-sel{font-size:13px;color:var(--text);font-family:'DM Mono',monospace;border:1.5px solid var(--g5);border-radius:8px;padding:4px 8px;background:var(--g7);outline:none;}
 
 /* Footer */
 .footer{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--bd);padding:12px 16px calc(12px + env(safe-area-inset-bottom));box-shadow:0 -4px 24px rgba(0,0,0,.09);}
@@ -221,10 +222,18 @@ let semaine = '';
     sel.appendChild(grp);
   });
 
-  // Charger légumes
+  // Charger légumes depuis catalogue
   try {
-    const rows = await sbGet('legumes', `semaine=eq.${semaine}&order=id.asc`);
-    veggies = rows;
+    const rows = await sbGet('catalogue', 'order=famille.asc,nom.asc');
+    veggies = rows.map(r => ({
+      id: r.id,
+      nom: r.nom,
+      famille: r.famille,
+      unite: (r.unites||'kg').split(',')[0],
+      unites: r.unites,
+      prix_kg: r.prix_defaut,
+      kg_dispo: null
+    }));
     renderVeggies();
   } catch(e) {
     document.getElementById('loading').innerHTML = '<div class="empty-msg">Impossible de charger les légumes.<br>Réessayez dans quelques instants.</div>';
@@ -254,8 +263,12 @@ function renderVeggies() {
   el.innerHTML = Object.entries(familles).map(([fam, vegs]) => `
     <div class="famille-title">${fam}</div>
     ${vegs.map(v => {
-      const unite = v.unite || 'kg';
+      const unitesList = (v.unites||v.unite||'kg').split(',');
+      const unite = unitesList[0];
       const step = unite === 'kg' ? '0.5' : '1';
+      const uniteSelector = unitesList.length > 1
+        ? `<select class="qty-unit-sel" id="unit-${v.id}" onchange="updateTotal()">${unitesList.map(u=>`<option value="${u}">${u}</option>`).join('')}</select>`
+        : `<span class="qty-unit">${unite}</span>`;
       return `<div class="veg-card" id="vc-${v.id}" onclick="toggleVeg(${v.id})">
         <div class="veg-top">
           <input type="checkbox" class="veg-chk" id="chk-${v.id}" onclick="event.stopPropagation();toggleVeg(${v.id})">
@@ -263,7 +276,7 @@ function renderVeggies() {
             <div class="veg-name">${v.nom}</div>
             <div class="veg-meta">
               ${v.prix_kg ? `<span class="veg-prix">${v.prix_kg.toFixed(2)} €/${unite}</span>` : ''}
-              <span class="veg-dispo">${v.kg_dispo} ${unite} dispo</span>
+              <span class="veg-dispo">Disponible</span>
             </div>
           </div>
         </div>
@@ -271,9 +284,9 @@ function renderVeggies() {
           <span class="qty-label">Quantité</span>
           <div class="qty-wrap">
             <button class="qty-btn" onclick="event.stopPropagation();changeQty(${v.id},-${step})">−</button>
-            <input type="number" class="qty-input" id="qty-${v.id}" value="0" min="0" max="${v.kg_dispo}" step="${step}" oninput="updateTotal()">
+            <input type="number" class="qty-input" id="qty-${v.id}" value="0" min="0" step="${step}" oninput="updateTotal()">
             <button class="qty-btn" onclick="event.stopPropagation();changeQty(${v.id},${step})">+</button>
-            <span class="qty-unit">${unite}</span>
+            ${uniteSelector}
           </div>
         </div>
       </div>`;
@@ -332,8 +345,11 @@ async function submitOrder() {
   veggies.forEach(v => {
     const chk = document.getElementById('chk-'+v.id);
     const qty = parseFloat(document.getElementById('qty-'+v.id)?.value)||0;
-    if (chk?.checked && qty > 0)
-      items.push({nom: v.nom, quantite: qty, unite: v.unite||'kg', prix_kg: v.prix_kg});
+    if (chk?.checked && qty > 0) {
+      const uniteSel = document.getElementById('unit-'+v.id);
+      const unite = uniteSel ? uniteSel.value : (v.unite||'kg');
+      items.push({nom: v.nom, quantite: qty, unite, prix_kg: v.prix_kg});
+    }
   });
   if (!items.length) return toast('Sélectionnez au moins un légume');
 
