@@ -494,24 +494,31 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
         <input type="date" id="sem-input" onchange="updateSemaine()" />
       </div>
 
-      <div class="add-form">
-        <div class="add-form-title">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--g2)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-          Sélectionner les légumes disponibles
-        </div>
-        <div id="catalogue-list"><div class="empty-msg">Chargement du catalogue...</div></div>
-        <div style="font-size:11px;color:var(--tl);margin-top:6px;">Cochez un légume → entrez sa quantité et son prix → publiez.</div>
-        <button class="btn-primary" style="margin-top:12px;" onclick="addVeggies()">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Publier les légumes cochés
-        </button>
-      </div>
-
+      <!-- Liste de la semaine EN PREMIER -->
       <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
         <span>Légumes cette semaine</span>
         <span class="live-tag"><span class="sync-dot"></span>visible livreur</span>
       </div>
-      <div id="veg-list"><div class="empty-msg">Aucun légume saisi · Ajoutez-en un ci-dessus</div></div>
+      <div id="veg-list"><div class="empty-msg">Aucun légume cette semaine · Ajoutez-en ci-dessous</div></div>
+
+      <!-- Catalogue en accordéon PAR FAMILLE -->
+      <div class="add-form" style="margin-top:20px;">
+        <div class="add-form-title" id="catalogue-toggle" onclick="toggleCatalogue()" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none;">
+          <span style="display:flex;align-items:center;gap:8px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--g2)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            Ajouter des légumes
+          </span>
+          <svg id="catalogue-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--g2)" stroke-width="2" style="transition:transform .2s"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div id="catalogue-body" style="display:none;margin-top:12px;">
+          <div id="catalogue-list"><div class="empty-msg">Chargement...</div></div>
+          <div style="font-size:11px;color:var(--tl);margin-top:6px;">Cochez un légume, entrez quantité et prix, puis publiez.</div>
+          <button class="btn-primary" style="margin-top:12px;" onclick="addVeggies()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Publier les légumes cochés
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- PAGE COMMANDES (encadrant) -->
@@ -1015,6 +1022,14 @@ async function importRNM() {
 
 // ══════ CATALOGUE ══════
 let catalogue = [];
+
+function toggleCatalogue() {
+  const body = document.getElementById('catalogue-body');
+  const chevron = document.getElementById('catalogue-chevron');
+  const open = body.style.display === 'none';
+  body.style.display = open ? 'block' : 'none';
+  chevron.style.transform = open ? 'rotate(180deg)' : '';
+}
 
 async function loadCatalogue() {
   try {
