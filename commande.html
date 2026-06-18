@@ -222,18 +222,10 @@ let semaine = '';
     sel.appendChild(grp);
   });
 
-  // Charger légumes depuis catalogue
+  // Charger légumes de la semaine
   try {
-    const rows = await sbGet('catalogue', 'order=famille.asc,nom.asc');
-    veggies = rows.map(r => ({
-      id: r.id,
-      nom: r.nom,
-      famille: r.famille,
-      unite: (r.unites||'kg').split(',')[0],
-      unites: r.unites,
-      prix_kg: r.prix_defaut,
-      kg_dispo: null
-    }));
+    const rows = await sbGet('legumes', `semaine=eq.${semaine}&order=famille.asc,nom.asc`);
+    veggies = rows;
     renderVeggies();
   } catch(e) {
     document.getElementById('loading').innerHTML = '<div class="empty-msg">Impossible de charger les légumes.<br>Réessayez dans quelques instants.</div>';
