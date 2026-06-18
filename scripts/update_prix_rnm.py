@@ -1,8 +1,9 @@
 """
-Mise à jour automatique des prix depuis RNM Nantes (FranceAgriMer)
+Mise à jour automatique des prix depuis data.gouv.fr (FranceAgriMer)
+Dataset : cotations fruits et légumes par marché et par produit
 Exécuté chaque lundi à 7h via GitHub Actions
 """
-import os, json, urllib.request, urllib.error
+import os, json, urllib.request, urllib.error, csv, io
 
 SUPA_URL = 'https://ulvrwtwxzhlrplvbcsrd.supabase.co'
 SUPA_KEY = os.environ['SUPABASE_SERVICE_KEY']
@@ -13,27 +14,30 @@ HEADERS_SUPA = {
     'Content-Type': 'application/json'
 }
 
-# Correspondances noms catalogue → mots-clés RNM
+# Correspondances noms catalogue → mots-clés dans les données
 CORRESPONDANCES = {
-    'Tomate':      ['tomate'],
-    'Courgette':   ['courgette'],
-    'Concombre':   ['concombre'],
-    'Aubergine':   ['aubergine'],
-    'Poivron':     ['poivron'],
-    'Carotte':     ['carotte'],
-    'Betterave':   ['betterave'],
-    'Radis':       ['radis'],
-    'Oignon':      ['oignon'],
-    'Poireau':     ['poireau'],
-    'Pomme de terre': ['pomme de terre', 'pomme terre'],
-    'Salade':      ['laitue', 'salade'],
-    'Épinard':     ['epinard', 'épinard'],
-    'Blette':      ['blette', 'bette'],
-    'Chou':        ['chou'],
-    'Haricot':     ['haricot'],
-    'Ail':         ['ail'],
-    'Fenouil':     ['fenouil'],
-    'Navet':       ['navet'],
+    'Tomate':         ['tomate'],
+    'Courgette':      ['courgette'],
+    'Concombre':      ['concombre'],
+    'Aubergine':      ['aubergine'],
+    'Poivron':        ['poivron'],
+    'Carotte':        ['carotte'],
+    'Betterave':      ['betterave'],
+    'Radis':          ['radis'],
+    'Oignon':         ['oignon'],
+    'Poireau':        ['poireau'],
+    'Pomme de terre': ['pomme de terre'],
+    'Salade':         ['laitue', 'salade', 'batavia'],
+    'Épinard':        ['epinard', 'épinard'],
+    'Blette':         ['blette', 'bette'],
+    'Chou':           ['chou'],
+    'Haricot':        ['haricot'],
+    'Ail':            ['ail'],
+    'Fenouil':        ['fenouil'],
+    'Navet':          ['navet'],
+    'Basilic':        ['basilic'],
+    'Persil':         ['persil'],
+    'Coriandre':      ['coriandre'],
 }
 
 def supa_get(table, params=''):
@@ -49,61 +53,97 @@ def supa_patch(table, id_, data):
     with urllib.request.urlopen(req) as r:
         return r.status
 
-def fetch_rnm_nantes():
-    """Tente de récupérer les cours RNM du marché de Nantes"""
-    # URL API RNM FranceAgriMer - marché de Nantes (code NAN)
-    urls_to_try = [
-        'https://rnm.franceagrimer.fr/prix?MARCHE=NAN&format=json',
-        'https://rnm.franceagrimer.fr/prix?marche=NAN&format=json',
-    ]
-    for url in urls_to_try:
-        try:
-            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=15) as r:
-                data = json.loads(r.read())
-                if data:
-                    print(f"✓ RNM récupéré : {len(data)} entrées")
-                    return data
-        except Exception as e:
-            print(f"Tentative échouée ({url}) : {e}")
-    return None
+def fetch_datagouv():
+    """Récupère les cotations depuis data.gouv.fr via l'API CKAN"""
+    # ID du dataset FranceAgriMer sur data.gouv.fr
+    dataset_id = '573051'
+    api_url = f'https://www.data.gouv.fr/api/1/datasets/cotations-des-fruits-et-legumes-par-marche-et-par-produit-{dataset_id}/'
 
-def trouver_prix_rnm(nom_legume, rnm_data):
-    """Cherche le prix RNM correspondant à un légume"""
+    try:
+        req = urllib.request.Request(api_url, headers={'User-Agent': 'CIDIL-App/1.0'})
+        with urllib.request.urlopen(req, timeout=15) as r:
+            meta = json.loads(r.read())
+
+        # Trouver la ressource CSV la plus récente
+        resources = meta.get('resources', [])
+        csv_resources = [r for r in resources if r.get('format','').upper() == 'CSV']
+        if not csv_resources:
+            print("Aucune ressource CSV trouvée")
+            return None
+
+        # Prendre la plus récente
+        latest = sorted(csv_resources, key=lambda x: x.get('last_modified',''), reverse=True)[0]
+        csv_url = latest['url']
+        print(f"CSV trouvé : {csv_url}")
+
+        req2 = urllib.request.Request(csv_url, headers={'User-Agent': 'CIDIL-App/1.0'})
+        with urllib.request.urlopen(req2, timeout=30) as r:
+            content = r.read().decode('utf-8', errors='replace')
+
+        reader = csv.DictReader(io.StringIO(content), delimiter=';')
+        rows = list(reader)
+        print(f"✓ {len(rows)} lignes chargées")
+        return rows
+
+    except Exception as e:
+        print(f"Erreur data.gouv.fr : {e}")
+        return None
+
+def trouver_prix(nom_legume, rows):
+    """Cherche le prix moyen le plus récent pour un légume"""
     mots_cles = CORRESPONDANCES.get(nom_legume, [nom_legume.lower()])
-    for entry in rnm_data:
-        produit = str(entry.get('produit', '') or entry.get('libelle', '') or '').lower()
+
+    # Colonnes possibles selon le format du fichier
+    col_produit = next((k for k in (rows[0].keys() if rows else []) if 'produit' in k.lower() or 'libelle' in k.lower()), None)
+    col_prix = next((k for k in (rows[0].keys() if rows else []) if 'prix' in k.lower() and 'moyen' in k.lower()), None)
+    if not col_prix:
+        col_prix = next((k for k in (rows[0].keys() if rows else []) if 'prix' in k.lower()), None)
+
+    if not col_produit or not col_prix:
+        print(f"Colonnes non trouvées. Disponibles : {list(rows[0].keys()) if rows else []}")
+        return None
+
+    candidats = []
+    for row in rows:
+        produit = str(row.get(col_produit, '')).lower()
         if any(mc in produit for mc in mots_cles):
-            prix = entry.get('prix_moyen') or entry.get('prix') or entry.get('prixMoyen')
-            if prix:
-                return float(prix)
+            try:
+                prix_str = row.get(col_prix, '').replace(',', '.').strip()
+                if prix_str:
+                    candidats.append(float(prix_str))
+            except:
+                pass
+
+    if candidats:
+        return round(sum(candidats) / len(candidats), 2)
     return None
 
 def main():
-    print("=== Mise à jour prix RNM Nantes ===")
+    print("=== Mise à jour prix FranceAgriMer (data.gouv.fr) ===")
 
-    # Charger le catalogue
     catalogue = supa_get('catalogue', 'order=nom.asc')
     print(f"Catalogue : {len(catalogue)} légumes")
 
-    # Récupérer les cours RNM
-    rnm_data = fetch_rnm_nantes()
-    if not rnm_data:
-        print("⚠ RNM non disponible - arrêt du script")
+    rows = fetch_datagouv()
+    if not rows:
+        print("⚠ Données non disponibles - arrêt")
         return
 
-    # Mettre à jour les prix
     mis_a_jour = 0
     for legume in catalogue:
         nom = legume['nom']
-        prix_rnm = trouver_prix_rnm(nom, rnm_data)
-        if prix_rnm and prix_rnm != legume.get('prix_defaut'):
+        prix = trouver_prix(nom, rows)
+        if prix and prix != legume.get('prix_defaut'):
             try:
-                supa_patch('catalogue', legume['id'], {'prix_defaut': prix_rnm})
-                print(f"✓ {nom} : {legume.get('prix_defaut')} → {prix_rnm} €")
+                supa_patch('catalogue', legume['id'], {'prix_defaut': prix})
+                print(f"✓ {nom} : {legume.get('prix_defaut')} → {prix} €")
                 mis_a_jour += 1
             except Exception as e:
-                print(f"✗ Erreur mise à jour {nom} : {e}")
+                print(f"✗ Erreur {nom} : {e}")
+        elif prix:
+            print(f"= {nom} : {prix} € (inchangé)")
+        else:
+            print(f"? {nom} : pas de correspondance RNM")
 
     print(f"\n=== Terminé : {mis_a_jour} prix mis à jour ===")
 
