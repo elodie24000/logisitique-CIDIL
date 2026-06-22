@@ -524,18 +524,20 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
       </div>
     </div>
 
-    <!-- PAGE COMMANDES (encadrant) -->
+    <!-- PAGE COMMANDES (encadrant + gestionnaire) -->
     <div class="page" id="page-commandes">
-      <div style="margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
-        <div class="section-title" style="margin:0;">Saisir une commande</div>
-        <select class="finput" id="client-sel" style="width:auto;max-width:180px;font-size:13px;">
-          <option value="">— Client —</option>
-        </select>
+      <div id="cmd-saisie-wrap">
+        <div style="margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
+          <div class="section-title" style="margin:0;">Saisir une commande</div>
+          <select class="finput" id="client-sel" style="width:auto;max-width:180px;font-size:13px;">
+            <option value="">— Client —</option>
+          </select>
+        </div>
+        <button class="btn-primary" style="margin-bottom:20px;" onclick="openOrderModal()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Ouvrir fiche commande
+        </button>
       </div>
-      <button class="btn-primary" style="margin-bottom:20px;" onclick="openOrderModal()">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        Ouvrir fiche commande
-      </button>
 
       <div class="section-title">Commandes validées</div>
       <div id="orders-list"><div class="empty-msg">Aucune commande cette semaine</div></div>
@@ -857,7 +859,11 @@ function showPage(id) {
 function initPage(id) {
   if (id==='tournee') renderClients();
   if (id==='legumes') { loadCatalogue(); loadVeggies(); }
-  if (id==='commandes') { loadVeggies().then(()=>loadCommandes()); }
+  if (id==='commandes') {
+    const saisie = document.getElementById('cmd-saisie-wrap');
+    if (saisie) saisie.style.display = currentRole === 'gestionnaire' ? 'none' : '';
+    loadVeggies().then(()=>loadCommandes());
+  }
   if (id==='tarifs') loadTarifs();
   if (id==='recap') renderRecap();
   if (id==='clients') renderClients2();
