@@ -414,6 +414,17 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
       </div>
       <div class="role-arrow">›</div>
     </div>
+
+    <div class="role-card" onclick="selectRole('client')">
+      <div class="role-icon" style="background:rgba(13,180,100,.12);">
+        <svg viewBox="0 0 24 24" stroke="#0db464"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      </div>
+      <div>
+        <div class="role-name">Passer une commande</div>
+        <div class="role-desc">Légumes de la semaine</div>
+      </div>
+      <div class="role-arrow">›</div>
+    </div>
   </div>
 </div>
 
@@ -625,19 +636,27 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 <!-- ══════════════════════ PAGE COMMANDE CLIENT ══════════════════════ -->
 <div id="screen-commande-client">
   <div class="cmd-hero">
+    <button class="pin-back" onclick="cmdRetourLogin()" style="position:absolute;top:12px;left:12px;">‹ Retour</button>
     <div class="cmd-hero-logo">
-      <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M8 12l2.5 2.5L16 9"/></svg>
+      <img src="logo.jpg" alt="CIDIL" style="width:90px;border-radius:8px;"/>
     </div>
-    <div class="cmd-hero-title">CIDIL Maraîchage</div>
     <div class="cmd-hero-sub">Passez votre commande de la semaine</div>
     <div class="cmd-week-tag" id="cmd-week-tag"></div>
   </div>
   <div class="cmd-body">
     <div class="cmd-select-wrap">
       <div class="cmd-select-label">Qui êtes-vous ?</div>
-      <select class="cmd-client-sel" id="cmd-client-sel" onchange="cmdClientChange()">
-        <option value="">— Sélectionnez votre nom —</option>
-      </select>
+      <div style="position:relative;">
+        <input type="text" id="cmd-client-search" class="cmd-client-sel"
+          placeholder="Tapez les 3 premières lettres de votre nom…"
+          oninput="cmdSearchClient(this.value)" autocomplete="off"
+          style="width:100%;box-sizing:border-box;"/>
+        <div id="cmd-client-results" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--g5);border-top:none;border-radius:0 0 9px 9px;z-index:10;max-height:200px;overflow-y:auto;"></div>
+      </div>
+      <div id="cmd-client-choisi" style="display:none;margin-top:8px;padding:8px 12px;background:var(--g7);border-radius:8px;font-size:14px;color:var(--g1);display:flex;justify-content:space-between;align-items:center;">
+        <span id="cmd-client-nom"></span>
+        <button onclick="cmdResetClient()" style="background:none;border:none;color:var(--g3);font-size:18px;cursor:pointer;padding:0 4px;">×</button>
+      </div>
     </div>
     <div id="cmd-legumes-wrap" style="display:none;">
       <div id="cmd-legumes-list"></div>
@@ -773,6 +792,11 @@ const NAV_CONFIG = {
 
 // ══════ AUTH ══════
 function selectRole(role) {
+  if (role === 'client') {
+    document.getElementById('screen-login').style.display = 'none';
+    initCommandeClient();
+    return;
+  }
   document.getElementById('screen-login').style.display = 'none';
   enterApp(role);
 }
@@ -1473,9 +1497,49 @@ if ('serviceWorker' in navigator) {
 }
 
 // ══════ PAGE COMMANDE CLIENT ══════
+let _cmdClientIdx = null;
+
+function cmdRetourLogin() {
+  document.getElementById('screen-commande-client').style.display = 'none';
+  document.getElementById('screen-login').style.display = 'flex';
+  _cmdClientIdx = null;
+}
+
+function cmdSearchClient(val) {
+  const res = document.getElementById('cmd-client-results');
+  if (val.length < 3) { res.style.display = 'none'; return; }
+  const q = val.toLowerCase();
+  const matches = clients.map((c,i) => ({c,i})).filter(({c}) => c.nom.toLowerCase().includes(q));
+  if (!matches.length) { res.innerHTML = '<div style="padding:10px 12px;font-size:13px;color:#888;">Aucun résultat</div>'; res.style.display='block'; return; }
+  res.innerHTML = matches.map(({c,i}) =>
+    `<div onclick="cmdSelectClient(${i})" style="padding:10px 14px;font-size:14px;cursor:pointer;border-bottom:0.5px solid #f0efe8;" onmouseover="this.style.background='#f7f6f2'" onmouseout="this.style.background=''">${c.nom} <span style="font-size:11px;color:#888;margin-left:6px;">${c.cat}</span></div>`
+  ).join('');
+  res.style.display = 'block';
+}
+
+function cmdSelectClient(idx) {
+  _cmdClientIdx = idx;
+  document.getElementById('cmd-client-search').value = '';
+  document.getElementById('cmd-client-results').style.display = 'none';
+  const choisi = document.getElementById('cmd-client-choisi');
+  document.getElementById('cmd-client-nom').textContent = clients[idx].nom;
+  choisi.style.display = 'flex';
+  document.getElementById('cmd-legumes-wrap').style.display = 'block';
+  document.getElementById('cmd-footer').style.display = 'block';
+  updateCmdTotal();
+}
+
+function cmdResetClient() {
+  _cmdClientIdx = null;
+  document.getElementById('cmd-client-choisi').style.display = 'none';
+  document.getElementById('cmd-client-search').value = '';
+  document.getElementById('cmd-legumes-wrap').style.display = 'none';
+  document.getElementById('cmd-footer').style.display = 'none';
+}
+
 async function initCommandeClient() {
-  document.getElementById('screen-login').style.display = 'none';
   document.getElementById('screen-commande-client').style.display = 'block';
+  _cmdClientIdx = null;
 
   // Semaine courante
   const d = new Date(); d.setDate(d.getDate() - d.getDay() + 1);
@@ -1483,14 +1547,6 @@ async function initCommandeClient() {
   const fin = new Date(d); fin.setDate(d.getDate() + 6);
   const fmt = v => v.toLocaleDateString('fr-FR', {day:'numeric', month:'long'});
   document.getElementById('cmd-week-tag').textContent = 'Semaine du ' + fmt(d) + ' au ' + fmt(fin);
-
-  // Remplir liste clients
-  const sel = document.getElementById('cmd-client-sel');
-  clients.forEach((c, i) => {
-    const opt = document.createElement('option');
-    opt.value = i; opt.textContent = c.nom;
-    sel.appendChild(opt);
-  });
 
   // Charger légumes disponibles cette semaine
   try {
@@ -1565,8 +1621,8 @@ function updateCmdTotal() {
 }
 
 async function submitClientOrder() {
-  const idx = parseInt(document.getElementById('cmd-client-sel').value);
-  if (isNaN(idx)) return showToast('Sélectionnez votre nom');
+  const idx = _cmdClientIdx !== null ? _cmdClientIdx : parseInt(document.getElementById('cmd-client-sel')?.value);
+  if (idx === null || isNaN(idx)) return showToast('Sélectionnez votre nom');
   const veggies = window._cmdVeggies || [];
   const items = [];
   veggies.forEach(v => {
