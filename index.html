@@ -773,14 +773,8 @@ const NAV_CONFIG = {
 
 // ══════ AUTH ══════
 function selectRole(role) {
-  pendingRole = role;
-  pinBuffer = '';
-  document.getElementById('pin-role-title').textContent = ROLE_ICONS[role] + ' ' + ROLE_LABELS[role];
-  document.getElementById('pin-error').textContent = '';
-  document.getElementById('pin-hint').textContent = 'Démo — PIN : ' + PINS[role];
-  updatePinDots();
   document.getElementById('screen-login').style.display = 'none';
-  document.getElementById('screen-pin').style.display = 'flex';
+  enterApp(role);
 }
 
 function backToLogin() {
