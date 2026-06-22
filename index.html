@@ -1142,7 +1142,22 @@ async function loadVeggies() {
   try {
     const semLundi = state.semaine;
     if (!semLundi) return;
-    const rows = await sbGet('legumes', `semaine=eq.${semLundi}&order=id.asc`);
+    let rows = await sbGet('legumes', `semaine=eq.${semLundi}&order=id.asc`);
+    // Si la semaine est vide, recopier la semaine précédente
+    if (!rows.length) {
+      const prev = await sbGet('legumes', `semaine=lt.${semLundi}&order=semaine.desc&limit=50`);
+      if (prev.length) {
+        // Grouper par semaine la plus récente
+        const lastSem = prev[0].semaine;
+        const lastRows = prev.filter(r => r.semaine === lastSem);
+        // Insérer chaque légume pour la semaine courante
+        const inserts = await Promise.all(lastRows.map(r =>
+          sbPost('legumes', {nom:r.nom, kg_dispo:r.kg_dispo, prix_kg:r.prix_kg, semaine:semLundi, unite:r.unite||'kg', famille:r.famille||''})
+        ));
+        rows = inserts.map(r => r[0]);
+        showToast('Liste reprise de la semaine précédente — ajustez si besoin');
+      }
+    }
     state.veggies = rows.map(r => ({id:r.id, nom:r.nom, kg:r.kg_dispo, prix:r.prix_kg, unite:r.unite||'kg', famille:r.famille||''}));
   } catch(e) {
     showToast('Erreur chargement légumes : ' + e.message);
