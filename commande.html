@@ -199,7 +199,7 @@ let semaine = '';
 (async () => {
   // Semaine courante
   const d = new Date(); d.setDate(d.getDate() - d.getDay() + 1);
-  semaine = d.toISOString().split('T')[0];
+  semaine = [d.getFullYear(), String(d.getMonth()+1).padStart(2,'0'), String(d.getDate()).padStart(2,'0')].join('-');
   const fin = new Date(d); fin.setDate(d.getDate() + 6);
   const fmt = v => v.toLocaleDateString('fr-FR', {day:'numeric', month:'long'});
   document.getElementById('hero-week').textContent = 'Semaine du ' + fmt(d) + ' au ' + fmt(fin);
