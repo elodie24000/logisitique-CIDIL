@@ -53,6 +53,17 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 .role-name{font-size:15px;font-weight:500;color:#fff;}
 .role-desc{font-size:12px;color:rgba(255,255,255,.45);margin-top:2px;}
 .role-arrow{margin-left:auto;color:rgba(255,255,255,.25);font-size:18px;}
+.role-card.primary{background:var(--g4);border-color:var(--g4);padding:26px 22px;}
+.role-card.primary:hover{background:var(--g3);border-color:var(--g3);}
+.role-card.primary .role-icon{width:52px;height:52px;background:rgba(255,255,255,.2)!important;}
+.role-card.primary .role-icon svg{width:28px;height:28px;stroke:#0d2818;}
+.role-card.primary .role-name{font-size:19px;color:#0d2818;}
+.role-card.primary .role-desc{font-size:13px;color:rgba(13,40,24,.6);}
+.role-card.primary .role-arrow{color:rgba(13,40,24,.4);font-size:22px;}
+.equipe-toggle{margin-top:8px;text-align:center;color:rgba(255,255,255,.4);font-size:13px;cursor:pointer;padding:10px;user-select:none;}
+.equipe-toggle:hover{color:rgba(255,255,255,.7);}
+.equipe-group{display:none;flex-direction:column;gap:10px;margin-top:4px;}
+.equipe-group.open{display:flex;}
 
 /* ── PIN ── */
 #screen-pin{
@@ -383,70 +394,74 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
   <div class="login-sub">Chantier d'insertion — volet maraîchage</div>
 
   <div class="role-cards">
-    <div class="role-card" onclick="selectRole('livreur')">
-      <div class="role-icon" style="background:rgba(116,198,157,.15);">
-        <svg viewBox="0 0 24 24" stroke="var(--g4)"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-      </div>
-      <div>
-        <div class="role-name">Livreur</div>
-        <div class="role-desc">Tournée GPS · Suivi livraisons</div>
-      </div>
-      <div class="role-arrow">›</div>
-    </div>
-
-    <div class="role-card" onclick="selectRole('encadrant')">
-      <div class="role-icon" style="background:rgba(233,160,58,.15);">
-        <svg viewBox="0 0 24 24" stroke="var(--amb)"><path d="M3 6h18M3 12h18M3 18h18"/><circle cx="8" cy="6" r="2" fill="var(--amb)" stroke="none"/><circle cx="14" cy="12" r="2" fill="var(--amb)" stroke="none"/><circle cx="10" cy="18" r="2" fill="var(--amb)" stroke="none"/></svg>
-      </div>
-      <div>
-        <div class="role-name">Encadrant technique</div>
-        <div class="role-desc">Légumes disponibles · Commandes</div>
-      </div>
-      <div class="role-arrow">›</div>
-    </div>
-
-    <div class="role-card" onclick="selectRole('gestionnaire')">
-      <div class="role-icon" style="background:rgba(37,99,235,.12);">
-        <svg viewBox="0 0 24 24" stroke="#2563eb"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
-      </div>
-      <div>
-        <div class="role-name">Gestionnaire</div>
-        <div class="role-desc">Récap · Clients · Stats</div>
-      </div>
-      <div class="role-arrow">›</div>
-    </div>
-
-    <div class="role-card" onclick="selectRole('client')">
-      <div class="role-icon" style="background:rgba(13,180,100,.12);">
-        <svg viewBox="0 0 24 24" stroke="#0db464"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+    <div class="role-card primary" onclick="selectRole('client')">
+      <div class="role-icon">
+        <svg viewBox="0 0 24 24" stroke="#0d2818"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
       </div>
       <div>
         <div class="role-name">Passer une commande</div>
-        <div class="role-desc">Légumes de la semaine</div>
+        <div class="role-desc">Légumes frais de la semaine</div>
       </div>
       <div class="role-arrow">›</div>
     </div>
 
-    <div class="role-card" onclick="selectInterne('Boutique')">
-      <div class="role-icon" style="background:rgba(219,112,147,.14);">
-        <svg viewBox="0 0 24 24" stroke="#c2548a"><path d="M3 9l1-5h16l1 5M4 9v11a1 1 0 001 1h14a1 1 0 001-1V9M3 9h18M9 21v-6h6v6"/></svg>
-      </div>
-      <div>
-        <div class="role-name">Boutique</div>
-        <div class="role-desc">Réassort légumes vente</div>
-      </div>
-      <div class="role-arrow">›</div>
-    </div>
+    <div class="equipe-toggle" id="equipe-toggle" onclick="toggleEquipe()">Espace équipe ▾</div>
 
-    <div class="role-card" onclick="selectInterne('Labo de transformation')">
-      <div class="role-icon" style="background:rgba(147,112,219,.14);">
-        <svg viewBox="0 0 24 24" stroke="#7d5bc2"><path d="M9 3h6M10 3v6L5 19a1 1 0 001 1.5h12A1 1 0 0019 19l-5-10V3"/></svg>
+    <div class="equipe-group" id="equipe-group">
+      <div class="role-card" onclick="selectInterne('Boutique')">
+        <div class="role-icon" style="background:rgba(219,112,147,.14);">
+          <svg viewBox="0 0 24 24" stroke="#c2548a"><path d="M3 9l1-5h16l1 5M4 9v11a1 1 0 001 1h14a1 1 0 001-1V9M3 9h18M9 21v-6h6v6"/></svg>
+        </div>
+        <div>
+          <div class="role-name">Boutique</div>
+          <div class="role-desc">Réassort légumes vente</div>
+        </div>
+        <div class="role-arrow">›</div>
       </div>
-      <div>
-        <div class="role-name">Labo de transformation</div>
-        <div class="role-desc">Légumes pour transfo</div>
+
+      <div class="role-card" onclick="selectInterne('Labo de transformation')">
+        <div class="role-icon" style="background:rgba(147,112,219,.14);">
+          <svg viewBox="0 0 24 24" stroke="#7d5bc2"><path d="M9 3h6M10 3v6L5 19a1 1 0 001 1.5h12A1 1 0 0019 19l-5-10V3"/></svg>
+        </div>
+        <div>
+          <div class="role-name">Labo de transformation</div>
+          <div class="role-desc">Légumes pour transfo</div>
+        </div>
+        <div class="role-arrow">›</div>
       </div>
-      <div class="role-arrow">›</div>
+
+      <div class="role-card" onclick="selectRole('livreur')">
+        <div class="role-icon" style="background:rgba(116,198,157,.15);">
+          <svg viewBox="0 0 24 24" stroke="var(--g4)"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        </div>
+        <div>
+          <div class="role-name">Livreur</div>
+          <div class="role-desc">Tournée GPS · Suivi livraisons</div>
+        </div>
+        <div class="role-arrow">›</div>
+      </div>
+
+      <div class="role-card" onclick="selectRole('encadrant')">
+        <div class="role-icon" style="background:rgba(233,160,58,.15);">
+          <svg viewBox="0 0 24 24" stroke="var(--amb)"><path d="M3 6h18M3 12h18M3 18h18"/><circle cx="8" cy="6" r="2" fill="var(--amb)" stroke="none"/><circle cx="14" cy="12" r="2" fill="var(--amb)" stroke="none"/><circle cx="10" cy="18" r="2" fill="var(--amb)" stroke="none"/></svg>
+        </div>
+        <div>
+          <div class="role-name">Encadrant technique</div>
+          <div class="role-desc">Légumes disponibles · Commandes</div>
+        </div>
+        <div class="role-arrow">›</div>
+      </div>
+
+      <div class="role-card" onclick="selectRole('gestionnaire')">
+        <div class="role-icon" style="background:rgba(37,99,235,.12);">
+          <svg viewBox="0 0 24 24" stroke="#2563eb"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+        </div>
+        <div>
+          <div class="role-name">Gestionnaire</div>
+          <div class="role-desc">Récap · Clients · Stats</div>
+        </div>
+        <div class="role-arrow">›</div>
+      </div>
     </div>
   </div>
 </div>
@@ -829,6 +844,13 @@ const NAV_CONFIG = {
 };
 
 // ══════ AUTH ══════
+function toggleEquipe() {
+  const grp = document.getElementById('equipe-group');
+  const tog = document.getElementById('equipe-toggle');
+  const open = grp.classList.toggle('open');
+  tog.textContent = open ? 'Espace équipe ▴' : 'Espace équipe ▾';
+}
+
 function selectRole(role) {
   if (role === 'client') {
     document.getElementById('screen-login').style.display = 'none';
