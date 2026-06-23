@@ -331,6 +331,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 .cmd-client-sel{width:100%;padding:10px 12px;border:1.5px solid var(--g5);border-radius:9px;font-size:15px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--white);outline:none;}
 .cmd-client-sel:focus{border-color:var(--g3);}
 .cmd-famille-title{font-size:13px;font-weight:500;color:var(--g2);text-transform:uppercase;letter-spacing:.04em;margin:20px 0 8px;padding-bottom:6px;border-bottom:2px solid var(--g6);}
+.jour-selected{border-color:var(--g1) !important;background:var(--g7);color:var(--g1);}
 .cmd-veg-card{background:var(--white);border:1.5px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:8px;box-shadow:var(--sh);transition:border-color .15s,box-shadow .15s;}
 .cmd-veg-card.selected{border-color:var(--g3);box-shadow:0 0 0 3px rgba(64,145,108,.12);}
 .cmd-veg-top{display:flex;align-items:center;gap:12px;cursor:pointer;}
@@ -660,6 +661,19 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
     </div>
     <div id="cmd-legumes-wrap" style="display:none;">
       <div id="cmd-legumes-list"></div>
+      <div style="margin-top:16px;">
+        <div class="cmd-select-label">Jour de livraison souhaité</div>
+        <div style="display:flex;gap:10px;margin-top:8px;">
+          <label id="lbl-mardi" style="flex:1;border:1.5px solid var(--g5);border-radius:10px;padding:12px;text-align:center;cursor:pointer;font-size:14px;font-weight:500;color:var(--text);">
+            <input type="radio" name="livraison" value="mardi" style="display:none;" onchange="cmdJourChange()">
+            Mardi matin
+          </label>
+          <label id="lbl-jeudi" style="flex:1;border:1.5px solid var(--g5);border-radius:10px;padding:12px;text-align:center;cursor:pointer;font-size:14px;font-weight:500;color:var(--text);">
+            <input type="radio" name="livraison" value="jeudi" style="display:none;" onchange="cmdJourChange()">
+            Jeudi matin
+          </label>
+        </div>
+      </div>
     </div>
     <div class="cmd-success" id="cmd-success">
       <div class="cmd-success-icon">
@@ -1535,6 +1549,15 @@ function cmdResetClient() {
   document.getElementById('cmd-client-search').value = '';
   document.getElementById('cmd-legumes-wrap').style.display = 'none';
   document.getElementById('cmd-footer').style.display = 'none';
+  document.querySelectorAll('input[name="livraison"]').forEach(r => r.checked = false);
+  document.getElementById('lbl-mardi').classList.remove('jour-selected');
+  document.getElementById('lbl-jeudi').classList.remove('jour-selected');
+}
+
+function cmdJourChange() {
+  const val = document.querySelector('input[name="livraison"]:checked')?.value;
+  document.getElementById('lbl-mardi').classList.toggle('jour-selected', val === 'mardi');
+  document.getElementById('lbl-jeudi').classList.toggle('jour-selected', val === 'jeudi');
 }
 
 async function initCommandeClient() {
@@ -1631,6 +1654,8 @@ async function submitClientOrder() {
     if (chk?.checked && qty > 0) items.push({legume_id: v.id, nom: v.nom, quantite: qty, unite: v.unite||'kg', prix_kg: v.prix_kg});
   });
   if (!items.length) return showToast('Sélectionnez au moins un légume');
+  const jour = document.querySelector('input[name="livraison"]:checked')?.value;
+  if (!jour) return showToast('Choisissez un jour de livraison');
   const d = new Date(); d.setDate(d.getDate() - d.getDay() + 1);
   const semaine = [d.getFullYear(), String(d.getMonth()+1).padStart(2,'0'), String(d.getDate()).padStart(2,'0')].join('-');
   try {
@@ -1638,6 +1663,7 @@ async function submitClientOrder() {
       client_nom: clients[idx].nom,
       client_idx: idx,
       semaine,
+      jour_livraison: jour,
       items: JSON.stringify(items),
       total: items.reduce((s,i) => s + (i.prix_kg||0)*i.quantite, 0)
     });
