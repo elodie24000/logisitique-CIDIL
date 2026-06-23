@@ -426,6 +426,28 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
       </div>
       <div class="role-arrow">›</div>
     </div>
+
+    <div class="role-card" onclick="selectInterne('Boutique')">
+      <div class="role-icon" style="background:rgba(219,112,147,.14);">
+        <svg viewBox="0 0 24 24" stroke="#c2548a"><path d="M3 9l1-5h16l1 5M4 9v11a1 1 0 001 1h14a1 1 0 001-1V9M3 9h18M9 21v-6h6v6"/></svg>
+      </div>
+      <div>
+        <div class="role-name">Boutique</div>
+        <div class="role-desc">Réassort légumes vente</div>
+      </div>
+      <div class="role-arrow">›</div>
+    </div>
+
+    <div class="role-card" onclick="selectInterne('Labo de transformation')">
+      <div class="role-icon" style="background:rgba(147,112,219,.14);">
+        <svg viewBox="0 0 24 24" stroke="#7d5bc2"><path d="M9 3h6M10 3v6L5 19a1 1 0 001 1.5h12A1 1 0 0019 19l-5-10V3"/></svg>
+      </div>
+      <div>
+        <div class="role-name">Labo de transformation</div>
+        <div class="role-desc">Légumes pour transfo</div>
+      </div>
+      <div class="role-arrow">›</div>
+    </div>
   </div>
 </div>
 
@@ -661,7 +683,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
     </div>
     <div id="cmd-legumes-wrap" style="display:none;">
       <div id="cmd-legumes-list"></div>
-      <div style="margin-top:16px;">
+      <div id="cmd-livraison-wrap" style="margin-top:16px;">
         <div class="cmd-select-label">Jour de livraison souhaité</div>
         <div style="display:flex;gap:10px;margin-top:8px;">
           <label id="lbl-mardi" style="flex:1;border:1.5px solid var(--g5);border-radius:10px;padding:12px;text-align:center;cursor:pointer;font-size:14px;font-weight:500;color:var(--text);">
@@ -735,6 +757,8 @@ const ROLE_LABELS = { livreur:'Livreur', encadrant:'Encadrant technique', gestio
 const ROLE_ICONS = { livreur:'🚚', encadrant:'🌿', gestionnaire:'📋' };
 
 const clients = [
+  {cat:'Interne',nom:'Boutique',contact:null,tel:null,email:null,adresse:null,km:0},
+  {cat:'Interne',nom:'Labo de transformation',contact:null,tel:null,email:null,adresse:null,km:0},
   {cat:'Restau Co',nom:'Collège Montbron gestionnaire',contact:'Mme Henry',role:'gestionnaire',tel:'688991722',email:'int.0160030w@ac-poitiers.fr',adresse:'43 bis Rue de Limoges, Montbron',km:5},
   {cat:'Restau Co',nom:'Cuisine centrale La Rochefoucauld',contact:'Fabrice Harant',role:'Cuisinier collège',tel:'674596653',email:'fharant@lacharente.fr',adresse:null,km:null},
   {cat:'Restau Co',nom:'Cantine Dignac',contact:'Nicolas',role:'Chef de cuisine',tel:'545248803',email:'cantine@dignac.fr',adresse:null,km:null},
@@ -1560,9 +1584,33 @@ function cmdJourChange() {
   document.getElementById('lbl-jeudi').classList.toggle('jour-selected', val === 'jeudi');
 }
 
+async function selectInterne(nom) {
+  document.getElementById('screen-login').style.display = 'none';
+  await initCommandeClient();
+  const idx = clients.findIndex(c => c.nom === nom);
+  if (idx >= 0) {
+    cmdSelectClient(idx);
+    // Masquer la zone de recherche : identité déjà connue
+    const sw = document.querySelector('.cmd-select-wrap');
+    if (sw) sw.style.display = 'none';
+    // Pas de jour de livraison pour les clients internes (sur place)
+    const lw = document.getElementById('cmd-livraison-wrap');
+    if (lw) lw.style.display = 'none';
+  }
+}
+
 async function initCommandeClient() {
   document.getElementById('screen-commande-client').style.display = 'block';
   _cmdClientIdx = null;
+  // Réafficher les blocs par défaut (au cas où un client interne les aurait masqués)
+  const sw = document.querySelector('.cmd-select-wrap');
+  if (sw) sw.style.display = '';
+  const lw = document.getElementById('cmd-livraison-wrap');
+  if (lw) lw.style.display = '';
+  document.getElementById('cmd-success').style.display = 'none';
+  document.getElementById('cmd-client-choisi').style.display = 'none';
+  document.getElementById('cmd-legumes-wrap').style.display = 'none';
+  document.getElementById('cmd-footer').style.display = 'none';
 
   // Semaine courante
   const d = new Date(); d.setDate(d.getDate() - d.getDay() + 1);
@@ -1654,8 +1702,9 @@ async function submitClientOrder() {
     if (chk?.checked && qty > 0) items.push({legume_id: v.id, nom: v.nom, quantite: qty, unite: v.unite||'kg', prix_kg: v.prix_kg});
   });
   if (!items.length) return showToast('Sélectionnez au moins un légume');
-  const jour = document.querySelector('input[name="livraison"]:checked')?.value;
-  if (!jour) return showToast('Choisissez un jour de livraison');
+  const livraisonVisible = document.getElementById('cmd-livraison-wrap')?.style.display !== 'none';
+  const jour = document.querySelector('input[name="livraison"]:checked')?.value || (livraisonVisible ? null : 'sur place');
+  if (livraisonVisible && !jour) return showToast('Choisissez un jour de livraison');
   const d = new Date(); d.setDate(d.getDate() - d.getDay() + 1);
   const semaine = [d.getFullYear(), String(d.getMonth()+1).padStart(2,'0'), String(d.getDate()).padStart(2,'0')].join('-');
   try {
