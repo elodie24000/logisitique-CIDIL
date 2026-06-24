@@ -315,6 +315,10 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 .recap-veg-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
 .recap-titre{font-size:26px;font-weight:500;color:var(--g1);margin-bottom:4px;letter-spacing:-.02em;}
 .recap-resume{font-size:14px;color:var(--tm);font-family:'DM Mono',monospace;margin-bottom:24px;}
+.cl-lbl{display:block;font-size:12px;color:var(--tl);margin:12px 0 4px;font-weight:500;}
+.cl-field{width:100%;box-sizing:border-box;}
+.cc-edit{margin-top:8px;width:100%;padding:8px;border:1px solid var(--bd);border-radius:9px;background:var(--g7);color:var(--g1);font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.cc-edit:active{background:var(--g6);}
 .btn-effacer{display:inline-flex;align-items:center;gap:8px;padding:12px 18px;border:1.5px solid #d9534f;border-radius:11px;background:var(--white);color:#d9534f;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;}
 .btn-effacer:active{background:#d9534f;color:#fff;}
 .recap-veg-card{background:var(--white);border:1px solid var(--bd);border-radius:12px;padding:14px;}
@@ -632,11 +636,16 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 
     <!-- PAGE CLIENTS (gestionnaire) -->
     <div class="page" id="page-clients">
+      <button class="btn-primary" style="margin-bottom:14px;" onclick="openClientModal()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nouveau client
+      </button>
       <div class="filters" id="flt-cat2">
         <button class="flt active" onclick="filterCat2('Tous')">Tous</button>
         <button class="flt" onclick="filterCat2('Restau Co')">Restau Co</button>
         <button class="flt" onclick="filterCat2('Commerce')">Commerce</button>
         <button class="flt" onclick="filterCat2('Maraichage')">Maraîchage</button>
+        <button class="flt" onclick="filterCat2('Interne')">Interne</button>
       </div>
       <div id="client-list2"></div>
     </div>
@@ -692,6 +701,49 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
     <div class="modal-foot">
       <button class="btn-cancel" onclick="closeModal()">Annuler</button>
       <button class="btn-save" onclick="saveOrder()">Valider ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ MODALE CLIENT (ajout / modif) ══════ -->
+<div class="modal" id="modal-client">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <div class="modal-head-name" id="cl-titre">Nouveau client</div>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="cl-id">
+      <label class="cl-lbl">Nom *</label>
+      <input class="finput cl-field" id="cl-nom" placeholder="Nom du client">
+      <label class="cl-lbl">Catégorie</label>
+      <select class="finput cl-field" id="cl-cat">
+        <option>Restau Co</option><option>Commerce</option><option>Maraichage</option><option>Interne</option>
+      </select>
+      <label class="cl-lbl">Contact</label>
+      <input class="finput cl-field" id="cl-contact" placeholder="Nom du contact">
+      <label class="cl-lbl">Rôle / fonction</label>
+      <input class="finput cl-field" id="cl-role" placeholder="ex : Chef de cuisine">
+      <label class="cl-lbl">Téléphone</label>
+      <input class="finput cl-field" id="cl-tel" placeholder="0X XX XX XX XX">
+      <label class="cl-lbl">Email</label>
+      <input class="finput cl-field" id="cl-email" placeholder="adresse@email.fr">
+      <label class="cl-lbl">Adresse</label>
+      <input class="finput cl-field" id="cl-adresse" placeholder="Rue, code postal, ville">
+      <label class="cl-lbl">Distance (km)</label>
+      <input class="finput cl-field" type="number" id="cl-km" placeholder="ex : 12" step="0.1">
+      <label class="cl-lbl">Forfait livraison (€)</label>
+      <input class="finput cl-field" type="number" id="cl-forfait" placeholder="ex : 5" step="0.5">
+      <label class="cl-lbl">Note</label>
+      <input class="finput cl-field" id="cl-note" placeholder="Remarque éventuelle">
+      <button id="cl-delete" class="btn-effacer" style="margin-top:18px;display:none;" onclick="deleteClient()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+        Supprimer ce client
+      </button>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="closeClientModal()">Annuler</button>
+      <button class="btn-save" onclick="saveClient()">Enregistrer ✓</button>
     </div>
   </div>
 </div>
@@ -799,7 +851,7 @@ const ROLE_LABELS = { livreur:'Livreur', encadrant:'Encadrant technique', boutiq
 const ROLE_ICONS = { livreur:'🚚', encadrant:'🌿', boutique:'🛒', labo:'⚗️', gestionnaire:'📋' };
 const INTERNE_KEY = { 'Boutique':'boutique', 'Labo de transformation':'labo' };
 
-const clients = [
+const CLIENTS_SEED = [
   {cat:'Interne',nom:'Boutique',contact:null,tel:null,email:null,adresse:'19 Sq. du Huit Mai, 16220 Montbron',km:0},
   {cat:'Interne',nom:'Labo de transformation',contact:null,tel:null,email:null,adresse:'1 Place de la Mairie, 16380 Souffrignac',km:0},
   {cat:'Restau Co',nom:'Collège Montbron gestionnaire',contact:'Mme Henry',role:'gestionnaire',tel:'688991722',email:'int.0160030w@ac-poitiers.fr',adresse:'43 bis Rue de Limoges, Montbron',km:5},
@@ -835,6 +887,16 @@ const clients = [
   {cat:'Maraichage',nom:'Un jardin à 4 mains',contact:'Aurélie & Thierry',role:'Responsable exploit.',tel:null,email:null,adresse:null,km:null,note:'Création AMAP Montbron mai 2025'},
 ];
 
+// Clients chargés depuis Supabase (avec identifiant stable). Fallback = liste figée si hors-ligne.
+let clients = CLIENTS_SEED.slice();
+let clientById = {};
+function indexClients() { clientById = {}; clients.forEach(c => { if (c.id != null) clientById[c.id] = c; }); }
+async function loadClients() {
+  try { clients = await sbGet('clients', 'order=id.asc'); } catch(e) { console.error('loadClients', e); }
+  indexClients();
+}
+function getClient(id) { return clientById[id] || clients.find(c => String(c.id) === String(id)) || {}; }
+
 // Shared state
 let state = {
   veggies: [],
@@ -862,6 +924,7 @@ const NAV_CONFIG = {
   encadrant: [
     {id:'legumes',label:'Légumes',icon:'<svg viewBox="0 0 24 24"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0112 2a8 8 0 018 8.2c0 7.3-8 11.8-8 11.8z"/><path d="M12 2v20M4.8 9.6h14.4"/></svg>'},
     {id:'commandes',label:'Commandes',icon:'<svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>'},
+    {id:'clients',label:'Clients',icon:'<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>'},
   ],
   gestionnaire: [
     {id:'recap',label:'Récap',icon:'<svg viewBox="0 0 24 24"><path d="M3 3h18v18H3z" fill="none"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>'},
@@ -936,17 +999,18 @@ function updatePinDots() {
   for (let i=0;i<4;i++) document.getElementById('pd'+i).className='pin-dot'+(i<pinBuffer.length?' filled':'');
 }
 
-function enterApp(role) {
+async function enterApp(role) {
   currentRole = role;
   document.getElementById('screen-pin').style.display = 'none';
   document.getElementById('screen-app').style.display = 'flex';
   document.getElementById('app-title').textContent = 'CIDIL · ' + ROLE_LABELS[role];
   document.getElementById('app-role-badge').textContent = ROLE_ICONS[role] + ' ' + ROLE_LABELS[role];
   buildNav(role);
+  await loadClients();
+  populateClientSel();
   const defaultPage = NAV_CONFIG[role][0].id;
   showPage(defaultPage);
   initPage(defaultPage);
-  populateClientSel();
   initSemaine();
 }
 
@@ -1028,7 +1092,7 @@ function renderTournee() {
   }
   el.innerHTML = rows.map(r => {
     const items = typeof r.items === 'string' ? JSON.parse(r.items) : (r.items||[]);
-    const c = clients[r.client_idx] || {};
+    const c = getClient(r.client_idx);
     const lines = items.map(it =>
       `<div class="tour-line"><span>${it.nom}</span><span class="tour-qty">${it.quantite} ${pluriel(it.quantite, it.unite||'kg')}</span></div>`
     ).join('');
@@ -1486,7 +1550,7 @@ function populateClientSel() {
   const sel = document.getElementById('client-sel');
   if (!sel) return;
   sel.innerHTML = '<option value="">— Client —</option>' +
-    clients.map((c,i)=>`<option value="${i}">${c.nom}</option>`).join('');
+    clients.map(c=>`<option value="${c.id}">${c.nom}</option>`).join('');
 }
 
 function openOrderModal() {
@@ -1494,7 +1558,7 @@ function openOrderModal() {
   if (isNaN(idx)) return showToast('Sélectionnez un client');
   if (!state.veggies.length) return showToast('Ajoutez des légumes d\'abord');
   modalClientIdx = idx;
-  document.getElementById('mo-name').textContent = clients[idx].nom;
+  document.getElementById('mo-name').textContent = getClient(idx).nom;
   document.getElementById('mo-week').textContent = semaineLabel();
   const ex = state.orders[idx]||{};
   document.getElementById('mo-rows').innerHTML = state.veggies.map(v=>{
@@ -1547,7 +1611,7 @@ async function saveOrder() {
   showToast('✓ Commande enregistrée');
   // Persistance Supabase
   try {
-    const c = clients[modalClientIdx];
+    const c = getClient(modalClientIdx);
     const items = state.veggies
       .filter(v=>od[v.id]>0)
       .map(v=>({legume_id:v.id, nom:v.nom, quantite:od[v.id], unite:v.unite||'kg', prix_kg:v.prix||null}));
@@ -1586,7 +1650,7 @@ function renderOrders() {
     html += '<div class="empty-msg">Aucune commande cette semaine</div>';
   } else {
     html += keys.map(idx=>{
-      const c=clients[idx]; if(!c) return '';
+      const c=getClient(idx); if(!c||!c.nom) return '';
       const od=state.orders[idx];
       let total=0,hasP=false;
       const lines=Object.entries(od).filter(([k])=>k!=='_sbId'&&k!=='_jour').map(([vid,qty])=>{
@@ -1666,13 +1730,13 @@ function renderRecap() {
 
   const rcl=document.getElementById('rc-clients');
   rcl.innerHTML=keys.length?keys.map(idx=>{
-    const c=clients[idx],od=state.orders[idx];
-    const pills=Object.entries(od).map(([vid,qty])=>{
+    const c=getClient(idx),od=state.orders[idx];
+    const pills=Object.entries(od).filter(([k])=>k!=='_sbId'&&k!=='_jour').map(([vid,qty])=>{
       const v=state.veggies.find(v=>v.id==vid);
       return v?`<span style="font-size:12px;background:var(--g6);color:var(--g1);padding:3px 9px;border-radius:10px;font-family:'DM Mono',monospace;">${v.nom} ${qty}kg</span>`:'';
     }).filter(Boolean).join(' ');
     return `<div class="card" style="margin-bottom:8px;">
-      <div style="font-size:14px;font-weight:500;margin-bottom:6px;">${c.nom}</div>
+      <div style="font-size:14px;font-weight:500;margin-bottom:6px;">${c.nom||'Client'}</div>
       <div style="display:flex;gap:5px;flex-wrap:wrap;">${pills}</div>
     </div>`;
   }).join(''):'<div class="empty-msg">Aucune commande</div>';
@@ -1723,9 +1787,81 @@ function renderClients2() {
       ${c.tel?`<div class="cc-line">📞 ${c.tel}</div>`:''}
       ${c.email?`<div class="cc-line" style="font-size:11px;">✉ ${c.email}</div>`:''}
       ${c.adresse?`<div class="cc-line">📍 ${c.adresse}</div>`:'<div class="cc-line" style="color:var(--tl);">Adresse à compléter</div>'}
+      ${c.forfait_livraison?`<div class="cc-line">🚚 Forfait livraison : ${Number(c.forfait_livraison).toFixed(2)} €</div>`:''}
       ${c.note?`<div class="note-tag">⚠ ${c.note}</div>`:''}
+      <button class="cc-edit" onclick="openClientModal(${c.id})">✎ Modifier</button>
     </div>`;
   }).join('');
+}
+
+// ══════ GESTION CLIENTS (ajout / modif / suppression) ══════
+function openClientModal(id) {
+  const c = id != null ? getClient(id) : {};
+  document.getElementById('cl-titre').textContent = id != null ? 'Modifier le client' : 'Nouveau client';
+  document.getElementById('cl-id').value = id != null ? id : '';
+  document.getElementById('cl-nom').value = c.nom || '';
+  document.getElementById('cl-cat').value = c.cat || 'Restau Co';
+  document.getElementById('cl-contact').value = c.contact || '';
+  document.getElementById('cl-role').value = c.role || '';
+  document.getElementById('cl-tel').value = c.tel || '';
+  document.getElementById('cl-email').value = c.email || '';
+  document.getElementById('cl-adresse').value = c.adresse || '';
+  document.getElementById('cl-km').value = c.km != null ? c.km : '';
+  document.getElementById('cl-forfait').value = c.forfait_livraison != null ? c.forfait_livraison : '';
+  document.getElementById('cl-note').value = c.note || '';
+  document.getElementById('cl-delete').style.display = id != null ? 'inline-flex' : 'none';
+  document.getElementById('modal-client').classList.add('open');
+}
+
+function closeClientModal() { document.getElementById('modal-client').classList.remove('open'); }
+
+async function saveClient() {
+  const nom = document.getElementById('cl-nom').value.trim();
+  if (!nom) return showToast('Le nom est obligatoire');
+  const num = v => { const n = parseFloat(v); return isNaN(n) ? null : n; };
+  const data = {
+    nom,
+    cat: document.getElementById('cl-cat').value,
+    contact: document.getElementById('cl-contact').value.trim() || null,
+    role: document.getElementById('cl-role').value.trim() || null,
+    tel: document.getElementById('cl-tel').value.trim() || null,
+    email: document.getElementById('cl-email').value.trim() || null,
+    adresse: document.getElementById('cl-adresse').value.trim() || null,
+    km: num(document.getElementById('cl-km').value),
+    forfait_livraison: num(document.getElementById('cl-forfait').value),
+    note: document.getElementById('cl-note').value.trim() || null,
+  };
+  const id = document.getElementById('cl-id').value;
+  try {
+    if (id) await sbPatch('clients', id, data);
+    else await sbPost('clients', data);
+    await loadClients();
+    closeClientModal();
+    renderClients2();
+    populateClientSel();
+    showToast(id ? '✓ Client modifié' : '✓ Client ajouté');
+  } catch(e) {
+    showToast('Erreur enregistrement client');
+    console.error(e);
+  }
+}
+
+async function deleteClient() {
+  const id = document.getElementById('cl-id').value;
+  if (!id) return;
+  const c = getClient(id);
+  if (!confirm('Supprimer définitivement le client « ' + (c.nom||'') + ' » ?')) return;
+  try {
+    await sbDelete('clients', id);
+    await loadClients();
+    closeClientModal();
+    renderClients2();
+    populateClientSel();
+    showToast('✓ Client supprimé');
+  } catch(e) {
+    showToast('Erreur suppression');
+    console.error(e);
+  }
 }
 
 // ══════ TOAST ══════
@@ -1753,10 +1889,10 @@ function cmdSearchClient(val) {
   const res = document.getElementById('cmd-client-results');
   if (val.length < 3) { res.style.display = 'none'; return; }
   const q = val.toLowerCase();
-  const matches = clients.map((c,i) => ({c,i})).filter(({c}) => c.nom.toLowerCase().includes(q));
+  const matches = clients.filter(c => (c.nom||'').toLowerCase().includes(q));
   if (!matches.length) { res.innerHTML = '<div style="padding:10px 12px;font-size:13px;color:#888;">Aucun résultat</div>'; res.style.display='block'; return; }
-  res.innerHTML = matches.map(({c,i}) =>
-    `<div onclick="cmdSelectClient(${i})" style="padding:10px 14px;font-size:14px;cursor:pointer;border-bottom:0.5px solid #f0efe8;" onmouseover="this.style.background='#f7f6f2'" onmouseout="this.style.background=''">${c.nom} <span style="font-size:11px;color:#888;margin-left:6px;">${c.cat}</span></div>`
+  res.innerHTML = matches.map(c =>
+    `<div onclick="cmdSelectClient(${c.id})" style="padding:10px 14px;font-size:14px;cursor:pointer;border-bottom:0.5px solid #f0efe8;" onmouseover="this.style.background='#f7f6f2'" onmouseout="this.style.background=''">${c.nom} <span style="font-size:11px;color:#888;margin-left:6px;">${c.cat}</span></div>`
   ).join('');
   res.style.display = 'block';
 }
@@ -1766,7 +1902,7 @@ function cmdSelectClient(idx) {
   document.getElementById('cmd-client-search').value = '';
   document.getElementById('cmd-client-results').style.display = 'none';
   const choisi = document.getElementById('cmd-client-choisi');
-  document.getElementById('cmd-client-nom').textContent = clients[idx].nom;
+  document.getElementById('cmd-client-nom').textContent = getClient(idx).nom;
   choisi.style.display = 'flex';
   document.getElementById('cmd-legumes-wrap').style.display = 'block';
   document.getElementById('cmd-footer').style.display = 'block';
@@ -1797,7 +1933,8 @@ function selectInterne(nom) {
 
 async function openInterne(nom) {
   await initCommandeClient();
-  const idx = clients.findIndex(c => c.nom === nom);
+  const ci = clients.find(c => c.nom === nom);
+  const idx = ci ? ci.id : -1;
   if (idx >= 0) {
     cmdSelectClient(idx);
     // Masquer la zone de recherche : identité déjà connue
@@ -1811,6 +1948,7 @@ async function openInterne(nom) {
 
 async function initCommandeClient() {
   document.getElementById('screen-commande-client').style.display = 'block';
+  await loadClients();
   _cmdClientIdx = null;
   // Réafficher les blocs par défaut (au cas où un client interne les aurait masqués)
   const sw = document.querySelector('.cmd-select-wrap');
@@ -1919,7 +2057,7 @@ async function submitClientOrder() {
   const semaine = [d.getFullYear(), String(d.getMonth()+1).padStart(2,'0'), String(d.getDate()).padStart(2,'0')].join('-');
   try {
     await sbPost('commandes_clients', {
-      client_nom: clients[idx].nom,
+      client_nom: getClient(idx).nom,
       client_idx: idx,
       semaine,
       jour_livraison: jour,
@@ -1930,7 +2068,7 @@ async function submitClientOrder() {
     document.getElementById('cmd-footer').style.display = 'none';
     document.getElementById('cmd-select-wrap') && (document.querySelector('.cmd-select-wrap').style.display = 'none');
     document.getElementById('cmd-success').style.display = 'block';
-    document.getElementById('cmd-success-sub').textContent = 'Merci ' + clients[idx].nom + ', votre commande a bien été enregistrée pour la semaine du ' + document.getElementById('cmd-week-tag').textContent.replace('Semaine du ','') + '.';
+    document.getElementById('cmd-success-sub').textContent = 'Merci ' + getClient(idx).nom + ', votre commande a bien été enregistrée pour la semaine du ' + document.getElementById('cmd-week-tag').textContent.replace('Semaine du ','') + '.';
   } catch(e) {
     showToast('Erreur envoi commande');
     console.error(e);
