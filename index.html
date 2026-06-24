@@ -60,9 +60,13 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 .role-card.primary .role-name{font-size:19px;color:#0d2818;}
 .role-card.primary .role-desc{font-size:13px;color:rgba(13,40,24,.6);}
 .role-card.primary .role-arrow{color:rgba(13,40,24,.4);font-size:22px;}
-.equipe-toggle{margin-top:8px;text-align:center;color:rgba(255,255,255,.4);font-size:13px;cursor:pointer;padding:10px;user-select:none;}
-.equipe-toggle:hover{color:rgba(255,255,255,.7);}
-.equipe-group{display:none;flex-direction:column;gap:10px;margin-top:4px;}
+.equipe-toggle{margin-top:14px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:16px 20px;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .15s;user-select:none;}
+.equipe-toggle:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.25);}
+.equipe-toggle .role-icon{background:rgba(255,255,255,.12);}
+.equipe-toggle .role-icon svg{stroke:#fff;}
+.equipe-chevron{margin-left:auto;color:rgba(255,255,255,.5);font-size:18px;transition:transform .2s;}
+.equipe-toggle.open .equipe-chevron{transform:rotate(180deg);}
+.equipe-group{display:none;flex-direction:column;gap:10px;margin-top:10px;}
 .equipe-group.open{display:flex;}
 
 /* ── PIN ── */
@@ -405,7 +409,16 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
       <div class="role-arrow">›</div>
     </div>
 
-    <div class="equipe-toggle" id="equipe-toggle" onclick="toggleEquipe()">Espace équipe ▾</div>
+    <div class="equipe-toggle" id="equipe-toggle" onclick="toggleEquipe()">
+      <div class="role-icon">
+        <svg viewBox="0 0 24 24" stroke="#fff"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      </div>
+      <div>
+        <div class="role-name">Espace équipe</div>
+        <div class="role-desc">Boutique · Labo · Livreur · Encadrant · Gestionnaire</div>
+      </div>
+      <div class="equipe-chevron">▾</div>
+    </div>
 
     <div class="equipe-group" id="equipe-group">
       <div class="role-card" onclick="selectInterne('Boutique')">
@@ -848,7 +861,7 @@ function toggleEquipe() {
   const grp = document.getElementById('equipe-group');
   const tog = document.getElementById('equipe-toggle');
   const open = grp.classList.toggle('open');
-  tog.textContent = open ? 'Espace équipe ▴' : 'Espace équipe ▾';
+  tog.classList.toggle('open', open);
 }
 
 function selectRole(role) {
