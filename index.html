@@ -313,6 +313,8 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 
 /* ── RÉCAP ── */
 .recap-veg-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
+.recap-titre{font-size:26px;font-weight:500;color:var(--g1);margin-bottom:4px;letter-spacing:-.02em;}
+.recap-resume{font-size:14px;color:var(--tm);font-family:'DM Mono',monospace;margin-bottom:24px;}
 .recap-veg-card{background:var(--white);border:1px solid var(--bd);border-radius:12px;padding:14px;}
 .rvn{font-size:13px;font-weight:500;margin-bottom:4px;}
 .rvk{font-size:24px;font-weight:500;font-family:'DM Mono',monospace;color:var(--g1);}
@@ -608,24 +610,14 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 
     <!-- PAGE RÉCAP (gestionnaire) -->
     <div class="page" id="page-recap">
-      <div class="stats-grid" style="grid-template-columns:1fr 1fr 1fr;gap:10px;">
-        <div class="stat-card" style="border-left:3px solid var(--g3);">
-          <div class="stat-num" id="rc-cmd">0</div>
-          <div class="stat-lbl">Commandes</div>
-        </div>
-        <div class="stat-card" style="border-left:3px solid var(--amb);">
-          <div class="stat-num" id="rc-kg">0</div>
-          <div class="stat-lbl">Kg total</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-num" id="rc-ca">—</div>
-          <div class="stat-lbl">CA (€)</div>
-        </div>
-      </div>
-      <div class="section-title">Par légume</div>
-      <div class="recap-veg-grid" id="rc-vegs"><div class="empty-msg" style="grid-column:1/-1;">Aucune commande</div></div>
-      <div class="section-title">Par client</div>
+      <div class="recap-titre">Récap de la semaine</div>
+      <div class="recap-resume" id="rc-resume">—</div>
+
+      <div class="section-title">Récap par client</div>
       <div id="rc-clients"><div class="empty-msg">Aucune commande</div></div>
+
+      <div class="section-title" style="margin-top:22px;">Récap par légume</div>
+      <div class="recap-veg-grid" id="rc-vegs"><div class="empty-msg" style="grid-column:1/-1;">Aucune commande</div></div>
     </div>
 
     <!-- PAGE CLIENTS (gestionnaire) -->
@@ -1642,9 +1634,8 @@ function renderRecap() {
       if(v.prix) byV[vid].ca+=v.prix*qty;
     });
   });
-  document.getElementById('rc-cmd').textContent=keys.length;
-  document.getElementById('rc-kg').textContent=Math.round(tKg*10)/10;
-  document.getElementById('rc-ca').textContent=hasCA?tCA.toFixed(2)+'€':'—';
+  const resume = `${keys.length} commande(s) · ${Math.round(tKg*10)/10} kg${hasCA?' · '+tCA.toFixed(2)+' €':''}`;
+  document.getElementById('rc-resume').textContent = keys.length ? resume : 'Aucune commande cette semaine';
 
   const rvg=document.getElementById('rc-vegs');
   rvg.innerHTML=Object.values(byV).length?Object.values(byV).map(b=>`
