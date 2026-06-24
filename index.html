@@ -956,7 +956,7 @@ function initPage(id) {
     loadVeggies().then(()=>loadCommandes());
   }
   if (id==='tarifs') loadTarifs();
-  if (id==='recap') renderRecap();
+  if (id==='recap') { loadVeggies().then(()=>loadCommandes()).then(()=>renderRecap()); }
   if (id==='clients') renderClients2();
 }
 
