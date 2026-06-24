@@ -315,6 +315,8 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 .recap-veg-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
 .recap-titre{font-size:26px;font-weight:500;color:var(--g1);margin-bottom:4px;letter-spacing:-.02em;}
 .recap-resume{font-size:14px;color:var(--tm);font-family:'DM Mono',monospace;margin-bottom:24px;}
+.btn-effacer{display:inline-flex;align-items:center;gap:8px;padding:12px 18px;border:1.5px solid #d9534f;border-radius:11px;background:var(--white);color:#d9534f;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.btn-effacer:active{background:#d9534f;color:#fff;}
 .recap-veg-card{background:var(--white);border:1px solid var(--bd);border-radius:12px;padding:14px;}
 .rvn{font-size:13px;font-weight:500;margin-bottom:4px;}
 .rvk{font-size:24px;font-weight:500;font-family:'DM Mono',monospace;color:var(--g1);}
@@ -618,6 +620,14 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 
       <div class="section-title" style="margin-top:22px;">Récap par légume</div>
       <div class="recap-veg-grid" id="rc-vegs"><div class="empty-msg" style="grid-column:1/-1;">Aucune commande</div></div>
+
+      <div style="margin-top:34px;border-top:1px solid var(--bd);padding-top:20px;">
+        <div style="font-size:12px;color:var(--tl);margin-bottom:10px;">Une fois les commandes reportées dans votre logiciel de comptabilité, vous pouvez tout effacer pour repartir à zéro.</div>
+        <button class="btn-effacer" onclick="effacerToutesCommandes()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+          Effacer toutes les commandes
+        </button>
+      </div>
     </div>
 
     <!-- PAGE CLIENTS (gestionnaire) -->
@@ -1657,6 +1667,25 @@ function renderRecap() {
       <div style="display:flex;gap:5px;flex-wrap:wrap;">${pills}</div>
     </div>`;
   }).join(''):'<div class="empty-msg">Aucune commande</div>';
+}
+
+async function effacerToutesCommandes() {
+  if (!confirm('⚠ Effacer DÉFINITIVEMENT toutes les commandes ?\n\nCette action est irréversible. À ne faire qu\'après avoir reporté les commandes dans votre logiciel de comptabilité.')) return;
+  if (!confirm('Êtes-vous vraiment sûr ? Toutes les commandes seront supprimées sur toutes les interfaces (livreur, encadrant, gestionnaire).')) return;
+  try {
+    const res = await fetch(`${SUPA_URL}/rest/v1/commandes_clients?id=not.is.null`, {
+      method: 'DELETE',
+      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Prefer': 'return=minimal' }
+    });
+    if (!res.ok) throw new Error(await res.text());
+    state.orders = {};
+    state.pastOrders = [];
+    renderRecap();
+    showToast('✓ Toutes les commandes ont été effacées');
+  } catch(e) {
+    showToast('Erreur lors de l\'effacement');
+    console.error(e);
+  }
 }
 
 // ══════ CLIENTS (gestionnaire) ══════
