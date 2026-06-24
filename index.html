@@ -207,6 +207,8 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 .tour-line{display:flex;justify-content:space-between;font-size:15px;padding:5px 0;border-bottom:1px solid var(--g7);}
 .tour-line:last-child{border-bottom:none;}
 .tour-qty{font-family:'DM Mono',monospace;font-weight:500;}
+.tour-chevron{color:var(--g3);font-size:16px;transition:transform .2s;flex-shrink:0;}
+.tour-gps{display:inline-flex;align-items:center;gap:6px;margin-top:12px;padding:9px 14px;background:var(--g1);color:#fff;border-radius:9px;font-size:13px;font-weight:500;text-decoration:none;}
 
 /* ── ENCADRANT ── */
 .week-bar{
@@ -1025,17 +1027,28 @@ function renderTournee() {
     const lines = items.map(it =>
       `<div class="tour-line"><span>${it.nom}</span><span class="tour-qty">${it.quantite} ${pluriel(it.quantite, it.unite||'kg')}</span></div>`
     ).join('');
+    const gps = c.adresse ? `<a class="tour-gps" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c.adresse)}" target="_blank" onclick="event.stopPropagation()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>Itinéraire GPS</a>` : '';
     return `<div class="tour-card ${r.livre?'livre':''}" id="tour-${r.id}">
-      <div class="tour-head">
-        <input type="checkbox" class="tour-chk" ${r.livre?'checked':''} onchange="toggleLivre(${r.id}, this.checked)">
-        <div>
+      <div class="tour-head" onclick="toggleTourCard(${r.id})">
+        <input type="checkbox" class="tour-chk" ${r.livre?'checked':''} onclick="event.stopPropagation()" onchange="toggleLivre(${r.id}, this.checked)">
+        <div style="flex:1;">
           <div class="tour-nom">${r.client_nom}</div>
-          ${c.adresse?`<div class="tour-adr">${c.adresse}</div>`:''}
+          <div class="tour-adr">${items.length} article(s)${c.adresse?' · '+c.adresse:''}</div>
         </div>
+        <span class="tour-chevron" id="chev-${r.id}">▾</span>
       </div>
-      <div class="tour-body">${lines}</div>
+      <div class="tour-body" id="body-${r.id}" style="display:none;">${lines}${gps}</div>
     </div>`;
   }).join('');
+}
+
+function toggleTourCard(id) {
+  const body = document.getElementById('body-'+id);
+  const chev = document.getElementById('chev-'+id);
+  const open = body.style.display === 'none';
+  body.style.display = open ? 'block' : 'none';
+  if (chev) chev.style.transform = open ? 'rotate(180deg)' : '';
 }
 
 async function toggleLivre(id, checked) {
