@@ -66,8 +66,10 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 .equipe-toggle .role-icon svg{stroke:#fff;}
 .equipe-chevron{margin-left:auto;color:rgba(255,255,255,.5);font-size:18px;transition:transform .2s;}
 .equipe-toggle.open .equipe-chevron{transform:rotate(180deg);}
-.equipe-group{display:none;flex-direction:column;gap:10px;margin-top:10px;}
+.equipe-group{display:none;flex-direction:column;gap:10px;}
 .equipe-group.open{display:flex;}
+.equipe-back{color:rgba(255,255,255,.5);font-size:13px;cursor:pointer;padding:4px 2px 8px;user-select:none;}
+.equipe-back:hover{color:#fff;}
 
 /* ── PIN ── */
 #screen-pin{
@@ -398,7 +400,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
   <div class="login-sub">Chantier d'insertion — volet maraîchage</div>
 
   <div class="role-cards">
-    <div class="role-card primary" onclick="selectRole('client')">
+    <div class="role-card primary" id="card-client" onclick="selectRole('client')">
       <div class="role-icon">
         <svg viewBox="0 0 24 24" stroke="#0d2818"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
       </div>
@@ -421,6 +423,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
     </div>
 
     <div class="equipe-group" id="equipe-group">
+      <div class="equipe-back" onclick="closeEquipe()">‹ Retour</div>
       <div class="role-card" onclick="selectInterne('Boutique')">
         <div class="role-icon" style="background:rgba(219,112,147,.14);">
           <svg viewBox="0 0 24 24" stroke="#c2548a"><path d="M3 9l1-5h16l1 5M4 9v11a1 1 0 001 1h14a1 1 0 001-1V9M3 9h18M9 21v-6h6v6"/></svg>
@@ -858,10 +861,15 @@ const NAV_CONFIG = {
 
 // ══════ AUTH ══════
 function toggleEquipe() {
-  const grp = document.getElementById('equipe-group');
-  const tog = document.getElementById('equipe-toggle');
-  const open = grp.classList.toggle('open');
-  tog.classList.toggle('open', open);
+  document.getElementById('equipe-group').classList.add('open');
+  document.getElementById('card-client').style.display = 'none';
+  document.getElementById('equipe-toggle').style.display = 'none';
+}
+
+function closeEquipe() {
+  document.getElementById('equipe-group').classList.remove('open');
+  document.getElementById('card-client').style.display = '';
+  document.getElementById('equipe-toggle').style.display = '';
 }
 
 function selectRole(role) {
