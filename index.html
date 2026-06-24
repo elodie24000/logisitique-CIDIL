@@ -424,27 +424,6 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 
     <div class="equipe-group" id="equipe-group">
       <div class="equipe-back" onclick="closeEquipe()">‹ Retour</div>
-      <div class="role-card" onclick="selectInterne('Boutique')">
-        <div class="role-icon" style="background:rgba(219,112,147,.14);">
-          <svg viewBox="0 0 24 24" stroke="#c2548a"><path d="M3 9l1-5h16l1 5M4 9v11a1 1 0 001 1h14a1 1 0 001-1V9M3 9h18M9 21v-6h6v6"/></svg>
-        </div>
-        <div>
-          <div class="role-name">Boutique</div>
-          <div class="role-desc">Réassort légumes vente</div>
-        </div>
-        <div class="role-arrow">›</div>
-      </div>
-
-      <div class="role-card" onclick="selectInterne('Labo de transformation')">
-        <div class="role-icon" style="background:rgba(147,112,219,.14);">
-          <svg viewBox="0 0 24 24" stroke="#7d5bc2"><path d="M9 3h6M10 3v6L5 19a1 1 0 001 1.5h12A1 1 0 0019 19l-5-10V3"/></svg>
-        </div>
-        <div>
-          <div class="role-name">Labo de transformation</div>
-          <div class="role-desc">Légumes pour transfo</div>
-        </div>
-        <div class="role-arrow">›</div>
-      </div>
 
       <div class="role-card" onclick="selectRole('livreur')">
         <div class="role-icon" style="background:rgba(116,198,157,.15);">
@@ -464,6 +443,28 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
         <div>
           <div class="role-name">Encadrant technique</div>
           <div class="role-desc">Légumes disponibles · Commandes</div>
+        </div>
+        <div class="role-arrow">›</div>
+      </div>
+
+      <div class="role-card" onclick="selectInterne('Boutique')">
+        <div class="role-icon" style="background:rgba(219,112,147,.14);">
+          <svg viewBox="0 0 24 24" stroke="#c2548a"><path d="M3 9l1-5h16l1 5M4 9v11a1 1 0 001 1h14a1 1 0 001-1V9M3 9h18M9 21v-6h6v6"/></svg>
+        </div>
+        <div>
+          <div class="role-name">Boutique</div>
+          <div class="role-desc">Réassort légumes vente</div>
+        </div>
+        <div class="role-arrow">›</div>
+      </div>
+
+      <div class="role-card" onclick="selectInterne('Labo de transformation')">
+        <div class="role-icon" style="background:rgba(147,112,219,.14);">
+          <svg viewBox="0 0 24 24" stroke="#7d5bc2"><path d="M9 3h6M10 3v6L5 19a1 1 0 001 1.5h12A1 1 0 0019 19l-5-10V3"/></svg>
+        </div>
+        <div>
+          <div class="role-name">Labo de transformation</div>
+          <div class="role-desc">Légumes pour transfo</div>
         </div>
         <div class="role-arrow">›</div>
       </div>
@@ -783,9 +784,10 @@ async function sbDelete(table, id) {
 }
 
 // ══════ DATA ══════
-const PINS = { livreur:'1234', encadrant:'5678', gestionnaire:'9012' };
-const ROLE_LABELS = { livreur:'Livreur', encadrant:'Encadrant technique', gestionnaire:'Gestionnaire' };
-const ROLE_ICONS = { livreur:'🚚', encadrant:'🌿', gestionnaire:'📋' };
+const PINS = { livreur:'1111', encadrant:'2222', boutique:'3333', labo:'4444', gestionnaire:'9999' };
+const ROLE_LABELS = { livreur:'Livreur', encadrant:'Encadrant technique', boutique:'Boutique', labo:'Labo de transformation', gestionnaire:'Gestionnaire' };
+const ROLE_ICONS = { livreur:'🚚', encadrant:'🌿', boutique:'🛒', labo:'⚗️', gestionnaire:'📋' };
+const INTERNE_KEY = { 'Boutique':'boutique', 'Labo de transformation':'labo' };
 
 const clients = [
   {cat:'Interne',nom:'Boutique',contact:null,tel:null,email:null,adresse:null,km:0},
@@ -872,14 +874,28 @@ function closeEquipe() {
   document.getElementById('equipe-toggle').style.display = '';
 }
 
+let _pinKey = null;     // clé PIN attendue (livreur, encadrant, boutique, labo, gestionnaire)
+let _pinSuccess = null; // callback en cas de succès
+
+function askPin(key, onSuccess) {
+  _pinKey = key;
+  _pinSuccess = onSuccess;
+  pinBuffer = '';
+  document.getElementById('pin-role-title').textContent = ROLE_ICONS[key] + ' ' + ROLE_LABELS[key];
+  document.getElementById('pin-error').textContent = '';
+  document.getElementById('pin-hint').textContent = 'Code (provisoire) : ' + PINS[key];
+  updatePinDots();
+  document.getElementById('screen-login').style.display = 'none';
+  document.getElementById('screen-pin').style.display = 'flex';
+}
+
 function selectRole(role) {
   if (role === 'client') {
     document.getElementById('screen-login').style.display = 'none';
     initCommandeClient();
     return;
   }
-  document.getElementById('screen-login').style.display = 'none';
-  enterApp(role);
+  askPin(role, () => enterApp(role));
 }
 
 function backToLogin() {
@@ -893,8 +909,9 @@ function pinPress(d) {
   updatePinDots();
   if (pinBuffer.length === 4) {
     setTimeout(() => {
-      if (pinBuffer === PINS[pendingRole]) {
-        enterApp(pendingRole);
+      if (pinBuffer === PINS[_pinKey]) {
+        document.getElementById('screen-pin').style.display = 'none';
+        _pinSuccess && _pinSuccess();
       } else {
         document.getElementById('pin-error').textContent = 'Code incorrect, réessayez';
         pinBuffer = '';
@@ -1627,8 +1644,12 @@ function cmdJourChange() {
   document.getElementById('lbl-jeudi').classList.toggle('jour-selected', val === 'jeudi');
 }
 
-async function selectInterne(nom) {
-  document.getElementById('screen-login').style.display = 'none';
+function selectInterne(nom) {
+  const key = INTERNE_KEY[nom];
+  askPin(key, () => openInterne(nom));
+}
+
+async function openInterne(nom) {
   await initCommandeClient();
   const idx = clients.findIndex(c => c.nom === nom);
   if (idx >= 0) {
