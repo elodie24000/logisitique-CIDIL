@@ -897,6 +897,17 @@ async function loadClients() {
 }
 function getClient(id) { return clientById[id] || clients.find(c => String(c.id) === String(id)) || {}; }
 
+// Frais de livraison par paliers de distance (km). Boutique/Labo sur place = 0.
+function fraisLivraison(c) {
+  if (!c || c.cat === 'Interne') return 0;
+  const km = c.km;
+  if (km == null) return 0;
+  if (km < 10) return 2;
+  if (km < 30) return 5;
+  if (km < 60) return 10;
+  return 15;
+}
+
 // Shared state
 let state = {
   veggies: [],
@@ -1662,9 +1673,13 @@ function renderOrders() {
       }).filter(Boolean).join('');
       const bc=c.cat==='Restau Co'?'b-rco':c.cat==='Commerce'?'b-com':'b-mar';
       const bl=c.cat==='Maraichage'?'Maraîchage':c.cat;
+      const frais=fraisLivraison(c);
+      const totalBloc = hasP ? (frais>0
+        ? `<div class="co-total" style="font-weight:400;color:var(--tm);">Légumes : ${total.toFixed(2)} € · Livraison : ${frais.toFixed(2)} €</div><div class="co-total">Total : ${(total+frais).toFixed(2)} €</div>`
+        : `<div class="co-total">Total : ${total.toFixed(2)} €</div>`) : '';
       return `<div class="co-card">
         <div class="co-head"><span class="co-name">${c.nom}</span><span class="badge ${bc}">${bl}</span></div>
-        <div class="co-body">${lines}${hasP?`<div class="co-total">Total : ${total.toFixed(2)} €</div>`:''}</div>
+        <div class="co-body">${lines}${totalBloc}</div>
       </div>`;
     }).filter(Boolean).join('');
   }
@@ -1682,9 +1697,13 @@ function renderOrders() {
       pw.records.forEach(r => {
         const items = typeof r.items === 'string' ? JSON.parse(r.items) : (r.items||[]);
         const lines = items.map(it=>`<div class="co-line"><span>${it.nom}</span><span style="font-family:'DM Mono',monospace;">${it.quantite} ${pluriel(it.quantite,it.unite||'kg')}${it.prix_kg?' · '+(it.prix_kg*it.quantite).toFixed(2)+' €':''}</span></div>`).join('');
+        const frH=fraisLivraison(getClient(r.client_idx));
+        const totH=r.total?(frH>0
+          ? `<div class="co-total" style="font-weight:400;color:var(--tm);">Légumes : ${Number(r.total).toFixed(2)} € · Livraison : ${frH.toFixed(2)} €</div><div class="co-total">Total : ${(Number(r.total)+frH).toFixed(2)} €</div>`
+          : `<div class="co-total">Total : ${Number(r.total).toFixed(2)} €</div>`):'';
         html += `<div class="co-card" style="margin-bottom:8px;">
           <div class="co-head"><span class="co-name">${r.client_nom}</span></div>
-          <div class="co-body">${lines}${r.total?`<div class="co-total">Total : ${Number(r.total).toFixed(2)} €</div>`:''}</div>
+          <div class="co-body">${lines}${totH}</div>
         </div>`;
       });
       html += `</div></div>`;
@@ -1705,19 +1724,22 @@ function togglePastWeek(head) {
 // ══════ RÉCAP ══════
 function renderRecap() {
   const keys=Object.keys(state.orders);
-  let tKg=0,tCA=0,hasCA=false;
+  let tKg=0,tCA=0,hasCA=false,tFrais=0;
   const byV={};
   keys.forEach(idx=>{
-    Object.entries(state.orders[idx]).forEach(([vid,qty])=>{
+    let clientACommande=false;
+    Object.entries(state.orders[idx]).filter(([k])=>k!=='_sbId'&&k!=='_jour').forEach(([vid,qty])=>{
       const v=state.veggies.find(v=>v.id==vid); if(!v) return;
+      clientACommande=true;
       tKg+=qty;
       if(v.prix){tCA+=v.prix*qty;hasCA=true;}
       byV[vid]=byV[vid]||{nom:v.nom,kg:0,ca:0};
       byV[vid].kg+=qty;
       if(v.prix) byV[vid].ca+=v.prix*qty;
     });
+    if(clientACommande) tFrais+=fraisLivraison(getClient(idx));
   });
-  const resume = `${keys.length} commande(s) · ${Math.round(tKg*10)/10} kg${hasCA?' · '+tCA.toFixed(2)+' €':''}`;
+  const resume = `${keys.length} commande(s) · ${Math.round(tKg*10)/10} kg${hasCA?' · Légumes '+tCA.toFixed(2)+' € · Livraison '+tFrais.toFixed(2)+' € · Total '+(tCA+tFrais).toFixed(2)+' €':''}`;
   document.getElementById('rc-resume').textContent = keys.length ? resume : 'Aucune commande cette semaine';
 
   const rvg=document.getElementById('rc-vegs');
@@ -2036,7 +2058,15 @@ function updateCmdTotal() {
   });
   const el = document.getElementById('cmd-total');
   if (lines === 0) { el.textContent = ''; return; }
-  el.innerHTML = `<strong>${lines} article(s)</strong>${hasPrice ? ' · Total estimé : <strong>' + total.toFixed(2) + ' €</strong>' : ''}`;
+  const frais = fraisLivraison(getClient(_cmdClientIdx));
+  if (hasPrice) {
+    const ttc = total + frais;
+    el.innerHTML = `<strong>${lines} article(s)</strong> · Légumes : ${total.toFixed(2)} €`
+      + (frais > 0 ? ` · Livraison : ${frais.toFixed(2)} €` : '')
+      + `<br><strong>Total : ${ttc.toFixed(2)} €</strong>`;
+  } else {
+    el.innerHTML = `<strong>${lines} article(s)</strong>`;
+  }
 }
 
 async function submitClientOrder() {
