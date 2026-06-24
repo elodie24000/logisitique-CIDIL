@@ -1180,6 +1180,7 @@ function toggleDone(idx) {
 
 // ══════ TARIFS ══════
 let tarifsData = [];
+let tarifLegumePrix = {};  // nom (minuscule) -> prix le plus récent saisi dans les légumes
 
 async function loadTarifs() {
   const el = document.getElementById('tarifs-list');
@@ -1188,6 +1189,12 @@ async function loadTarifs() {
   try {
     const rows = await sbGet('catalogue', 'order=famille.asc,nom.asc');
     tarifsData = rows;
+    // Récupérer les prix saisis dans les légumes (toutes semaines, le plus récent gagne)
+    tarifLegumePrix = {};
+    try {
+      const legs = await sbGet('legumes', 'order=semaine.asc&select=nom,prix_kg');
+      legs.forEach(l => { if (l.prix_kg != null) tarifLegumePrix[(l.nom||'').toLowerCase().trim()] = l.prix_kg; });
+    } catch(e) { /* pas bloquant */ }
     renderTarifs();
   } catch(e) {
     el.innerHTML = '<div class="empty-msg">Erreur chargement</div>';
@@ -1207,11 +1214,13 @@ function renderTarifs() {
       <div class="tarif-famille-title">${fam}</div>
       ${vegs.map(v => {
         const unite = (v.unites||'kg').split(',')[0];
+        const prixLeg = tarifLegumePrix[(v.nom||'').toLowerCase().trim()];
+        const valeur = v.prix_defaut ?? prixLeg ?? '';
         return `<div class="tarif-row">
           <div class="tarif-nom">${v.nom}</div>
           ${v._rnm ? `<span class="tarif-rnm">RNM ${v._rnm}€</span>` : ''}
           <div class="tarif-input-wrap">
-            <input class="tarif-input" type="number" id="tarif-${v.id}" value="${v.prix_defaut ?? ''}" placeholder="—" min="0" step="0.1">
+            <input class="tarif-input" type="number" id="tarif-${v.id}" value="${valeur}" placeholder="—" min="0" step="0.1">
             <span class="tarif-unit">€/${unite}</span>
           </div>
         </div>`;
@@ -1678,10 +1687,15 @@ async function effacerToutesCommandes() {
       headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Prefer': 'return=minimal' }
     });
     if (!res.ok) throw new Error(await res.text());
-    state.orders = {};
-    state.pastOrders = [];
+    // Recharger depuis la base pour refléter le vrai état (et détecter un blocage RLS)
+    await loadCommandes();
     renderRecap();
-    showToast('✓ Toutes les commandes ont été effacées');
+    const reste = Object.keys(state.orders).length + state.pastOrders.length;
+    if (reste > 0) {
+      showToast('⚠ Suppression bloquée : autorisation manquante (RLS)');
+    } else {
+      showToast('✓ Toutes les commandes ont été effacées');
+    }
   } catch(e) {
     showToast('Erreur lors de l\'effacement');
     console.error(e);
