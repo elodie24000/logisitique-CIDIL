@@ -194,6 +194,19 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 .filters::-webkit-scrollbar{display:none;}
 .flt{padding:6px 14px;border-radius:20px;border:1px solid var(--bd);background:var(--white);color:var(--tm);font-size:13px;cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif;flex-shrink:0;}
 .flt.active{background:var(--g2);color:#fff;border-color:var(--g2);}
+.jour-tabs{display:flex;gap:10px;margin-bottom:18px;}
+.jour-tab{flex:1;padding:16px;border-radius:13px;border:1.5px solid var(--bd);background:var(--white);color:var(--tm);font-size:16px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.jour-tab.active{background:var(--g1);color:#fff;border-color:var(--g1);}
+.tour-card{background:var(--white);border:1px solid var(--bd);border-radius:14px;margin-bottom:12px;overflow:hidden;box-shadow:var(--sh);}
+.tour-card.livre{opacity:.55;}
+.tour-head{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--g7);border-bottom:1px solid var(--bd);}
+.tour-chk{width:26px;height:26px;flex-shrink:0;accent-color:var(--g3);cursor:pointer;}
+.tour-nom{font-size:16px;font-weight:500;color:var(--g1);}
+.tour-adr{font-size:12px;color:var(--tm);margin-top:1px;}
+.tour-body{padding:10px 16px 12px;}
+.tour-line{display:flex;justify-content:space-between;font-size:15px;padding:5px 0;border-bottom:1px solid var(--g7);}
+.tour-line:last-child{border-bottom:none;}
+.tour-qty{font-family:'DM Mono',monospace;font-weight:500;}
 
 /* ── ENCADRANT ── */
 .week-bar{
@@ -527,32 +540,11 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 
     <!-- PAGE TOURNÉE -->
     <div class="page" id="page-tournee">
-      <div class="stats-grid">
-        <div class="stat-card" style="border-left:3px solid var(--g3);">
-          <div class="stat-num" id="s-total">0</div>
-          <div class="stat-lbl">Clients</div>
-          <div class="prog-wrap"><div class="prog-bar" id="s-prog" style="width:0%"></div></div>
-        </div>
-        <div class="stat-card" style="border-left:3px solid var(--g3);">
-          <div class="stat-num" id="s-done">0</div>
-          <div class="stat-lbl">Livrés <span style="font-size:10px;font-family:'DM Mono',monospace;" id="s-pct">(0%)</span></div>
-        </div>
-        <div class="stat-card" style="border-left:3px solid var(--amb);">
-          <div class="stat-num" id="s-km">—</div>
-          <div class="stat-lbl">Km tournée</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-num" id="s-cmd">0</div>
-          <div class="stat-lbl">Commandes</div>
-        </div>
+      <div class="jour-tabs">
+        <button class="jour-tab active" id="tab-mardi" onclick="showJour('mardi')">Mardi matin</button>
+        <button class="jour-tab" id="tab-jeudi" onclick="showJour('jeudi')">Jeudi matin</button>
       </div>
-      <div class="filters" id="flt-cat">
-        <button class="flt active" onclick="filterCat('Tous')">Tous</button>
-        <button class="flt" onclick="filterCat('Restau Co')">Restau Co</button>
-        <button class="flt" onclick="filterCat('Commerce')">Commerce</button>
-        <button class="flt" onclick="filterCat('Maraichage')">Maraîchage</button>
-      </div>
-      <div id="client-list"></div>
+      <div id="tournee-list"><div class="empty-msg">Chargement…</div></div>
     </div>
 
     <!-- PAGE LÉGUMES (encadrant) -->
@@ -678,6 +670,17 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
     <div class="modal-body">
       <div style="font-size:12px;color:var(--tl);margin-bottom:12px;">Cochez les légumes et indiquez la quantité souhaitée (kg).</div>
       <div id="mo-rows"></div>
+      <div style="margin-top:16px;">
+        <div style="font-size:12px;color:var(--tl);margin-bottom:8px;">Jour de livraison</div>
+        <div style="display:flex;gap:10px;">
+          <label id="mo-lbl-mardi" style="flex:1;border:1.5px solid var(--bd);border-radius:10px;padding:11px;text-align:center;cursor:pointer;font-size:14px;font-weight:500;">
+            <input type="radio" name="mo-livraison" value="mardi" style="display:none;" onchange="moJourChange()">Mardi matin
+          </label>
+          <label id="mo-lbl-jeudi" style="flex:1;border:1.5px solid var(--bd);border-radius:10px;padding:11px;text-align:center;cursor:pointer;font-size:14px;font-weight:500;">
+            <input type="radio" name="mo-livraison" value="jeudi" style="display:none;" onchange="moJourChange()">Jeudi matin
+          </label>
+        </div>
+      </div>
     </div>
     <div class="modal-foot">
       <button class="btn-cancel" onclick="closeModal()">Annuler</button>
@@ -973,7 +976,7 @@ function showPage(id) {
 }
 
 function initPage(id) {
-  if (id==='tournee') renderClients();
+  if (id==='tournee') loadTournee();
   if (id==='legumes') { loadCatalogue(); loadVeggies(); }
   if (id==='commandes') {
     const saisie = document.getElementById('cmd-saisie-wrap');
@@ -983,6 +986,68 @@ function initPage(id) {
   if (id==='tarifs') loadTarifs();
   if (id==='recap') { loadVeggies().then(()=>loadCommandes()).then(()=>renderRecap()); }
   if (id==='clients') renderClients2();
+}
+
+// ══════ TOURNÉE LIVREUR ══════
+let _tourneeRows = [];
+let _jourActif = 'mardi';
+
+async function loadTournee() {
+  const el = document.getElementById('tournee-list');
+  el.innerHTML = '<div class="empty-msg">Chargement…</div>';
+  try {
+    _tourneeRows = await sbGet('commandes_clients', `semaine=eq.${state.semaine}&order=client_nom.asc`);
+  } catch(e) {
+    _tourneeRows = [];
+    el.innerHTML = '<div class="empty-msg">Erreur de chargement</div>';
+    return;
+  }
+  showJour(_jourActif);
+}
+
+function showJour(jour) {
+  _jourActif = jour;
+  document.getElementById('tab-mardi').classList.toggle('active', jour==='mardi');
+  document.getElementById('tab-jeudi').classList.toggle('active', jour==='jeudi');
+  renderTournee();
+}
+
+function renderTournee() {
+  const el = document.getElementById('tournee-list');
+  const rows = _tourneeRows.filter(r => r.jour_livraison === _jourActif);
+  if (!rows.length) {
+    el.innerHTML = `<div class="empty-msg">Aucune commande à livrer le ${_jourActif} cette semaine</div>`;
+    return;
+  }
+  el.innerHTML = rows.map(r => {
+    const items = typeof r.items === 'string' ? JSON.parse(r.items) : (r.items||[]);
+    const c = clients[r.client_idx] || {};
+    const lines = items.map(it =>
+      `<div class="tour-line"><span>${it.nom}</span><span class="tour-qty">${it.quantite} ${pluriel(it.quantite, it.unite||'kg')}</span></div>`
+    ).join('');
+    return `<div class="tour-card ${r.livre?'livre':''}" id="tour-${r.id}">
+      <div class="tour-head">
+        <input type="checkbox" class="tour-chk" ${r.livre?'checked':''} onchange="toggleLivre(${r.id}, this.checked)">
+        <div>
+          <div class="tour-nom">${r.client_nom}</div>
+          ${c.adresse?`<div class="tour-adr">${c.adresse}</div>`:''}
+        </div>
+      </div>
+      <div class="tour-body">${lines}</div>
+    </div>`;
+  }).join('');
+}
+
+async function toggleLivre(id, checked) {
+  const row = _tourneeRows.find(r => r.id === id);
+  if (row) row.livre = checked;
+  document.getElementById('tour-'+id)?.classList.toggle('livre', checked);
+  try {
+    await sbPatch('commandes_clients', id, {livre: checked});
+  } catch(e) {
+    showToast('Erreur enregistrement');
+    console.error(e);
+  }
 }
 
 function pluriel(qty, unite) {
@@ -1356,6 +1421,7 @@ async function loadCommandes() {
         state.orders[r.client_idx] = od;
         // stocker l'id Supabase pour pouvoir faire un PATCH
         state.orders[r.client_idx]._sbId = r.id;
+        state.orders[r.client_idx]._jour = r.jour_livraison || '';
       } else {
         if (!byWeek[r.semaine]) byWeek[r.semaine] = [];
         byWeek[r.semaine].push(r);
@@ -1397,7 +1463,17 @@ function openOrderModal() {
       </div>
     </div>`;
   }).join('');
+  // Pré-remplir le jour de livraison existant
+  const jour = (state.orders[idx]||{})._jour || '';
+  document.querySelectorAll('input[name="mo-livraison"]').forEach(r => r.checked = (r.value===jour));
+  moJourChange();
   document.getElementById('modal-order').classList.add('open');
+}
+
+function moJourChange() {
+  const val = document.querySelector('input[name="mo-livraison"]:checked')?.value;
+  document.getElementById('mo-lbl-mardi').classList.toggle('jour-selected', val==='mardi');
+  document.getElementById('mo-lbl-jeudi').classList.toggle('jour-selected', val==='jeudi');
 }
 
 function chkChange(vid) {
@@ -1410,13 +1486,15 @@ function chkChange(vid) {
 function closeModal() { document.getElementById('modal-order').classList.remove('open'); }
 
 async function saveOrder() {
+  const jour = document.querySelector('input[name="mo-livraison"]:checked')?.value;
+  if (!jour) return showToast('Choisissez un jour de livraison (mardi ou jeudi)');
   const od={};
   state.veggies.forEach(v=>{
     const q=parseFloat(document.getElementById('oq-'+v.id)?.value);
     if(!isNaN(q)&&q>0) od[v.id]=q;
   });
   const sbId = state.orders[modalClientIdx]?._sbId;
-  if(Object.keys(od).length) state.orders[modalClientIdx]=od;
+  if(Object.keys(od).length) { state.orders[modalClientIdx]=od; od._jour=jour; if(sbId) od._sbId=sbId; }
   else delete state.orders[modalClientIdx];
   closeModal();
   renderOrders();
@@ -1431,7 +1509,7 @@ async function saveOrder() {
     const total = items.reduce((s,i)=>s+(i.prix_kg||0)*i.quantite, 0);
     const payload = {
       client_nom: c.nom, client_idx: modalClientIdx,
-      semaine: state.semaine, items: JSON.stringify(items), total
+      semaine: state.semaine, jour_livraison: jour, items: JSON.stringify(items), total
     };
     if (sbId) {
       await sbPatch('commandes_clients', sbId, payload);
@@ -1466,7 +1544,7 @@ function renderOrders() {
       const c=clients[idx]; if(!c) return '';
       const od=state.orders[idx];
       let total=0,hasP=false;
-      const lines=Object.entries(od).filter(([k])=>k!=='_sbId').map(([vid,qty])=>{
+      const lines=Object.entries(od).filter(([k])=>k!=='_sbId'&&k!=='_jour').map(([vid,qty])=>{
         const v=state.veggies.find(v=>v.id==vid);
         if(!v) return '';
         const sub=v.prix?v.prix*qty:null;
