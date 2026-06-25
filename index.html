@@ -353,6 +353,8 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 .tarif-row:last-child{border-bottom:none;}
 .tarif-nom{flex:1;font-size:14px;font-weight:500;}
 .tarif-input-wrap{display:flex;align-items:center;gap:5px;}
+.tarif-del{flex-shrink:0;width:28px;height:28px;border:none;border-radius:7px;background:var(--g7);color:#d9534f;font-size:14px;cursor:pointer;line-height:1;}
+.tarif-del:active{background:#d9534f;color:#fff;}
 .tarif-input{width:72px;padding:6px 8px;border:1.5px solid var(--bd);border-radius:8px;font-size:14px;font-family:'DM Mono',monospace;text-align:right;outline:none;color:var(--text);}
 .tarif-input:focus{border-color:var(--g4);}
 .tarif-unit{font-size:12px;color:var(--tl);}
@@ -1298,6 +1300,7 @@ function renderTarifs() {
             <input class="tarif-input" type="number" id="tarif-${v.id}" value="${valeur}" placeholder="—" min="0" step="0.1">
             <span class="tarif-unit">€/${unite}</span>
           </div>
+          <button class="tarif-del" onclick="deleteTarif(${v.id}, '${(v.nom||'').replace(/'/g, "\\'")}')" title="Supprimer">✕</button>
         </div>`;
       }).join('')}
     </div>`).join('');
@@ -1318,6 +1321,18 @@ async function saveTarifs() {
     showToast(count > 0 ? '✓ ' + count + ' prix sauvegardés' : 'Aucune modification');
   } catch(e) {
     showToast('Erreur sauvegarde');
+  }
+}
+
+async function deleteTarif(id, nom) {
+  if (!confirm('Retirer « ' + nom + ' » de la liste des légumes ?')) return;
+  try {
+    await sbDelete('catalogue', id);
+    await loadTarifs();
+    showToast('✓ ' + nom + ' retiré');
+  } catch(e) {
+    showToast('Erreur suppression');
+    console.error(e);
   }
 }
 
