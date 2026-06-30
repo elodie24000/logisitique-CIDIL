@@ -763,6 +763,10 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
     <div class="cmd-week-tag" id="cmd-week-tag"></div>
   </div>
   <div class="cmd-body">
+    <div id="push-banner" style="display:none;background:var(--g7);border:1px solid var(--g6);border-radius:11px;padding:12px 14px;margin-bottom:16px;">
+      <div style="font-size:13px;color:var(--g1);margin-bottom:8px;">🔔 Recevez une alerte chaque lundi quand les commandes ouvrent.</div>
+      <button onclick="subscribePush()" style="background:var(--g1);color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">Activer les notifications</button>
+    </div>
     <div class="cmd-select-wrap">
       <div class="cmd-select-label">Qui êtes-vous ?</div>
       <div style="position:relative;">
@@ -1913,6 +1917,46 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js');
 }
 
+// ══════ NOTIFICATIONS PUSH ══════
+const VAPID_PUBLIC = 'BFrLSIVX8dwJX2OuNl5Ib6PQfZlkUTDySD9-Hs-aDvdUVOw7iO6G92tBUgKXM_k3mRZNjax14EZgmLcJ3aKhoZE';
+
+function urlB64ToUint8(base64) {
+  const pad = '='.repeat((4 - base64.length % 4) % 4);
+  const b64 = (base64 + pad).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(b64);
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+
+function pushSupporte() {
+  return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+}
+
+// Affiche le bandeau si le push est possible et pas encore activé
+function majBannierePush() {
+  const b = document.getElementById('push-banner');
+  if (!b) return;
+  b.style.display = (pushSupporte() && Notification.permission !== 'granted') ? 'block' : 'none';
+}
+
+async function subscribePush() {
+  if (!pushSupporte()) return showToast("Notifications non supportées sur cet appareil");
+  try {
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') { showToast('Notifications refusées'); return; }
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8(VAPID_PUBLIC) });
+    }
+    await sbPost('push_subscriptions', { subscription: JSON.stringify(sub), client_id: (_cmdClientIdx ?? null) });
+    showToast('🔔 Notifications activées !');
+    majBannierePush();
+  } catch(e) {
+    console.error('subscribePush', e);
+    showToast("Erreur activation notifications");
+  }
+}
+
 // ══════ PAGE COMMANDE CLIENT ══════
 let _cmdClientIdx = null;
 
@@ -2003,6 +2047,7 @@ async function initCommandeClient() {
   const fin = new Date(d); fin.setDate(d.getDate() + 6);
   const fmt = v => v.toLocaleDateString('fr-FR', {day:'numeric', month:'long'});
   document.getElementById('cmd-week-tag').textContent = 'Semaine du ' + fmt(d) + ' au ' + fmt(fin);
+  majBannierePush();
 
   // Charger légumes disponibles cette semaine
   try {
