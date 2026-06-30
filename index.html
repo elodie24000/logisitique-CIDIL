@@ -803,9 +803,9 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
         <div class="cmd-select-label" style="margin-bottom:10px;">Créer ma fiche client</div>
         <input class="finput cl-field" id="ins-nom" placeholder="Nom de l'établissement / votre nom *">
         <input class="finput cl-field" id="ins-contact" placeholder="Personne à contacter" style="margin-top:8px;">
-        <input class="finput cl-field" id="ins-tel" placeholder="Téléphone" style="margin-top:8px;">
+        <input class="finput cl-field" id="ins-tel" placeholder="Téléphone *" style="margin-top:8px;">
         <input class="finput cl-field" id="ins-email" placeholder="Email" style="margin-top:8px;">
-        <input class="finput cl-field" id="ins-adresse" placeholder="Adresse complète (rue, CP, ville)" style="margin-top:8px;">
+        <input class="finput cl-field" id="ins-adresse" placeholder="Adresse complète : rue, CP, ville *" style="margin-top:8px;">
         <div style="display:flex;gap:8px;margin-top:12px;">
           <button onclick="toggleInscription()" style="flex:1;padding:11px;border:1px solid var(--g5);border-radius:9px;background:#fff;color:var(--tm);font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;">Annuler</button>
           <button onclick="submitInscription()" style="flex:1;padding:11px;border:none;border-radius:9px;background:var(--g1);color:#fff;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">Valider mon inscription</button>
@@ -2077,7 +2077,11 @@ function toggleInscription() {
 
 async function submitInscription() {
   const nom = document.getElementById('ins-nom').value.trim();
+  const adresse = document.getElementById('ins-adresse').value.trim();
+  const tel = document.getElementById('ins-tel').value.trim();
   if (!nom) return showToast('Indiquez votre nom');
+  if (!adresse) { showToast('⚠ L\'adresse est obligatoire (pour la livraison)'); document.getElementById('ins-adresse').focus(); return; }
+  if (!tel) { showToast('⚠ Le téléphone est obligatoire'); document.getElementById('ins-tel').focus(); return; }
   const val = id => document.getElementById(id).value.trim() || null;
   try {
     const [row] = await sbPost('clients', {
