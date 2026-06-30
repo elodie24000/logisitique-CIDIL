@@ -1042,6 +1042,10 @@ async function enterApp(role) {
   buildNav(role);
   await loadClients();
   populateClientSel();
+  if (role === 'encadrant' || role === 'gestionnaire') {
+    const news = nouvellesInscriptions();
+    if (news.length) setTimeout(()=>showToast('🆕 ' + news.length + ' nouvelle(s) inscription(s) client — voir l\'onglet Clients'), 600);
+  }
   const defaultPage = NAV_CONFIG[role][0].id;
   showPage(defaultPage);
   initPage(defaultPage);
@@ -1832,24 +1836,52 @@ function filterCat2(cat) {
   });
   renderClients2();
 }
+function estNouvelleInscription(c) { return (c.note||'').includes('Inscription en ligne'); }
+function nouvellesInscriptions() { return clients.filter(estNouvelleInscription); }
+
 function renderClients2() {
   const el=document.getElementById('client-list2'); if(!el) return;
   const filtered=clients.filter(c=>currentCat2==='Tous'||c.cat===currentCat2);
-  el.innerHTML=filtered.map(c=>{
+  const news = nouvellesInscriptions();
+  let banner = '';
+  if (news.length) {
+    banner = `<div style="background:#fff7e6;border:1px solid #f0c36d;border-radius:11px;padding:12px 14px;margin-bottom:14px;">
+      <div style="font-size:14px;font-weight:500;color:#8a5a00;margin-bottom:6px;">🆕 ${news.length} nouvelle(s) inscription(s) à vérifier</div>
+      <div style="font-size:12px;color:#8a5a00;">Complétez la catégorie et la distance (km) de chacun, puis cliquez « ✓ Vérifié ».</div>
+    </div>`;
+  }
+  el.innerHTML = banner + filtered.map(c=>{
+    const isNew = estNouvelleInscription(c);
     const bc=c.cat==='Restau Co'?'b-rco':c.cat==='Commerce'?'b-com':'b-mar';
     const bl=c.cat==='Maraichage'?'Maraîchage':c.cat;
-    return `<div class="cc">
-      <div class="cc-top"><span class="badge ${bc}">${bl}</span>${c.km?`<span class="km-tag">${c.km}km</span>`:''}</div>
+    return `<div class="cc" style="${isNew?'border:2px solid #f0c36d;':''}">
+      <div class="cc-top">
+        <span class="badge ${bc}">${bl}</span>
+        ${isNew?'<span style="font-size:10px;background:#f0c36d;color:#5a3d00;padding:2px 7px;border-radius:10px;font-weight:500;">🆕 Nouveau</span>':''}
+        ${c.km?`<span class="km-tag">${c.km}km</span>`:''}
+      </div>
       <div class="cc-name">${c.nom}</div>
       ${c.contact?`<div class="cc-line">${c.contact}${c.role?' · '+c.role:''}</div>`:''}
       ${c.tel?`<div class="cc-line">📞 ${c.tel}</div>`:''}
       ${c.email?`<div class="cc-line" style="font-size:11px;">✉ ${c.email}</div>`:''}
       ${c.adresse?`<div class="cc-line">📍 ${c.adresse}</div>`:'<div class="cc-line" style="color:var(--tl);">Adresse à compléter</div>'}
       ${c.forfait_livraison?`<div class="cc-line">🚚 Forfait livraison : ${Number(c.forfait_livraison).toFixed(2)} €</div>`:''}
-      ${c.note?`<div class="note-tag">⚠ ${c.note}</div>`:''}
-      <button class="cc-edit" onclick="openClientModal(${c.id})">✎ Modifier</button>
+      ${c.note&&!isNew?`<div class="note-tag">⚠ ${c.note}</div>`:''}
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="cc-edit" style="margin-top:0;flex:1;" onclick="openClientModal(${c.id})">✎ Modifier</button>
+        ${isNew?`<button class="cc-edit" style="margin-top:0;flex:1;background:var(--g6);color:var(--g1);" onclick="marquerVerifie(${c.id})">✓ Vérifié</button>`:''}
+      </div>
     </div>`;
   }).join('');
+}
+
+async function marquerVerifie(id) {
+  try {
+    await sbPatch('clients', id, {note: null});
+    await loadClients();
+    renderClients2();
+    showToast('✓ Inscription validée');
+  } catch(e) { showToast('Erreur'); console.error(e); }
 }
 
 // ══════ GESTION CLIENTS (ajout / modif / suppression) ══════
