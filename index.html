@@ -167,6 +167,10 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 
 /* client card */
 .cc{background:var(--white);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:10px;box-shadow:var(--sh);}
+#client-list2{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start;}
+#client-list2 .cc{margin-bottom:0;padding:12px;}
+#client-list2 .cc-name{font-size:13px;}
+.clients-banner{grid-column:1/-1;}
 .cc.done{opacity:.45;}
 .cc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
 .cc-name{font-size:14px;font-weight:500;color:var(--text);margin-bottom:4px;}
@@ -1859,7 +1863,7 @@ function renderClients2() {
   const news = nouvellesInscriptions();
   let banner = '';
   if (news.length) {
-    banner = `<div style="background:#fff7e6;border:1px solid #f0c36d;border-radius:11px;padding:12px 14px;margin-bottom:14px;">
+    banner = `<div class="clients-banner" style="background:#fff7e6;border:1px solid #f0c36d;border-radius:11px;padding:12px 14px;margin-bottom:4px;">
       <div style="font-size:14px;font-weight:500;color:#8a5a00;margin-bottom:6px;">🆕 ${news.length} nouvelle(s) inscription(s) à vérifier</div>
       <div style="font-size:12px;color:#8a5a00;">Complétez la catégorie et la distance (km) de chacun, puis cliquez « ✓ Vérifié ».</div>
     </div>`;
