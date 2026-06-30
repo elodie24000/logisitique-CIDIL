@@ -377,6 +377,8 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 .cmd-client-sel:focus{border-color:var(--g3);}
 .cmd-famille-title{font-size:13px;font-weight:500;color:var(--g2);text-transform:uppercase;letter-spacing:.04em;margin:20px 0 8px;padding-bottom:6px;border-bottom:2px solid var(--g6);}
 .jour-selected{border-color:var(--g1) !important;background:var(--g7);color:var(--g1);}
+.flash-required{animation:flashReq .4s ease-in-out 3;border-radius:11px;}
+@keyframes flashReq{0%,100%{box-shadow:0 0 0 0 rgba(217,83,79,0);}50%{box-shadow:0 0 0 3px rgba(217,83,79,.55);}}
 .cmd-veg-card{background:var(--white);border:1.5px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:8px;box-shadow:var(--sh);transition:border-color .15s,box-shadow .15s;}
 .cmd-veg-card.selected{border-color:var(--g3);box-shadow:0 0 0 3px rgba(64,145,108,.12);}
 .cmd-veg-top{display:flex;align-items:center;gap:12px;cursor:pointer;}
@@ -2140,9 +2142,18 @@ async function submitClientOrder() {
     if (chk?.checked && qty > 0) items.push({legume_id: v.id, nom: v.nom, quantite: qty, unite: v.unite||'kg', prix_kg: v.prix_kg});
   });
   if (!items.length) return showToast('Sélectionnez au moins un légume');
-  const livraisonVisible = document.getElementById('cmd-livraison-wrap')?.style.display !== 'none';
+  const livW = document.getElementById('cmd-livraison-wrap');
+  const livraisonVisible = livW?.style.display !== 'none';
   const jour = document.querySelector('input[name="livraison"]:checked')?.value || (livraisonVisible ? null : 'sur place');
-  if (livraisonVisible && !jour) return showToast('Choisissez un jour de livraison');
+  if (livraisonVisible && !jour) {
+    showToast('⚠ Choisissez d\'abord un jour de livraison : Mardi ou Jeudi');
+    if (livW) {
+      livW.scrollIntoView({behavior:'smooth', block:'center'});
+      livW.classList.add('flash-required');
+      setTimeout(()=>livW.classList.remove('flash-required'), 1600);
+    }
+    return;
+  }
   const d = new Date(); d.setDate(d.getDate() - d.getDay() + 1);
   const semaine = [d.getFullYear(), String(d.getMonth()+1).padStart(2,'0'), String(d.getDate()).padStart(2,'0')].join('-');
   try {
