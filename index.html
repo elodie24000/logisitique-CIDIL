@@ -376,6 +376,9 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 .cmd-week-tag{display:inline-block;background:rgba(255,255,255,.12);color:rgba(255,255,255,.8);font-size:11px;font-family:'DM Mono',monospace;padding:4px 12px;border-radius:20px;margin-top:10px;}
 .cmd-body{padding:20px 16px 100px;}
 .cmd-select-wrap{background:var(--white);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:20px;box-shadow:var(--sh);}
+.cmd-two-col{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;align-items:start;}
+.cmd-two-col .cmd-col + .cmd-col{border-left:1px solid var(--g6);padding-left:20px;}
+@media(max-width:540px){.cmd-two-col .cmd-col + .cmd-col{border-left:none;padding-left:0;border-top:1px solid var(--g6);padding-top:16px;}}
 .cmd-select-label{font-size:12px;font-weight:500;color:var(--tl);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;}
 .cmd-client-sel{width:100%;padding:10px 12px;border:1.5px solid var(--g5);border-radius:9px;font-size:15px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--white);outline:none;}
 .cmd-client-sel:focus{border-color:var(--g3);}
@@ -774,24 +777,24 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
       <button onclick="subscribePush()" style="background:var(--g1);color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">Activer les notifications</button>
     </div>
     <div class="cmd-select-wrap">
-      <div class="cmd-select-label">Qui êtes-vous ?</div>
-      <div style="position:relative;">
-        <input type="text" id="cmd-client-search" class="cmd-client-sel"
-          placeholder="Tapez les 3 premières lettres de votre nom…"
-          oninput="cmdSearchClient(this.value)" autocomplete="off"
-          style="width:100%;box-sizing:border-box;"/>
-        <div id="cmd-client-results" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--g5);border-top:none;border-radius:0 0 9px 9px;z-index:10;max-height:200px;overflow-y:auto;"></div>
-      </div>
-      <div id="cmd-client-choisi" style="display:none;margin-top:8px;padding:8px 12px;background:var(--g7);border-radius:8px;font-size:14px;color:var(--g1);display:flex;justify-content:space-between;align-items:center;">
-        <span id="cmd-client-nom"></span>
-        <button onclick="cmdResetClient()" style="background:none;border:none;color:var(--g3);font-size:18px;cursor:pointer;padding:0 4px;">×</button>
-      </div>
-      <div id="cmd-inscription-link" style="margin-top:18px;">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
-          <div style="flex:1;height:1px;background:var(--g6);"></div>
-          <span style="font-size:12px;color:var(--tl);text-transform:uppercase;letter-spacing:.05em;">ou</span>
-          <div style="flex:1;height:1px;background:var(--g6);"></div>
+      <div class="cmd-two-col">
+       <div class="cmd-col">
+        <div class="cmd-select-label">Qui êtes-vous ?</div>
+        <div style="position:relative;">
+          <input type="text" id="cmd-client-search" class="cmd-client-sel"
+            placeholder="Tapez les 3 premières lettres de votre nom…"
+            oninput="cmdSearchClient(this.value)" autocomplete="off"
+            style="width:100%;box-sizing:border-box;"/>
+          <div id="cmd-client-results" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--g5);border-top:none;border-radius:0 0 9px 9px;z-index:10;max-height:200px;overflow-y:auto;"></div>
         </div>
+        <div id="cmd-client-choisi" style="display:none;margin-top:8px;padding:8px 12px;background:var(--g7);border-radius:8px;font-size:14px;color:var(--g1);display:flex;justify-content:space-between;align-items:center;">
+          <span id="cmd-client-nom"></span>
+          <button onclick="cmdResetClient()" style="background:none;border:none;color:var(--g3);font-size:18px;cursor:pointer;padding:0 4px;">×</button>
+        </div>
+       </div>
+       <div class="cmd-col">
+        <div class="cmd-select-label">Nouveau client</div>
+        <div id="cmd-inscription-link">
         <button onclick="toggleInscription()" style="width:100%;display:flex;align-items:center;gap:12px;padding:16px;border:1.5px solid var(--g4);border-radius:13px;background:#fff;cursor:pointer;font-family:'DM Sans',sans-serif;text-align:left;">
           <span style="width:42px;height:42px;flex-shrink:0;border-radius:11px;background:var(--g6);display:flex;align-items:center;justify-content:center;">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--g1)" stroke-width="1.8"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
@@ -814,6 +817,8 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
           <button onclick="toggleInscription()" style="flex:1;padding:11px;border:1px solid var(--g5);border-radius:9px;background:#fff;color:var(--tm);font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;">Annuler</button>
           <button onclick="submitInscription()" style="flex:1;padding:11px;border:none;border-radius:9px;background:var(--g1);color:#fff;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">Valider mon inscription</button>
         </div>
+        </div>
+       </div>
       </div>
     </div>
     <div id="cmd-legumes-wrap" style="display:none;">
