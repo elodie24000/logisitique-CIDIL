@@ -779,7 +779,15 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
     <div class="cmd-select-wrap">
       <div class="cmd-two-col">
        <div class="cmd-col">
-        <div class="cmd-select-label">Qui êtes-vous ?</div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+          <span style="width:42px;height:42px;flex-shrink:0;border-radius:11px;background:var(--g6);display:flex;align-items:center;justify-content:center;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--g1)" stroke-width="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </span>
+          <span>
+            <span style="display:block;font-size:15px;font-weight:500;color:var(--g1);">Déjà client ?</span>
+            <span style="display:block;font-size:12.5px;color:var(--tm);margin-top:2px;">Tapez votre nom pour commander</span>
+          </span>
+        </div>
         <div style="position:relative;">
           <input type="text" id="cmd-client-search" class="cmd-client-sel"
             placeholder="Tapez les 3 premières lettres de votre nom…"
@@ -793,7 +801,6 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
         </div>
        </div>
        <div class="cmd-col">
-        <div class="cmd-select-label">Nouveau client</div>
         <div id="cmd-inscription-link">
         <button onclick="toggleInscription()" style="width:100%;display:flex;align-items:center;gap:12px;padding:16px;border:1.5px solid var(--g4);border-radius:13px;background:#fff;cursor:pointer;font-family:'DM Sans',sans-serif;text-align:left;">
           <span style="width:42px;height:42px;flex-shrink:0;border-radius:11px;background:var(--g6);display:flex;align-items:center;justify-content:center;">
