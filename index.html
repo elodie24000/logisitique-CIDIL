@@ -727,6 +727,8 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
       <input type="hidden" id="cl-id">
       <label class="cl-lbl">Nom *</label>
       <input class="finput cl-field" id="cl-nom" placeholder="Nom du client">
+      <label class="cl-lbl">N° SIRET</label>
+      <input class="finput cl-field" id="cl-siret" placeholder="N° SIRET (si entreprise)">
       <label class="cl-lbl">Catégorie</label>
       <select class="finput cl-field" id="cl-cat">
         <option>Restau Co</option><option>Commerce</option><option>Maraichage</option><option>Interne</option>
@@ -816,10 +818,13 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
       <div id="cmd-inscription-form" style="display:none;margin-top:12px;background:var(--g7);border-radius:11px;padding:14px;">
         <div class="cmd-select-label" style="margin-bottom:10px;">Créer ma fiche client</div>
         <input class="finput cl-field" id="ins-nom" placeholder="Nom de l'établissement / votre nom *">
+        <input class="finput cl-field" id="ins-siret" placeholder="N° SIRET (si entreprise)" style="margin-top:8px;">
         <input class="finput cl-field" id="ins-contact" placeholder="Personne à contacter" style="margin-top:8px;">
         <input class="finput cl-field" id="ins-tel" placeholder="Téléphone *" style="margin-top:8px;">
         <input class="finput cl-field" id="ins-email" placeholder="Email" style="margin-top:8px;">
-        <input class="finput cl-field" id="ins-adresse" placeholder="Adresse complète : rue, CP, ville *" style="margin-top:8px;">
+        <input class="finput cl-field" id="ins-adresse" placeholder="Adresse (n° et rue) *" style="margin-top:8px;">
+        <input class="finput cl-field" id="ins-cp" placeholder="Code postal *" style="margin-top:8px;">
+        <input class="finput cl-field" id="ins-commune" placeholder="Commune *" style="margin-top:8px;">
         <div style="display:flex;gap:8px;margin-top:12px;">
           <button onclick="toggleInscription()" style="flex:1;padding:11px;border:1px solid var(--g5);border-radius:9px;background:#fff;color:var(--tm);font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;">Annuler</button>
           <button onclick="submitInscription()" style="flex:1;padding:11px;border:none;border-radius:9px;background:var(--g1);color:#fff;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">Valider mon inscription</button>
@@ -1891,6 +1896,7 @@ function renderClients2() {
         ${c.km?`<span class="km-tag">${c.km}km</span>`:''}
       </div>
       <div class="cc-name">${c.nom}</div>
+      ${c.siret?`<div class="cc-line" style="font-size:11px;">SIRET ${c.siret}</div>`:''}
       ${c.contact?`<div class="cc-line">${c.contact}${c.role?' · '+c.role:''}</div>`:''}
       ${c.tel?`<div class="cc-line">📞 ${c.tel}</div>`:''}
       ${c.email?`<div class="cc-line" style="font-size:11px;">✉ ${c.email}</div>`:''}
@@ -1920,6 +1926,7 @@ function openClientModal(id) {
   document.getElementById('cl-titre').textContent = id != null ? 'Modifier le client' : 'Nouveau client';
   document.getElementById('cl-id').value = id != null ? id : '';
   document.getElementById('cl-nom').value = c.nom || '';
+  document.getElementById('cl-siret').value = c.siret || '';
   document.getElementById('cl-cat').value = c.cat || 'Restau Co';
   document.getElementById('cl-contact').value = c.contact || '';
   document.getElementById('cl-role').value = c.role || '';
@@ -1941,6 +1948,7 @@ async function saveClient() {
   const num = v => { const n = parseFloat(v); return isNaN(n) ? null : n; };
   const data = {
     nom,
+    siret: document.getElementById('cl-siret').value.trim() || null,
     cat: document.getElementById('cl-cat').value,
     contact: document.getElementById('cl-contact').value.trim() || null,
     role: document.getElementById('cl-role').value.trim() || null,
@@ -2093,23 +2101,29 @@ function toggleInscription() {
 
 async function submitInscription() {
   const nom = document.getElementById('ins-nom').value.trim();
-  const adresse = document.getElementById('ins-adresse').value.trim();
+  const rue = document.getElementById('ins-adresse').value.trim();
+  const cp = document.getElementById('ins-cp').value.trim();
+  const commune = document.getElementById('ins-commune').value.trim();
   const tel = document.getElementById('ins-tel').value.trim();
-  if (!nom) return showToast('Indiquez votre nom');
-  if (!adresse) { showToast('⚠ L\'adresse est obligatoire (pour la livraison)'); document.getElementById('ins-adresse').focus(); return; }
+  if (!nom) { showToast('Indiquez votre nom'); document.getElementById('ins-nom').focus(); return; }
   if (!tel) { showToast('⚠ Le téléphone est obligatoire'); document.getElementById('ins-tel').focus(); return; }
+  if (!rue) { showToast('⚠ L\'adresse (n° et rue) est obligatoire'); document.getElementById('ins-adresse').focus(); return; }
+  if (!cp) { showToast('⚠ Le code postal est obligatoire'); document.getElementById('ins-cp').focus(); return; }
+  if (!commune) { showToast('⚠ La commune est obligatoire'); document.getElementById('ins-commune').focus(); return; }
   const val = id => document.getElementById(id).value.trim() || null;
+  const adresse = `${rue}, ${cp} ${commune}`;
   try {
     const [row] = await sbPost('clients', {
       nom, cat: 'Commerce',
+      siret: val('ins-siret'),
       contact: val('ins-contact'), tel: val('ins-tel'),
-      email: val('ins-email'), adresse: val('ins-adresse'),
+      email: val('ins-email'), adresse,
       note: 'Inscription en ligne — à vérifier'
     });
     await loadClients();
     document.getElementById('cmd-inscription-form').style.display = 'none';
     document.getElementById('cmd-inscription-link').style.display = 'none';
-    ['ins-nom','ins-contact','ins-tel','ins-email','ins-adresse'].forEach(i=>document.getElementById(i).value='');
+    ['ins-nom','ins-siret','ins-contact','ins-tel','ins-email','ins-adresse','ins-cp','ins-commune'].forEach(i=>document.getElementById(i).value='');
     cmdSelectClient(row.id);
     showToast('✓ Inscription enregistrée — vous pouvez commander');
   } catch(e) {
