@@ -212,7 +212,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 .tour-line:last-child{border-bottom:none;}
 .tour-qty{font-family:'DM Mono',monospace;font-weight:500;}
 .tour-chevron{color:var(--g3);font-size:16px;transition:transform .2s;flex-shrink:0;}
-.tour-gps{display:inline-flex;align-items:center;gap:6px;margin-top:12px;padding:9px 14px;background:var(--g1);color:#fff;border-radius:9px;font-size:13px;font-weight:500;text-decoration:none;}
+.tour-gps{display:inline-flex;align-items:center;gap:6px;margin-top:12px;padding:9px 14px;background:var(--g1);color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:500;text-decoration:none;cursor:pointer;font-family:'DM Sans',sans-serif;}
 .tour-livre-btn{display:block;width:100%;margin-top:14px;padding:14px;border:2px solid var(--g3);border-radius:11px;background:var(--white);color:var(--g1);font-size:15px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;}
 .tour-livre-btn.ok{background:var(--g3);color:#fff;border-color:var(--g3);}
 .tour-done-tag{font-size:12px;font-weight:500;color:var(--g1);background:var(--g6);padding:3px 9px;border-radius:10px;font-family:'DM Mono',monospace;white-space:nowrap;}
@@ -1221,8 +1221,9 @@ function renderTournee() {
     const lines = items.map(it =>
       `<div class="tour-line"><span>${it.nom}</span><span class="tour-qty">${it.quantite} ${pluriel(it.quantite, it.unite||'kg')}</span></div>`
     ).join('');
-    const gps = c.adresse ? `<a class="tour-gps" href="https://www.google.com/maps?q=${encodeURIComponent(c.adresse)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>Itinéraire GPS</a>` : '';
+    const adrEsc = (c.adresse||'').replace(/'/g,"\\'");
+    const gps = c.adresse ? `<button type="button" class="tour-gps" onclick="event.stopPropagation();openItineraire('${adrEsc}')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>Itinéraire GPS</button>` : '';
     return `<div class="tour-card ${r.livre?'livre':''}" id="tour-${r.id}">
       <div class="tour-head" onclick="toggleTourCard(${r.id})">
         <div style="flex:1;">
@@ -1247,6 +1248,13 @@ function heureLivraison(iso) {
   if (!iso) return '';
   const d = new Date(iso);
   return d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}).replace(':','h');
+}
+
+function openItineraire(adr) {
+  if (!adr) return;
+  const url = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(adr);
+  const w = window.open(url, '_blank');
+  if (!w) window.location.href = url; // repli si popup bloquée (PWA)
 }
 
 function toggleTourCard(id) {
