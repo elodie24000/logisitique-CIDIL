@@ -401,6 +401,7 @@ button.livr-badge{cursor:pointer;}
 .cmd-client-sel:focus{border-color:var(--g3);}
 .cmd-famille-title{font-size:13px;font-weight:500;color:var(--g2);text-transform:uppercase;letter-spacing:.04em;margin:20px 0 8px;padding-bottom:6px;border-bottom:2px solid var(--g6);}
 .jour-selected{border-color:var(--g1) !important;background:var(--g7);color:var(--g1);}
+.jour-opt{flex:1 1 30%;min-width:90px;border:1.5px solid var(--g5);border-radius:10px;padding:11px 8px;text-align:center;cursor:pointer;font-size:13px;font-weight:500;color:var(--text);}
 .flash-required{animation:flashReq .4s ease-in-out 3;border-radius:11px;}
 @keyframes flashReq{0%,100%{box-shadow:0 0 0 0 rgba(217,83,79,0);}50%{box-shadow:0 0 0 3px rgba(217,83,79,.55);}}
 .cmd-veg-card{background:var(--white);border:1.5px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:8px;box-shadow:var(--sh);transition:border-color .15s,box-shadow .15s;}
@@ -717,15 +718,8 @@ button.livr-badge{cursor:pointer;}
       <div style="font-size:12px;color:var(--tl);margin-bottom:12px;">Cochez les légumes et indiquez la quantité souhaitée (kg).</div>
       <div id="mo-rows"></div>
       <div style="margin-top:16px;">
-        <div style="font-size:12px;color:var(--tl);margin-bottom:8px;">Jour de livraison</div>
-        <div style="display:flex;gap:10px;">
-          <label id="mo-lbl-mardi" style="flex:1;border:1.5px solid var(--bd);border-radius:10px;padding:11px;text-align:center;cursor:pointer;font-size:14px;font-weight:500;">
-            <input type="radio" name="mo-livraison" value="mardi" style="display:none;" onchange="moJourChange()">Mardi matin
-          </label>
-          <label id="mo-lbl-jeudi" style="flex:1;border:1.5px solid var(--bd);border-radius:10px;padding:11px;text-align:center;cursor:pointer;font-size:14px;font-weight:500;">
-            <input type="radio" name="mo-livraison" value="jeudi" style="display:none;" onchange="moJourChange()">Jeudi matin
-          </label>
-        </div>
+        <div style="font-size:12px;color:var(--tl);margin-bottom:8px;" id="mo-jour-titre">Jour de livraison</div>
+        <div id="mo-jour-options" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
       </div>
     </div>
     <div class="modal-foot">
@@ -867,17 +861,8 @@ button.livr-badge{cursor:pointer;}
     <div id="cmd-legumes-wrap" style="display:none;">
       <div id="cmd-legumes-list"></div>
       <div id="cmd-livraison-wrap" style="margin-top:16px;">
-        <div class="cmd-select-label">Jour de livraison souhaité</div>
-        <div style="display:flex;gap:10px;margin-top:8px;">
-          <label id="lbl-mardi" style="flex:1;border:1.5px solid var(--g5);border-radius:10px;padding:12px;text-align:center;cursor:pointer;font-size:14px;font-weight:500;color:var(--text);">
-            <input type="radio" name="livraison" value="mardi" style="display:none;" onchange="cmdJourChange()">
-            Mardi matin
-          </label>
-          <label id="lbl-jeudi" style="flex:1;border:1.5px solid var(--g5);border-radius:10px;padding:12px;text-align:center;cursor:pointer;font-size:14px;font-weight:500;color:var(--text);">
-            <input type="radio" name="livraison" value="jeudi" style="display:none;" onchange="cmdJourChange()">
-            Jeudi matin
-          </label>
-        </div>
+        <div class="cmd-select-label" id="cmd-jour-titre">Jour de livraison souhaité</div>
+        <div id="cmd-jour-options" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"></div>
       </div>
     </div>
     <div class="cmd-success" id="cmd-success">
@@ -939,6 +924,20 @@ const PINS = { livreur:'1111', encadrant:'2222', boutique:'3333', labo:'4444', g
 const ROLE_LABELS = { livreur:'Livreur', encadrant:'Encadrant technique', boutique:'Boutique', labo:'Labo de transformation', gestionnaire:'Gestionnaire' };
 const ROLE_ICONS = { livreur:'🚚', encadrant:'🌿', boutique:'🛒', labo:'⚗️', gestionnaire:'📋' };
 const INTERNE_KEY = { 'Boutique':'boutique', 'Labo de transformation':'labo' };
+const JOURS_EXT = [['mardi','Mardi'],['jeudi','Jeudi']];
+const JOURS_INTERNE = [['lundi','Lundi'],['mardi','Mardi'],['mercredi','Mercredi'],['jeudi','Jeudi'],['vendredi','Vendredi'],['samedi','Samedi']];
+
+function joursPourClient(c) { return (c && c.cat === 'Interne') ? JOURS_INTERNE : JOURS_EXT; }
+
+function renderJourOptions(containerId, radioName, jours, onchangeFn, checkedVal) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = jours.map(([val,label]) => `
+    <label class="jour-opt${val===checkedVal?' jour-selected':''}">
+      <input type="radio" name="${radioName}" value="${val}" style="display:none;" onchange="${onchangeFn}()" ${val===checkedVal?'checked':''}>
+      ${label}
+    </label>`).join('');
+}
 
 const CLIENTS_SEED = [
   {cat:'Interne',nom:'Boutique',contact:null,tel:null,email:null,adresse:'19 Sq. du Huit Mai, 16220 Montbron',km:0},
@@ -1228,7 +1227,7 @@ function emojiClient(idx) {
 
 function renderTournee() {
   const el = document.getElementById('tournee-list');
-  const rows = _tourneeRows.filter(r => r.jour_livraison === _jourActif && getClient(r.client_idx)?.nom);
+  const rows = _tourneeRows.filter(r => r.jour_livraison === _jourActif && getClient(r.client_idx)?.nom && getClient(r.client_idx)?.cat !== 'Interne');
   if (!rows.length) {
     el.innerHTML = `<div class="empty-msg">Aucune commande à livrer le ${_jourActif} cette semaine</div>`;
     return;
@@ -1755,17 +1754,19 @@ function openOrderModal() {
       </div>
     </div>`;
   }).join('');
-  // Pré-remplir le jour de livraison existant
+  // Jour de livraison : options selon le type de client (interne = tous les jours)
+  const cli = getClient(idx);
   const jour = (state.orders[idx]||{})._jour || '';
-  document.querySelectorAll('input[name="mo-livraison"]').forEach(r => r.checked = (r.value===jour));
-  moJourChange();
+  document.getElementById('mo-jour-titre').textContent = cli.cat === 'Interne' ? 'Jour de réassort souhaité' : 'Jour de livraison';
+  renderJourOptions('mo-jour-options', 'mo-livraison', joursPourClient(cli), 'moJourChange', jour);
   document.getElementById('modal-order').classList.add('open');
 }
 
 function moJourChange() {
-  const val = document.querySelector('input[name="mo-livraison"]:checked')?.value;
-  document.getElementById('mo-lbl-mardi').classList.toggle('jour-selected', val==='mardi');
-  document.getElementById('mo-lbl-jeudi').classList.toggle('jour-selected', val==='jeudi');
+  const checked = document.querySelector('input[name="mo-livraison"]:checked');
+  document.querySelectorAll('#mo-jour-options .jour-opt').forEach(l => {
+    l.classList.toggle('jour-selected', l.querySelector('input')===checked);
+  });
 }
 
 function chkChange(vid) {
@@ -1779,7 +1780,7 @@ function closeModal() { document.getElementById('modal-order').classList.remove(
 
 async function saveOrder() {
   const jour = document.querySelector('input[name="mo-livraison"]:checked')?.value;
-  if (!jour) return showToast('Choisissez un jour de livraison (mardi ou jeudi)');
+  if (!jour) return showToast('Choisissez un jour de livraison');
   const od={};
   state.veggies.forEach(v=>{
     const q=parseFloat(document.getElementById('oq-'+v.id)?.value);
@@ -1843,9 +1844,10 @@ function carteCommande(idx, mode) {
       ? `<button class="livr-badge ok" onclick="toggleLivraison(${idx})">✓ Livré</button>`
       : `<button class="livr-badge wait" onclick="toggleLivraison(${idx})">à livrer</button>`;
   }
+  const jourLabel = (mode==='interne' && od._jour) ? `<div style="font-size:11px;color:var(--g3);text-transform:capitalize;margin-bottom:6px;">${od._jour}</div>` : '';
   return `<div class="co-card ${od._livre&&mode?'co-livre':''}">
     <div class="co-head"><span class="co-name">${c.nom}</span>${statut}</div>
-    <div class="co-body">${lines}${totalBloc}</div>
+    <div class="co-body">${jourLabel}${lines}${totalBloc}</div>
   </div>`;
 }
 
@@ -2209,10 +2211,13 @@ function cmdSelectClient(idx) {
   document.getElementById('cmd-client-search').value = '';
   document.getElementById('cmd-client-results').style.display = 'none';
   const choisi = document.getElementById('cmd-client-choisi');
-  document.getElementById('cmd-client-nom').textContent = getClient(idx).nom;
+  const cli = getClient(idx);
+  document.getElementById('cmd-client-nom').textContent = cli.nom;
   choisi.style.display = 'flex';
   document.getElementById('cmd-legumes-wrap').style.display = 'block';
   document.getElementById('cmd-footer').style.display = 'block';
+  document.getElementById('cmd-jour-titre').textContent = cli.cat === 'Interne' ? 'Jour de réassort souhaité' : 'Jour de livraison souhaité';
+  renderJourOptions('cmd-jour-options', 'livraison', joursPourClient(cli), 'cmdJourChange', null);
   updateCmdTotal();
 }
 
@@ -2222,15 +2227,14 @@ function cmdResetClient() {
   document.getElementById('cmd-client-search').value = '';
   document.getElementById('cmd-legumes-wrap').style.display = 'none';
   document.getElementById('cmd-footer').style.display = 'none';
-  document.querySelectorAll('input[name="livraison"]').forEach(r => r.checked = false);
-  document.getElementById('lbl-mardi').classList.remove('jour-selected');
-  document.getElementById('lbl-jeudi').classList.remove('jour-selected');
+  const opts = document.getElementById('cmd-jour-options'); if (opts) opts.innerHTML = '';
 }
 
 function cmdJourChange() {
-  const val = document.querySelector('input[name="livraison"]:checked')?.value;
-  document.getElementById('lbl-mardi').classList.toggle('jour-selected', val === 'mardi');
-  document.getElementById('lbl-jeudi').classList.toggle('jour-selected', val === 'jeudi');
+  const checked = document.querySelector('input[name="livraison"]:checked');
+  document.querySelectorAll('#cmd-jour-options .jour-opt').forEach(l => {
+    l.classList.toggle('jour-selected', l.querySelector('input')===checked);
+  });
 }
 
 function toggleInscription() {
@@ -2285,9 +2289,6 @@ async function openInterne(nom) {
     // Masquer la zone de recherche : identité déjà connue
     const sw = document.querySelector('.cmd-select-wrap');
     if (sw) sw.style.display = 'none';
-    // Pas de jour de livraison pour les clients internes (sur place)
-    const lw = document.getElementById('cmd-livraison-wrap');
-    if (lw) lw.style.display = 'none';
   }
 }
 
@@ -2407,10 +2408,9 @@ async function submitClientOrder() {
   });
   if (!items.length) return showToast('Sélectionnez au moins un légume');
   const livW = document.getElementById('cmd-livraison-wrap');
-  const livraisonVisible = livW?.style.display !== 'none';
-  const jour = document.querySelector('input[name="livraison"]:checked')?.value || (livraisonVisible ? null : 'sur place');
-  if (livraisonVisible && !jour) {
-    showToast('⚠ Choisissez d\'abord un jour de livraison : Mardi ou Jeudi');
+  const jour = document.querySelector('input[name="livraison"]:checked')?.value;
+  if (!jour) {
+    showToast('⚠ Choisissez d\'abord un jour');
     if (livW) {
       livW.scrollIntoView({behavior:'smooth', block:'center'});
       livW.classList.add('flash-required');
