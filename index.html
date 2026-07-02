@@ -1228,7 +1228,7 @@ function emojiClient(idx) {
 
 function renderTournee() {
   const el = document.getElementById('tournee-list');
-  const rows = _tourneeRows.filter(r => r.jour_livraison === _jourActif);
+  const rows = _tourneeRows.filter(r => r.jour_livraison === _jourActif && getClient(r.client_idx)?.nom);
   if (!rows.length) {
     el.innerHTML = `<div class="empty-msg">Aucune commande à livrer le ${_jourActif} cette semaine</div>`;
     return;
@@ -2117,8 +2117,12 @@ async function deleteClient() {
   const id = document.getElementById('cl-id').value;
   if (!id) return;
   const c = getClient(id);
-  if (!confirm('Supprimer définitivement le client « ' + (c.nom||'') + ' » ?')) return;
+  if (!confirm('Supprimer définitivement le client « ' + (c.nom||'') + ' » ?\n\nSes commandes non encore livrées seront aussi retirées.')) return;
   try {
+    await fetch(`${SUPA_URL}/rest/v1/commandes_clients?client_idx=eq.${id}&livre=eq.false`, {
+      method: 'DELETE',
+      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+    });
     await sbDelete('clients', id);
     await loadClients();
     closeClientModal();
