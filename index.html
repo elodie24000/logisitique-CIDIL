@@ -292,7 +292,8 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 .cmd-jour-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start;}
 .cmd-jour-h{font-size:14px;font-weight:500;color:var(--g1);background:var(--g6);border-radius:9px;padding:9px 10px;margin-bottom:10px;text-align:center;}
 .cmd-jour-h span{color:var(--g3);font-size:12px;}
-.livr-badge{font-size:11px;padding:3px 9px;border-radius:10px;font-weight:500;white-space:nowrap;}
+.livr-badge{font-size:11px;padding:3px 9px;border-radius:10px;font-weight:500;white-space:nowrap;border:none;font-family:'DM Sans',sans-serif;}
+button.livr-badge{cursor:pointer;}
 .livr-badge.ok{background:#e1f0e8;color:#0f6e56;}
 .livr-badge.wait{background:#fdecea;color:#c0392b;}
 .co-livre{opacity:.62;}
@@ -1810,7 +1811,7 @@ function fmtSemaine(s) {
   return `Semaine du ${d.toLocaleDateString('fr-FR', opt)} au ${fin.toLocaleDateString('fr-FR', opt)}`;
 }
 
-function carteCommande(idx, avecStatut) {
+function carteCommande(idx, mode) {
   const c=getClient(idx); if(!c||!c.nom) return '';
   const od=state.orders[idx];
   let total=0,hasP=false;
@@ -1825,13 +1826,27 @@ function carteCommande(idx, avecStatut) {
   const totalBloc = hasP ? (frais>0
     ? `<div class="co-total" style="font-weight:400;color:var(--tm);">Légumes : ${total.toFixed(2)} € · Livr. : ${frais.toFixed(2)} €</div><div class="co-total">Total : ${(total+frais).toFixed(2)} €</div>`
     : `<div class="co-total">Total : ${total.toFixed(2)} €</div>`) : '';
-  const statut = avecStatut ? (od._livre
-    ? `<span class="livr-badge ok">✓ Livré</span>`
-    : `<span class="livr-badge wait">à livrer</span>`) : '';
-  return `<div class="co-card ${avecStatut&&od._livre?'co-livre':''}">
+  let statut = '';
+  if (mode === 'ext') {
+    statut = od._livre ? `<span class="livr-badge ok">✓ Livré</span>` : `<span class="livr-badge wait">à livrer</span>`;
+  } else if (mode === 'interne') {
+    statut = od._livre
+      ? `<button class="livr-badge ok" onclick="toggleInterneFait(${idx})">✓ Fait</button>`
+      : `<button class="livr-badge wait" onclick="toggleInterneFait(${idx})">À faire</button>`;
+  }
+  return `<div class="co-card ${od._livre&&mode?'co-livre':''}">
     <div class="co-head"><span class="co-name">${c.nom}</span>${statut}</div>
     <div class="co-body">${lines}${totalBloc}</div>
   </div>`;
+}
+
+async function toggleInterneFait(idx) {
+  const od=state.orders[idx]; if(!od) return;
+  od._livre=!od._livre;
+  renderOrders();
+  try {
+    await sbPatch('commandes_clients', od._sbId, {livre:od._livre, livre_at: od._livre?new Date().toISOString():null});
+  } catch(e) { showToast('Erreur enregistrement'); console.error(e); }
 }
 
 function renderOrders() {
@@ -1855,16 +1870,16 @@ function renderOrders() {
     html += `<div class="cmd-jour-grid">
       <div class="cmd-jour-col">
         <div class="cmd-jour-h">🗓️ Mardi <span>(${mardi.length})</span></div>
-        ${mardi.map(i=>carteCommande(i,true)).join('') || '<div class="empty-mini">Aucune</div>'}
+        ${mardi.map(i=>carteCommande(i,'ext')).join('') || '<div class="empty-mini">Aucune</div>'}
       </div>
       <div class="cmd-jour-col">
         <div class="cmd-jour-h">🗓️ Jeudi <span>(${jeudi.length})</span></div>
-        ${jeudi.map(i=>carteCommande(i,true)).join('') || '<div class="empty-mini">Aucune</div>'}
+        ${jeudi.map(i=>carteCommande(i,'ext')).join('') || '<div class="empty-mini">Aucune</div>'}
       </div>
     </div>`;
     if (interne.length) {
-      html += '<div class="section-title" style="margin-top:22px;">Commandes internes (sur place)</div>';
-      html += `<div class="cmd-jour-grid">${interne.map(i=>carteCommande(i,false)).join('')}</div>`;
+      html += '<div class="section-title" style="margin-top:22px;">Commandes internes</div>';
+      html += `<div class="cmd-jour-grid">${interne.map(i=>carteCommande(i,'interne')).join('')}</div>`;
     }
   }
 
