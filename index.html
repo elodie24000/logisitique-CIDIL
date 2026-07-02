@@ -256,6 +256,12 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 .veg-dot{width:8px;height:8px;border-radius:50%;background:var(--g4);flex-shrink:0;}
 .veg-name{flex:1;font-size:14px;font-weight:500;}
 .veg-info{font-size:12px;color:var(--tl);font-family:'DM Mono',monospace;}
+#veg-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start;}
+.veg-card{display:flex;align-items:center;gap:10px;background:var(--white);border:1px solid var(--bd);border-radius:12px;padding:10px 12px;box-shadow:var(--sh);}
+.veg-emoji{font-size:30px;flex-shrink:0;line-height:1;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:var(--g7);border-radius:11px;}
+.veg-card-info{flex:1;min-width:0;}
+.veg-card .veg-name{font-size:14px;font-weight:500;margin-bottom:2px;}
+.veg-card .btn-rm{flex-shrink:0;}
 .btn-rm{
   width:28px;height:28px;border-radius:7px;border:1px solid var(--bd);
   background:var(--white);color:var(--tl);cursor:pointer;
@@ -1621,16 +1627,33 @@ async function removeVeggie(id) {
   }
 }
 
+function emojiLegume(nom) {
+  const n = (nom||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+  const m = [
+    ['tomate','🍅'],['carotte','🥕'],['panais','🥕'],['courgette','🥒'],['concombre','🥒'],
+    ['courge','🎃'],['potiron','🎃'],['aubergine','🍆'],['piment','🌶️'],['poivron','🫑'],
+    ['brocoli','🥦'],['chou','🥬'],['salade','🥬'],['laitue','🥬'],['batavia','🥬'],['feuille','🥬'],
+    ['mesclun','🥬'],['roquette','🥬'],['mache','🥬'],['epinard','🥬'],['blette','🥬'],['bok','🥬'],['pak','🥬'],
+    ['oignon','🧅'],['echalote','🧅'],['ciboule','🧅'],['ail','🧄'],['pomme de terre','🥔'],['patate','🥔'],
+    ['mais','🌽'],['radis','🌰'],['betterave','🫜'],['navet','⚪'],['fenouil','🌿'],['celeri','🌿'],
+    ['haricot','🫛'],['pois','🫛'],['feve','🫛'],['fraise','🍓'],['melon','🍈'],['pasteque','🍉'],
+    ['basilic','🌿'],['persil','🌿'],['coriandre','🌿'],['aromatique','🌿'],['bouquet','🌿'],['poireau','🥬']
+  ];
+  for (const [k,e] of m) if (n.includes(k)) return e;
+  return '🥬';
+}
+
 function renderVeggies() {
   const el = document.getElementById('veg-list');
   if (!el) return;
-  if (!state.veggies.length) { el.innerHTML='<div class="empty-msg">Aucun légume · Ajoutez-en ci-dessus</div>'; return; }
+  if (!state.veggies.length) { el.innerHTML='<div class="empty-msg">Aucun légume · Ajoutez-en ci-dessous</div>'; return; }
   el.innerHTML = state.veggies.map(v=>`
-    <div class="veg-row">
-      <div class="veg-dot"></div>
-      <div class="veg-name">${v.nom}</div>
-      <div class="veg-info">${v.kg} ${pluriel(v.kg, v.unite)}</div>
-      <div class="veg-info" style="margin-left:6px;">${v.prix!==null?v.prix.toFixed(2)+' €/'+( v.unite||'kg'):'NC'}</div>
+    <div class="veg-card">
+      <div class="veg-emoji">${emojiLegume(v.nom)}</div>
+      <div class="veg-card-info">
+        <div class="veg-name">${v.nom}</div>
+        <div class="veg-info">${v.kg} ${pluriel(v.kg, v.unite)}${v.prix!==null?' · '+v.prix.toFixed(2)+' €/'+(v.unite||'kg'):' · NC'}</div>
+      </div>
       <button class="btn-rm" onclick="removeVeggie(${v.id})">✕</button>
     </div>`).join('');
 }
