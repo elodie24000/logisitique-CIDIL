@@ -1170,7 +1170,14 @@ function showInscriptionModal() {
 }
 function inscrModalVoir() {
   document.getElementById('inscr-modal').style.display = 'none';
+  voirNouveauClient();
+}
+
+function voirNouveauClient() {
+  const news = nouvellesInscriptions();
+  currentCat2 = '__new__';            // la page Clients n'affiche que les nouveaux
   navTo('clients');
+  if (news.length) openClientModal(news[0].id);   // ouvre directement sa fiche
 }
 
 function majBanniereInscriptions() {
@@ -1179,7 +1186,7 @@ function majBanniereInscriptions() {
     <div style="background:#fff7e6;border:1.5px solid #f0c36d;border-radius:12px;padding:14px 16px;margin-bottom:16px;">
       <div style="font-size:15px;font-weight:500;color:#8a5a00;margin-bottom:4px;">🆕 ${news.length} nouveau(x) client(s) inscrit(s) en ligne</div>
       <div style="font-size:12.5px;color:#a06a10;margin-bottom:11px;">${news.map(c=>c.nom).join(', ')}</div>
-      <button onclick="navTo('clients')" style="background:#8a5a00;color:#fff;border:none;border-radius:9px;padding:10px 18px;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">Voir et valider →</button>
+      <button onclick="voirNouveauClient()" style="background:#8a5a00;color:#fff;border:none;border-radius:9px;padding:10px 18px;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">Voir et valider →</button>
     </div>` : '';
   document.querySelectorAll('.new-inscr-slot').forEach(el => el.innerHTML = html);
 }
@@ -1978,7 +1985,9 @@ function nouvellesInscriptions() { return clients.filter(estNouvelleInscription)
 
 function renderClients2() {
   const el=document.getElementById('client-list2'); if(!el) return;
-  const filtered=clients.filter(c=>currentCat2==='Tous'||c.cat===currentCat2);
+  const filtered = currentCat2==='__new__'
+    ? clients.filter(estNouvelleInscription)
+    : clients.filter(c=>currentCat2==='Tous'||c.cat===currentCat2);
   const news = nouvellesInscriptions();
   let banner = '';
   if (news.length) {
