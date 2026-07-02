@@ -289,6 +289,14 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 .co-line{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;border-bottom:1px solid var(--g7);}
 .co-line:last-child{border-bottom:none;}
 .co-total{display:flex;justify-content:flex-end;font-size:13px;font-weight:500;color:var(--g1);padding-top:6px;margin-top:4px;border-top:1px solid var(--bd);font-family:'DM Mono',monospace;}
+.cmd-jour-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start;}
+.cmd-jour-h{font-size:14px;font-weight:500;color:var(--g1);background:var(--g6);border-radius:9px;padding:9px 10px;margin-bottom:10px;text-align:center;}
+.cmd-jour-h span{color:var(--g3);font-size:12px;}
+.livr-badge{font-size:11px;padding:3px 9px;border-radius:10px;font-weight:500;white-space:nowrap;}
+.livr-badge.ok{background:#e1f0e8;color:#0f6e56;}
+.livr-badge.wait{background:#fdecea;color:#c0392b;}
+.co-livre{opacity:.62;}
+.empty-mini{font-size:12px;color:var(--tl);text-align:center;padding:10px;background:var(--g7);border-radius:9px;}
 
 /* modal commande */
 .modal{
@@ -1678,6 +1686,7 @@ async function loadCommandes() {
         // stocker l'id Supabase pour pouvoir faire un PATCH
         state.orders[r.client_idx]._sbId = r.id;
         state.orders[r.client_idx]._jour = r.jour_livraison || '';
+        state.orders[r.client_idx]._livre = !!r.livre;
       } else {
         if (!byWeek[r.semaine]) byWeek[r.semaine] = [];
         byWeek[r.semaine].push(r);
@@ -1786,38 +1795,62 @@ function fmtSemaine(s) {
   return `Semaine du ${d.toLocaleDateString('fr-FR', opt)} au ${fin.toLocaleDateString('fr-FR', opt)}`;
 }
 
+function carteCommande(idx, avecStatut) {
+  const c=getClient(idx); if(!c||!c.nom) return '';
+  const od=state.orders[idx];
+  let total=0,hasP=false;
+  const lines=Object.entries(od).filter(([k])=>!String(k).startsWith('_')).map(([vid,qty])=>{
+    const v=state.veggies.find(v=>v.id==vid);
+    if(!v) return '';
+    const sub=v.prix?v.prix*qty:null;
+    if(sub!==null){total+=sub;hasP=true;}
+    return `<div class="co-line"><span>${v.nom}</span><span style="font-family:'DM Mono',monospace;">${qty} ${pluriel(qty,v.unite||'kg')}${sub?' · '+(sub.toFixed(2))+' €':''}</span></div>`;
+  }).filter(Boolean).join('');
+  const frais=fraisLivraison(c);
+  const totalBloc = hasP ? (frais>0
+    ? `<div class="co-total" style="font-weight:400;color:var(--tm);">Légumes : ${total.toFixed(2)} € · Livr. : ${frais.toFixed(2)} €</div><div class="co-total">Total : ${(total+frais).toFixed(2)} €</div>`
+    : `<div class="co-total">Total : ${total.toFixed(2)} €</div>`) : '';
+  const statut = avecStatut ? (od._livre
+    ? `<span class="livr-badge ok">✓ Livré</span>`
+    : `<span class="livr-badge wait">à livrer</span>`) : '';
+  return `<div class="co-card ${avecStatut&&od._livre?'co-livre':''}">
+    <div class="co-head"><span class="co-name">${c.nom}</span>${statut}</div>
+    <div class="co-body">${lines}${totalBloc}</div>
+  </div>`;
+}
+
 function renderOrders() {
   const el = document.getElementById('orders-list');
   if (!el) return;
-  const keys = Object.keys(state.orders).filter(k=>k!=='_sbId');
+  const keys = Object.keys(state.orders);
 
-  // Semaine courante
-  let html = '<div class="section-title" style="margin-top:0;">Cette semaine</div>';
-  if (!keys.length) {
+  // Répartir : mardi / jeudi / interne
+  const mardi=[], jeudi=[], interne=[];
+  keys.forEach(idx=>{
+    const c=getClient(idx); if(!c||!c.nom) return;
+    if (c.cat==='Interne') interne.push(idx);
+    else if (state.orders[idx]._jour==='jeudi') jeudi.push(idx);
+    else mardi.push(idx);
+  });
+
+  let html='';
+  if (!mardi.length && !jeudi.length && !interne.length) {
     html += '<div class="empty-msg">Aucune commande cette semaine</div>';
   } else {
-    html += keys.map(idx=>{
-      const c=getClient(idx); if(!c||!c.nom) return '';
-      const od=state.orders[idx];
-      let total=0,hasP=false;
-      const lines=Object.entries(od).filter(([k])=>k!=='_sbId'&&k!=='_jour').map(([vid,qty])=>{
-        const v=state.veggies.find(v=>v.id==vid);
-        if(!v) return '';
-        const sub=v.prix?v.prix*qty:null;
-        if(sub!==null){total+=sub;hasP=true;}
-        return `<div class="co-line"><span>${v.nom}</span><span style="font-family:'DM Mono',monospace;">${qty} ${pluriel(qty,v.unite||'kg')}${sub?' · '+(sub.toFixed(2))+' €':''}</span></div>`;
-      }).filter(Boolean).join('');
-      const bc=c.cat==='Restau Co'?'b-rco':c.cat==='Commerce'?'b-com':'b-mar';
-      const bl=c.cat==='Maraichage'?'Maraîchage':c.cat;
-      const frais=fraisLivraison(c);
-      const totalBloc = hasP ? (frais>0
-        ? `<div class="co-total" style="font-weight:400;color:var(--tm);">Légumes : ${total.toFixed(2)} € · Livraison : ${frais.toFixed(2)} €</div><div class="co-total">Total : ${(total+frais).toFixed(2)} €</div>`
-        : `<div class="co-total">Total : ${total.toFixed(2)} €</div>`) : '';
-      return `<div class="co-card">
-        <div class="co-head"><span class="co-name">${c.nom}</span><span class="badge ${bc}">${bl}</span></div>
-        <div class="co-body">${lines}${totalBloc}</div>
-      </div>`;
-    }).filter(Boolean).join('');
+    html += `<div class="cmd-jour-grid">
+      <div class="cmd-jour-col">
+        <div class="cmd-jour-h">🗓️ Mardi <span>(${mardi.length})</span></div>
+        ${mardi.map(i=>carteCommande(i,true)).join('') || '<div class="empty-mini">Aucune</div>'}
+      </div>
+      <div class="cmd-jour-col">
+        <div class="cmd-jour-h">🗓️ Jeudi <span>(${jeudi.length})</span></div>
+        ${jeudi.map(i=>carteCommande(i,true)).join('') || '<div class="empty-mini">Aucune</div>'}
+      </div>
+    </div>`;
+    if (interne.length) {
+      html += '<div class="section-title" style="margin-top:22px;">Commandes internes (sur place)</div>';
+      html += `<div class="cmd-jour-grid">${interne.map(i=>carteCommande(i,false)).join('')}</div>`;
+    }
   }
 
   // Semaines passées (accordéon)
@@ -1864,7 +1897,7 @@ function renderRecap() {
   const byV={};
   keys.forEach(idx=>{
     let clientACommande=false;
-    Object.entries(state.orders[idx]).filter(([k])=>k!=='_sbId'&&k!=='_jour').forEach(([vid,qty])=>{
+    Object.entries(state.orders[idx]).filter(([k])=>k!=='_sbId'&&k!=='_jour'&&k!=='_livre').forEach(([vid,qty])=>{
       const v=state.veggies.find(v=>v.id==vid); if(!v) return;
       clientACommande=true;
       tKg+=qty;
@@ -1889,7 +1922,7 @@ function renderRecap() {
   const rcl=document.getElementById('rc-clients');
   rcl.innerHTML=keys.length?keys.map(idx=>{
     const c=getClient(idx),od=state.orders[idx];
-    const pills=Object.entries(od).filter(([k])=>k!=='_sbId'&&k!=='_jour').map(([vid,qty])=>{
+    const pills=Object.entries(od).filter(([k])=>k!=='_sbId'&&k!=='_jour'&&k!=='_livre').map(([vid,qty])=>{
       const v=state.veggies.find(v=>v.id==vid);
       return v?`<span style="font-size:12px;background:var(--g6);color:var(--g1);padding:3px 9px;border-radius:10px;font-family:'DM Mono',monospace;">${v.nom} ${qty}kg</span>`:'';
     }).filter(Boolean).join(' ');
