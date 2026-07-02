@@ -765,6 +765,18 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 
 <div class="toast" id="toast"></div>
 
+<!-- ══════ POP-UP NOUVELLES INSCRIPTIONS (gestionnaire/encadrant) ══════ -->
+<div id="inscr-modal" style="display:none;position:fixed;inset:0;background:rgba(13,40,24,.55);z-index:9999;align-items:center;justify-content:center;padding:24px;">
+  <div style="background:#fff;border-radius:18px;max-width:340px;width:100%;padding:26px 22px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.3);">
+    <div style="font-size:44px;margin-bottom:6px;">🆕</div>
+    <div style="font-size:20px;font-weight:500;color:var(--g1);margin-bottom:8px;" id="inscr-modal-titre">Nouvelle inscription !</div>
+    <div style="font-size:14px;color:var(--tm);margin-bottom:6px;">De nouveaux clients se sont inscrits en ligne et attendent d'être validés :</div>
+    <div id="inscr-modal-noms" style="font-size:15px;font-weight:500;color:var(--g1);background:#fff7e6;border-radius:10px;padding:10px 12px;margin-bottom:20px;"></div>
+    <button onclick="inscrModalVoir()" style="width:100%;background:var(--g1);color:#fff;border:none;border-radius:11px;padding:14px;font-size:15px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:8px;">Voir et valider maintenant</button>
+    <button onclick="document.getElementById('inscr-modal').style.display='none'" style="width:100%;background:none;border:none;color:var(--tl);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;padding:6px;">Plus tard</button>
+  </div>
+</div>
+
 <!-- ══════════════════════ PAGE COMMANDE CLIENT ══════════════════════ -->
 <div id="screen-commande-client">
   <div class="cmd-hero">
@@ -1080,8 +1092,7 @@ async function enterApp(role) {
   await loadClients();
   populateClientSel();
   if (role === 'encadrant' || role === 'gestionnaire') {
-    const news = nouvellesInscriptions();
-    if (news.length) setTimeout(()=>showToast('🆕 ' + news.length + ' nouvelle(s) inscription(s) client — voir l\'onglet Clients'), 600);
+    setTimeout(showInscriptionModal, 500);
   }
   const defaultPage = NAV_CONFIG[role][0].id;
   showPage(defaultPage);
@@ -1133,6 +1144,19 @@ function initPage(id) {
   if (id==='tarifs') loadTarifs();
   if (id==='recap') { loadClients().then(majBanniereInscriptions); loadVeggies().then(()=>loadCommandes()).then(()=>renderRecap()); }
   if (id==='clients') renderClients2();
+}
+
+function showInscriptionModal() {
+  const news = nouvellesInscriptions();
+  if (!news.length) return;
+  document.getElementById('inscr-modal-titre').textContent =
+    news.length === 1 ? 'Nouvelle inscription !' : news.length + ' nouvelles inscriptions !';
+  document.getElementById('inscr-modal-noms').innerHTML = news.map(c=>c.nom).join('<br>');
+  document.getElementById('inscr-modal').style.display = 'flex';
+}
+function inscrModalVoir() {
+  document.getElementById('inscr-modal').style.display = 'none';
+  navTo('clients');
 }
 
 function majBanniereInscriptions() {
