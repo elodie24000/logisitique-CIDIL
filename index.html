@@ -201,8 +201,10 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 .jour-tabs{display:flex;gap:10px;margin-bottom:18px;}
 .jour-tab{flex:1;padding:16px;border-radius:13px;border:1.5px solid var(--bd);background:var(--white);color:var(--tm);font-size:16px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;}
 .jour-tab.active{background:var(--g1);color:#fff;border-color:var(--g1);}
-.tour-card{background:var(--white);border:1px solid var(--bd);border-radius:14px;margin-bottom:12px;overflow:hidden;box-shadow:var(--sh);}
+#tournee-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start;}
+.tour-card{background:var(--white);border:1px solid var(--bd);border-radius:14px;margin-bottom:0;overflow:hidden;box-shadow:var(--sh);}
 .tour-card.livre{opacity:.55;}
+.tour-emoji{font-size:22px;line-height:1;flex-shrink:0;width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:var(--g6);border-radius:9px;}
 .tour-head{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--g7);border-bottom:1px solid var(--bd);}
 .tour-chk{width:26px;height:26px;flex-shrink:0;accent-color:var(--g3);cursor:pointer;}
 .tour-nom{font-size:16px;font-weight:500;color:var(--g1);}
@@ -1216,6 +1218,14 @@ function showJour(jour) {
   renderTournee();
 }
 
+const TOUR_EMOJIS = ['🏪','🍞','🥐','🏥','🍽️','🏫','🧑‍🍳','🛒','🏡','🍅','🥕','🧺','🚚','🏭','🍷','🥖','🏨','🍕','🧀','🥗'];
+function emojiClient(idx) {
+  const s = String(idx);
+  let h = 0;
+  for (let i=0;i<s.length;i++) h = (h*31 + s.charCodeAt(i)) >>> 0;
+  return TOUR_EMOJIS[h % TOUR_EMOJIS.length];
+}
+
 function renderTournee() {
   const el = document.getElementById('tournee-list');
   const rows = _tourneeRows.filter(r => r.jour_livraison === _jourActif);
@@ -1234,6 +1244,7 @@ function renderTournee() {
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>Itinéraire GPS</button>` : '';
     return `<div class="tour-card ${r.livre?'livre':''}" id="tour-${r.id}">
       <div class="tour-head" onclick="toggleTourCard(${r.id})">
+        <div class="tour-emoji">${emojiClient(r.client_idx)}</div>
         <div style="flex:1;">
           <div class="tour-nom">${r.client_nom}</div>
           <div class="tour-adr">${items.length} article(s)${c.adresse?' · '+c.adresse:''}</div>
