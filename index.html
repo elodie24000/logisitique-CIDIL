@@ -1828,11 +1828,13 @@ function carteCommande(idx, mode) {
     : `<div class="co-total">Total : ${total.toFixed(2)} €</div>`) : '';
   let statut = '';
   if (mode === 'ext') {
-    statut = od._livre ? `<span class="livr-badge ok">✓ Livré</span>` : `<span class="livr-badge wait">à livrer</span>`;
+    statut = od._livre
+      ? `<button class="livr-badge ok" onclick="toggleLivraison(${idx})">✓ Livré</button>`
+      : `<button class="livr-badge wait" onclick="toggleLivraison(${idx})">à livrer</button>`;
   } else if (mode === 'interne') {
     statut = od._livre
-      ? `<button class="livr-badge ok" onclick="toggleInterneFait(${idx})">✓ Fait</button>`
-      : `<button class="livr-badge wait" onclick="toggleInterneFait(${idx})">À faire</button>`;
+      ? `<button class="livr-badge ok" onclick="toggleLivraison(${idx})">✓ Fait</button>`
+      : `<button class="livr-badge wait" onclick="toggleLivraison(${idx})">à faire</button>`;
   }
   return `<div class="co-card ${od._livre&&mode?'co-livre':''}">
     <div class="co-head"><span class="co-name">${c.nom}</span>${statut}</div>
@@ -1840,7 +1842,7 @@ function carteCommande(idx, mode) {
   </div>`;
 }
 
-async function toggleInterneFait(idx) {
+async function toggleLivraison(idx) {
   const od=state.orders[idx]; if(!od) return;
   od._livre=!od._livre;
   renderOrders();
