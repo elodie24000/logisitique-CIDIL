@@ -1,0 +1,37 @@
+name: Rappel vendredi (push + email)
+
+on:
+  schedule:
+    - cron: '0 8 * * 5'   # Chaque vendredi 10h heure française (8h UTC)
+  workflow_dispatch:        # Permet aussi un declenchement manuel pour tester
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install deps
+        run: pip install pywebpush
+      - name: Envoi des notifications push
+        env:
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+        run: python scripts/send_push_vendredi.py
+
+  email:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Envoi des emails de rappel
+        env:
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+        run: python scripts/send_email_vendredi.py

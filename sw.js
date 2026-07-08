@@ -32,6 +32,11 @@ self.addEventListener('push', e => {
     body: data.body,
     icon: '/logisitique-CIDIL/logo.jpg',
     badge: '/logisitique-CIDIL/logo.jpg',
+    vibrate: [200, 100, 200, 100, 200],
+    requireInteraction: true,
+    silent: false,
+    tag: data.tag || 'cidil-rappel',
+    renotify: true,
     data: { url: data.url || '/logisitique-CIDIL/?commande' }
   }));
 });
