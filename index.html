@@ -657,6 +657,16 @@ button.livr-badge{cursor:pointer;}
       <div class="section-title" style="margin-top:22px;">Récap par légume</div>
       <div class="recap-veg-grid" id="rc-vegs"><div class="empty-msg" style="grid-column:1/-1;">Aucune commande</div></div>
 
+      <div style="margin-top:28px;">
+        <div class="co-week-head" onclick="toggleActivityLog(this)" style="border-radius:12px;">
+          <span>📋 Journal d'activité</span>
+          <span class="pw-chev" style="display:inline-block;transition:transform .2s;">▼</span>
+        </div>
+        <div class="co-week-body" style="display:none;" id="activity-log-body">
+          <div id="activity-log-list" class="empty-msg">Chargement…</div>
+        </div>
+      </div>
+
       <div style="margin-top:34px;border-top:1px solid var(--bd);padding-top:20px;">
         <div style="font-size:12px;color:var(--tl);margin-bottom:10px;">Une fois les commandes reportées dans votre logiciel de comptabilité, vous pouvez tout effacer pour repartir à zéro.</div>
         <button class="btn-effacer" onclick="effacerToutesCommandes()">
@@ -985,6 +995,13 @@ async function loadClients() {
   indexClients();
 }
 function getClient(id) { return clientById[id] || clients.find(c => String(c.id) === String(id)) || {}; }
+
+// ══════ JOURNAL D'ACTIVITÉ ══════
+async function logActivity(type, details, role) {
+  try {
+    await sbPost('activity_log', { type, details: details || '', role: role || currentRole || 'client' });
+  } catch(e) { console.error('logActivity', e); }
+}
 
 // Frais de livraison par paliers de distance (km). Boutique/Labo sur place = 0.
 function fraisLivraison(c) {
@@ -1603,6 +1620,7 @@ async function addVeggies() {
     }
     renderVeggies();
     showToast('✓ ' + count + ' légume(s) publiés');
+    if (count > 0) logActivity('legume_ajout', `${count} légume(s) publié(s) pour la semaine ${state.semaine}`);
   } catch(e) {
     showToast('Erreur : ' + e.message);
   }
@@ -1657,6 +1675,7 @@ async function addVeggie() {
 }
 
 async function removeVeggie(id) {
+  const v = state.veggies.find(v=>v.id===id);
   try {
     await sbDelete('legumes', id);
     state.veggies = state.veggies.filter(v=>v.id!==id);
@@ -1667,6 +1686,7 @@ async function removeVeggie(id) {
     renderVeggies();
     renderOrders();
     showToast('Légume retiré');
+    logActivity('legume_suppression', v ? `${v.nom} retiré de la semaine ${state.semaine}` : `id ${id}`);
   } catch(e) {
     showToast('Erreur suppression');
   }
@@ -1817,11 +1837,14 @@ async function saveOrder() {
     };
     if (sbId) {
       await sbPatch('commandes_clients', sbId, payload);
+      logActivity('commande_modifiee', `${c.nom} — ${items.length} article(s) — ${jour}`);
     } else if (items.length) {
       const [row] = await sbPost('commandes_clients', payload);
       if (state.orders[modalClientIdx]) state.orders[modalClientIdx]._sbId = row.id;
+      logActivity('commande_creee', `${c.nom} — ${items.length} article(s) — ${jour}`);
     } else if (sbId) {
       await sbDelete('commandes_clients', sbId);
+      logActivity('commande_annulee', c.nom);
     }
   } catch(e) { console.error('Erreur sauvegarde commande:', e); showToast('Attention : erreur sauvegarde réseau'); }
 }
@@ -1868,6 +1891,7 @@ async function toggleLivraison(idx) {
   renderOrders();
   try {
     await sbPatch('commandes_clients', od._sbId, {livre:od._livre, livre_at: od._livre?new Date().toISOString():null});
+    logActivity('livraison_maj', `${getClient(idx).nom} — ${od._livre?'livré':'à livrer'}`);
   } catch(e) { showToast('Erreur enregistrement'); console.error(e); }
 }
 
@@ -1942,6 +1966,56 @@ function togglePastWeek(head) {
   chev.style.transform = open ? 'rotate(180deg)' : '';
 }
 
+// ══════ JOURNAL D'ACTIVITÉ (affichage) ══════
+function toggleActivityLog(head) {
+  const body = document.getElementById('activity-log-body');
+  const chev = head.querySelector('.pw-chev');
+  const open = body.style.display === 'none';
+  body.style.display = open ? 'block' : 'none';
+  chev.style.transform = open ? 'rotate(180deg)' : '';
+  if (open) loadActivityLog();
+}
+
+const ACTIVITY_ICONS = {
+  inscription_client: '🆕', legume_ajout: '🌿', legume_suppression: '🗑️',
+  commande_creee: '🛒', commande_modifiee: '✏️', commande_annulee: '❌',
+  commandes_effacees: '🧹', livraison_maj: '🚚',
+  client_ajoute: '➕', client_modifie: '✎', client_supprime: '🗑️'
+};
+const ACTIVITY_LABELS = {
+  inscription_client: 'Nouvelle inscription', legume_ajout: 'Légumes publiés', legume_suppression: 'Légume retiré',
+  commande_creee: 'Commande créée', commande_modifiee: 'Commande modifiée', commande_annulee: 'Commande annulée',
+  commandes_effacees: 'Commandes effacées', livraison_maj: 'Statut livraison',
+  client_ajoute: 'Client ajouté', client_modifie: 'Client modifié', client_supprime: 'Client supprimé'
+};
+
+function heureRelative(iso) {
+  const d = new Date(iso);
+  const diffMin = Math.round((Date.now() - d.getTime()) / 60000);
+  if (diffMin < 1) return "à l'instant";
+  if (diffMin < 60) return `il y a ${diffMin} min`;
+  if (diffMin < 1440) return `il y a ${Math.round(diffMin/60)} h`;
+  return d.toLocaleDateString('fr-FR', {day:'numeric', month:'short'}) + ' à ' + d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+}
+
+async function loadActivityLog() {
+  const el = document.getElementById('activity-log-list');
+  try {
+    const rows = await sbGet('activity_log', 'order=created_at.desc&limit=40');
+    if (!rows.length) { el.innerHTML = '<div class="empty-msg">Aucune activité enregistrée</div>'; return; }
+    el.innerHTML = rows.map(r => `
+      <div class="co-line" style="align-items:flex-start;padding:8px 0;">
+        <span>${ACTIVITY_ICONS[r.type]||'•'} <strong>${ACTIVITY_LABELS[r.type]||r.type}</strong><br>
+          <span style="font-size:12px;color:var(--tm);">${r.details||''}</span>
+        </span>
+        <span style="font-size:11px;color:var(--tl);white-space:nowrap;">${heureRelative(r.created_at)}</span>
+      </div>`).join('');
+  } catch(e) {
+    el.innerHTML = '<div class="empty-msg">Erreur chargement du journal</div>';
+    console.error(e);
+  }
+}
+
 // ══════ RÉCAP ══════
 function renderRecap() {
   const keys=Object.keys(state.orders);
@@ -2002,6 +2076,7 @@ async function effacerToutesCommandes() {
       showToast('⚠ Suppression bloquée : autorisation manquante (RLS)');
     } else {
       showToast('✓ Toutes les commandes ont été effacées');
+      logActivity('commandes_effacees', 'Toutes les commandes ont été effacées');
     }
   } catch(e) {
     showToast('Erreur lors de l\'effacement');
@@ -2116,6 +2191,7 @@ async function saveClient() {
     renderClients2();
     populateClientSel();
     showToast(id ? '✓ Client modifié' : '✓ Client ajouté');
+    logActivity(id ? 'client_modifie' : 'client_ajoute', nom);
   } catch(e) {
     showToast('Erreur enregistrement client');
     console.error(e);
@@ -2138,6 +2214,7 @@ async function deleteClient() {
     renderClients2();
     populateClientSel();
     showToast('✓ Client supprimé');
+    logActivity('client_supprime', c.nom);
   } catch(e) {
     showToast('Erreur suppression');
     console.error(e);
@@ -2280,6 +2357,7 @@ async function submitInscription() {
     ['ins-nom','ins-siret','ins-contact','ins-tel','ins-email','ins-adresse','ins-cp','ins-commune'].forEach(i=>document.getElementById(i).value='');
     cmdSelectClient(row.id);
     showToast('✓ Inscription enregistrée — vous pouvez commander');
+    logActivity('inscription_client', `${nom} — ${adresse}`, 'client');
   } catch(e) {
     showToast('Erreur lors de l\'inscription');
     console.error(e);
@@ -2445,6 +2523,7 @@ async function submitClientOrder() {
     document.getElementById('cmd-select-wrap') && (document.querySelector('.cmd-select-wrap').style.display = 'none');
     document.getElementById('cmd-success').style.display = 'block';
     document.getElementById('cmd-success-sub').textContent = 'Merci ' + getClient(idx).nom + ', votre commande a bien été enregistrée pour la semaine du ' + document.getElementById('cmd-week-tag').textContent.replace('Semaine du ','') + '.';
+    logActivity('commande_creee', `${getClient(idx).nom} — ${items.length} article(s) — ${jour}`, 'client');
   } catch(e) {
     showToast('Erreur envoi commande');
     console.error(e);
