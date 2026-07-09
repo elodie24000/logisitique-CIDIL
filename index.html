@@ -996,6 +996,37 @@ async function loadClients() {
 }
 function getClient(id) { return clientById[id] || clients.find(c => String(c.id) === String(id)) || {}; }
 
+// ══════ GESTION DU STOCK (kg_dispo) ══════
+// deltaQty > 0 = on retire du stock (commande passée/augmentée)
+// deltaQty < 0 = on remet au stock (commande réduite/annulée)
+async function adjustStock(legumeId, deltaQty) {
+  if (!deltaQty) return;
+  try {
+    const rows = await sbGet('legumes', `id=eq.${legumeId}&select=id,kg_dispo`);
+    const row = rows[0];
+    if (!row) return;
+    const nouveau = Math.max(0, (row.kg_dispo || 0) - deltaQty);
+    await sbPatch('legumes', legumeId, { kg_dispo: nouveau });
+    const v = state.veggies.find(v => v.id == legumeId);
+    if (v) v.kg = nouveau;
+    if (window._cmdVeggies) {
+      const vv = window._cmdVeggies.find(x => x.id == legumeId);
+      if (vv) vv.kg_dispo = nouveau;
+    }
+  } catch(e) { console.error('adjustStock', legumeId, e); }
+}
+
+// Applique la différence entre l'ancienne et la nouvelle commande sur le stock de chaque légume
+async function appliquerDeltaStock(ancienOd, nouvelOd) {
+  const ids = new Set([...Object.keys(ancienOd||{}), ...Object.keys(nouvelOd||{})].filter(k=>!k.startsWith('_')));
+  for (const id of ids) {
+    const avant = (ancienOd && ancienOd[id]) || 0;
+    const apres = (nouvelOd && nouvelOd[id]) || 0;
+    const delta = apres - avant;
+    if (delta) await adjustStock(id, delta);
+  }
+}
+
 // ══════ JOURNAL D'ACTIVITÉ ══════
 async function logActivity(type, details, role) {
   try {
@@ -1812,6 +1843,7 @@ function closeModal() { document.getElementById('modal-order').classList.remove(
 async function saveOrder() {
   const jour = document.querySelector('input[name="mo-livraison"]:checked')?.value;
   if (!jour) return showToast('Choisissez un jour de livraison');
+  const ancienOd = {...(state.orders[modalClientIdx]||{})};
   const od={};
   state.veggies.forEach(v=>{
     const q=parseFloat(document.getElementById('oq-'+v.id)?.value);
@@ -1824,6 +1856,9 @@ async function saveOrder() {
   renderOrders();
   renderClients();
   showToast('✓ Commande enregistrée');
+  // Ajuste le stock disponible selon la variation de quantités commandées
+  await appliquerDeltaStock(ancienOd, od);
+  renderVeggies();
   // Persistance Supabase
   try {
     const c = getClient(modalClientIdx);
@@ -2438,7 +2473,7 @@ function renderCmdLegumes(veggies) {
         </div>
         <div class="cmd-veg-qty">
           <span class="cmd-qty-label">Quantité souhaitée</span>
-          <input type="number" class="cmd-qty-input" id="cmdqty-${v.id}" min="0" step="${(v.unite||'kg')==='kg'?'0.5':'1'}" placeholder="0" oninput="updateCmdTotal()">
+          <input type="number" class="cmd-qty-input" id="cmdqty-${v.id}" min="0" max="${v.kg_dispo}" step="${(v.unite||'kg')==='kg'?'0.5':'1'}" placeholder="0" oninput="updateCmdTotal()">
           <span class="cmd-qty-unit">${v.unite||'kg'}</span>
         </div>
       </div>`).join('')}
@@ -2510,6 +2545,18 @@ async function submitClientOrder() {
   const d = new Date(); d.setDate(d.getDate() - d.getDay() + 1);
   const semaine = [d.getFullYear(), String(d.getMonth()+1).padStart(2,'0'), String(d.getDate()).padStart(2,'0')].join('-');
   try {
+    // Revérifie le stock réel juste avant l'envoi (évite qu'un autre client ait déjà tout pris)
+    const ids = items.map(i => i.legume_id).join(',');
+    const stockActuel = await sbGet('legumes', `id=in.(${ids})&select=id,nom,kg_dispo`);
+    const manque = items.find(i => {
+      const s = stockActuel.find(x => x.id === i.legume_id);
+      return s && i.quantite > (s.kg_dispo || 0);
+    });
+    if (manque) {
+      const s = stockActuel.find(x => x.id === manque.legume_id);
+      showToast(`⚠ Stock insuffisant pour ${manque.nom} (${s?.kg_dispo ?? 0} restant)`);
+      return;
+    }
     await sbPost('commandes_clients', {
       client_nom: getClient(idx).nom,
       client_idx: idx,
@@ -2518,6 +2565,8 @@ async function submitClientOrder() {
       items: JSON.stringify(items),
       total: items.reduce((s,i) => s + (i.prix_kg||0)*i.quantite, 0)
     });
+    // Déduit la quantité commandée du stock disponible
+    for (const it of items) await adjustStock(it.legume_id, it.quantite);
     document.getElementById('cmd-legumes-wrap').style.display = 'none';
     document.getElementById('cmd-footer').style.display = 'none';
     document.getElementById('cmd-select-wrap') && (document.querySelector('.cmd-select-wrap').style.display = 'none');
