@@ -291,6 +291,12 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 .co-line{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;border-bottom:1px solid var(--g7);}
 .co-line:last-child{border-bottom:none;}
 .co-total{display:flex;justify-content:flex-end;font-size:13px;font-weight:500;color:var(--g1);padding-top:6px;margin-top:4px;border-top:1px solid var(--bd);font-family:'DM Mono',monospace;}
+.co-adjust-btn{display:block;width:100%;margin-top:10px;padding:9px;border:1px solid var(--bd);border-radius:9px;background:var(--g7);color:var(--g1);font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.co-adjust-btn:active{background:var(--g6);}
+.aj-nd-btn{flex-shrink:0;padding:8px 10px;border:1.5px solid var(--bd);border-radius:8px;background:#fff;color:var(--tm);font-size:12px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.aj-nd-btn.active{background:#fdecea;border-color:#c0392b;color:#c0392b;}
+.aj-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--g7);flex-wrap:wrap;}
+.aj-row .order-qty-wrap{flex-shrink:0;}
 .cmd-jour-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start;}
 .cmd-jour-h{font-size:14px;font-weight:500;color:var(--g1);background:var(--g6);border-radius:9px;padding:9px 10px;margin-bottom:10px;text-align:center;}
 .cmd-jour-h span{color:var(--g3);font-size:12px;}
@@ -737,6 +743,25 @@ button.livr-badge{cursor:pointer;}
     <div class="modal-foot">
       <button class="btn-cancel" onclick="closeModal()">Annuler</button>
       <button class="btn-save" onclick="saveOrder()">Valider ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ MODALE AJUSTER LA COMMANDE (encadrant) ══════ -->
+<div class="modal" id="modal-ajuster">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <div class="modal-head-name" id="aj-name">Client</div>
+      <div class="modal-head-week">Ajuster au réel</div>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:12px;color:var(--tl);margin-bottom:12px;">Corrigez la quantité réellement disponible, ou marquez un légume indisponible.</div>
+      <div id="aj-rows"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="closeAjusterModal()">Annuler</button>
+      <button class="btn-save" onclick="saveAjustements()">Enregistrer ✓</button>
     </div>
   </div>
 </div>
@@ -1322,9 +1347,14 @@ function renderTournee() {
   el.innerHTML = rows.map(r => {
     const items = typeof r.items === 'string' ? JSON.parse(r.items) : (r.items||[]);
     const c = getClient(r.client_idx);
-    const lines = items.map(it =>
-      `<div class="tour-line"><span>${it.nom}</span><span class="tour-qty">${it.quantite} ${pluriel(it.quantite, it.unite||'kg')}</span></div>`
-    ).join('');
+    const lines = items.map(it => {
+      if (it.dispo === false) return `<div class="tour-line"><span style="text-decoration:line-through;color:var(--tl);">${it.nom}</span><span style="color:#c0392b;font-weight:500;font-size:13px;">Non disponible</span></div>`;
+      const qtyEff = (it.quantite_reelle != null) ? it.quantite_reelle : it.quantite;
+      const qtyLabel = (it.quantite_reelle != null && it.quantite_reelle !== it.quantite)
+        ? `<span style="text-decoration:line-through;color:var(--tl);font-size:12px;">${it.quantite}</span> → ${qtyEff} ${pluriel(qtyEff, it.unite||'kg')}`
+        : `${qtyEff} ${pluriel(qtyEff, it.unite||'kg')}`;
+      return `<div class="tour-line"><span>${it.nom}</span><span class="tour-qty">${qtyLabel}</span></div>`;
+    }).join('');
     const adrEsc = (c.adresse||'').replace(/'/g,"\\'");
     const gps = c.adresse ? `<button type="button" class="tour-gps" onclick="event.stopPropagation();openItineraire('${adrEsc}')">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>Itinéraire GPS</button>` : '';
@@ -1798,7 +1828,11 @@ async function loadCommandes() {
       if (r.semaine === state.semaine) {
         const items = typeof r.items === 'string' ? JSON.parse(r.items) : (r.items||[]);
         const od = {};
-        items.forEach(it => { od[it.legume_id] = it.quantite; });
+        items.forEach(it => {
+          od[it.legume_id] = it.quantite;
+          if (it.dispo === false) od['_nd_'+it.legume_id] = true;
+          else if (it.quantite_reelle != null && it.quantite_reelle !== it.quantite) od['_reel_'+it.legume_id] = it.quantite_reelle;
+        });
         state.orders[r.client_idx] = od;
         // stocker l'id Supabase pour pouvoir faire un PATCH
         state.orders[r.client_idx]._sbId = r.id;
@@ -1937,9 +1971,18 @@ function carteCommande(idx) {
   const lines=Object.entries(od).filter(([k])=>!String(k).startsWith('_')).map(([vid,qty])=>{
     const v=state.veggies.find(v=>v.id==vid);
     if(!v) return '';
-    const sub=v.prix?v.prix*qty:null;
+    const nonDispo = !!od['_nd_'+vid];
+    const reel = od['_reel_'+vid];
+    if (nonDispo) {
+      return `<div class="co-line"><span style="text-decoration:line-through;color:var(--tl);">${v.nom}</span><span style="color:#c0392b;font-weight:500;font-size:12px;">Non disponible</span></div>`;
+    }
+    const qtyEff = (reel != null) ? reel : qty;
+    const sub=v.prix?v.prix*qtyEff:null;
     if(sub!==null){total+=sub;hasP=true;}
-    return `<div class="co-line"><span>${v.nom}</span><span style="font-family:'DM Mono',monospace;">${qty} ${pluriel(qty,v.unite||'kg')}${sub?' · '+(sub.toFixed(2))+' €':''}</span></div>`;
+    const qtyLabel = (reel != null && reel !== qty)
+      ? `<span style="text-decoration:line-through;color:var(--tl);">${qty}</span> → ${reel} ${pluriel(reel,v.unite||'kg')}`
+      : `${qty} ${pluriel(qty,v.unite||'kg')}`;
+    return `<div class="co-line"><span>${v.nom}</span><span style="font-family:'DM Mono',monospace;">${qtyLabel}${sub?' · '+(sub.toFixed(2))+' €':''}</span></div>`;
   }).filter(Boolean).join('');
   const frais=fraisLivraison(c);
   const totalBloc = hasP ? (frais>0
@@ -1950,7 +1993,9 @@ function carteCommande(idx) {
     : `<button class="livr-badge wait" onclick="toggleLivraison(${idx})">à livrer</button>`;
   return `<div class="co-card ${od._livre?'co-livre':''}">
     <div class="co-head"><span class="co-name">${c.nom}</span>${statut}</div>
-    <div class="co-body">${lines}${totalBloc}</div>
+    <div class="co-body">${lines}${totalBloc}
+      <button class="co-adjust-btn" onclick="openAjusterModal(${idx})">✎ Ajuster la commande</button>
+    </div>
   </div>`;
 }
 
@@ -1962,6 +2007,80 @@ async function toggleLivraison(idx) {
     await sbPatch('commandes_clients', od._sbId, {livre:od._livre, livre_at: od._livre?new Date().toISOString():null});
     logActivity('livraison_maj', `${getClient(idx).nom} — ${od._livre?'livré':'à livrer'}`);
   } catch(e) { showToast('Erreur enregistrement'); console.error(e); }
+}
+
+// ══════ AJUSTER LA COMMANDE AU RÉEL (encadrant) ══════
+let _ajusterIdx = null;
+
+function openAjusterModal(idx) {
+  _ajusterIdx = idx;
+  const c = getClient(idx);
+  const od = state.orders[idx];
+  document.getElementById('aj-name').textContent = c.nom;
+  const items = Object.entries(od).filter(([k]) => !String(k).startsWith('_'));
+  document.getElementById('aj-rows').innerHTML = items.map(([vid, qty]) => {
+    const v = state.veggies.find(v => v.id == vid);
+    if (!v) return '';
+    const nonDispo = !!od['_nd_'+vid];
+    const reel = od['_reel_'+vid];
+    const valeur = nonDispo ? '' : (reel != null ? reel : qty);
+    return `<div class="aj-row" id="ajrow-${vid}">
+      <div style="flex:1;">
+        <div class="order-veg-name">${v.nom}</div>
+        <div class="order-veg-dispo">Commandé : ${qty} ${pluriel(qty, v.unite||'kg')}</div>
+      </div>
+      <div class="order-qty-wrap">
+        <input type="number" class="order-qty" id="ajqty-${vid}" value="${valeur}" min="0" step="${(v.unite||'kg')==='kg'?'0.5':'1'}" ${nonDispo?'disabled':''}/>
+        <span class="order-unit">${v.unite||'kg'}</span>
+      </div>
+      <button type="button" class="aj-nd-btn ${nonDispo?'active':''}" id="ajnd-${vid}" onclick="toggleNonDispo(${vid})">Non dispo</button>
+    </div>`;
+  }).join('');
+  document.getElementById('modal-ajuster').classList.add('open');
+}
+
+function closeAjusterModal() { document.getElementById('modal-ajuster').classList.remove('open'); }
+
+function toggleNonDispo(vid) {
+  const btn = document.getElementById('ajnd-'+vid);
+  const input = document.getElementById('ajqty-'+vid);
+  const nowActive = !btn.classList.contains('active');
+  btn.classList.toggle('active', nowActive);
+  input.disabled = nowActive;
+  if (nowActive) input.value = '';
+}
+
+async function saveAjustements() {
+  const idx = _ajusterIdx;
+  const od = state.orders[idx];
+  if (!od || !od._sbId) { showToast('Commande introuvable'); return; }
+  const items = Object.entries(od).filter(([k]) => !String(k).startsWith('_'));
+  let total = 0;
+  const itemsFull = [];
+  for (const [vid, qty] of items) {
+    const v = state.veggies.find(v => v.id == vid);
+    if (!v) continue;
+    const btn = document.getElementById('ajnd-'+vid);
+    const nonDispo = btn?.classList.contains('active');
+    const inputVal = parseFloat(document.getElementById('ajqty-'+vid)?.value);
+    const reel = nonDispo ? 0 : (isNaN(inputVal) ? qty : inputVal);
+    const delta = reel - qty; // positif = on retire plus au stock, negatif = on restitue
+    if (delta !== 0) await adjustStock(vid, delta);
+    if (nonDispo) od['_nd_'+vid] = true; else delete od['_nd_'+vid];
+    if (!nonDispo && reel !== qty) od['_reel_'+vid] = reel; else delete od['_reel_'+vid];
+    if (!nonDispo && v.prix) total += v.prix * reel;
+    itemsFull.push({legume_id: v.id, nom: v.nom, quantite: qty, quantite_reelle: nonDispo?0:reel, dispo: !nonDispo, unite: v.unite||'kg', prix_kg: v.prix||null});
+  }
+  try {
+    await sbPatch('commandes_clients', od._sbId, { items: JSON.stringify(itemsFull), total });
+    logActivity('commande_ajustee', `${getClient(idx).nom} — quantités réelles / disponibilité corrigées`);
+    showToast('✓ Commande ajustée');
+  } catch(e) {
+    showToast('Erreur enregistrement');
+    console.error(e);
+  }
+  closeAjusterModal();
+  renderOrders();
 }
 
 function renderOrders() {
@@ -2085,14 +2204,17 @@ function renderRecap() {
   const byV={};
   keys.forEach(idx=>{
     let clientACommande=false;
-    Object.entries(state.orders[idx]).filter(([k])=>k!=='_sbId'&&k!=='_jour'&&k!=='_livre').forEach(([vid,qty])=>{
+    const od=state.orders[idx];
+    Object.entries(od).filter(([k])=>!String(k).startsWith('_')).forEach(([vid,qty])=>{
       const v=state.veggies.find(v=>v.id==vid); if(!v) return;
+      if (od['_nd_'+vid]) return; // marqué non disponible : exclu du recap
+      const qtyEff = (od['_reel_'+vid] != null) ? od['_reel_'+vid] : qty;
       clientACommande=true;
-      tKg+=qty;
-      if(v.prix){tCA+=v.prix*qty;hasCA=true;}
+      tKg+=qtyEff;
+      if(v.prix){tCA+=v.prix*qtyEff;hasCA=true;}
       byV[vid]=byV[vid]||{nom:v.nom,kg:0,ca:0};
-      byV[vid].kg+=qty;
-      if(v.prix) byV[vid].ca+=v.prix*qty;
+      byV[vid].kg+=qtyEff;
+      if(v.prix) byV[vid].ca+=v.prix*qtyEff;
     });
     if(clientACommande) tFrais+=fraisLivraison(getClient(idx));
   });
@@ -2110,9 +2232,11 @@ function renderRecap() {
   const rcl=document.getElementById('rc-clients');
   rcl.innerHTML=keys.length?keys.map(idx=>{
     const c=getClient(idx),od=state.orders[idx];
-    const pills=Object.entries(od).filter(([k])=>k!=='_sbId'&&k!=='_jour'&&k!=='_livre').map(([vid,qty])=>{
+    const pills=Object.entries(od).filter(([k])=>!String(k).startsWith('_')).map(([vid,qty])=>{
       const v=state.veggies.find(v=>v.id==vid);
-      return v?`<span style="font-size:12px;background:var(--g6);color:var(--g1);padding:3px 9px;border-radius:10px;font-family:'DM Mono',monospace;">${v.nom} ${qty}kg</span>`:'';
+      if (!v || od['_nd_'+vid]) return '';
+      const qtyEff = (od['_reel_'+vid] != null) ? od['_reel_'+vid] : qty;
+      return `<span style="font-size:12px;background:var(--g6);color:var(--g1);padding:3px 9px;border-radius:10px;font-family:'DM Mono',monospace;">${v.nom} ${qtyEff}kg</span>`;
     }).filter(Boolean).join(' ');
     return `<div class="card" style="margin-bottom:8px;">
       <div style="font-size:14px;font-weight:500;margin-bottom:6px;">${c.nom||'Client'}</div>
