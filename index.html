@@ -404,21 +404,23 @@ button.livr-badge{cursor:pointer;}
 .jour-opt{flex:1 1 30%;min-width:90px;border:1.5px solid var(--g5);border-radius:10px;padding:11px 8px;text-align:center;cursor:pointer;font-size:13px;font-weight:500;color:var(--text);}
 .flash-required{animation:flashReq .4s ease-in-out 3;border-radius:11px;}
 @keyframes flashReq{0%,100%{box-shadow:0 0 0 0 rgba(217,83,79,0);}50%{box-shadow:0 0 0 3px rgba(217,83,79,.55);}}
-.cmd-veg-card{background:var(--white);border:1.5px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:8px;box-shadow:var(--sh);transition:border-color .15s,box-shadow .15s;}
+.cmd-veg-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.cmd-veg-card{background:var(--white);border:1.5px solid var(--bd);border-radius:12px;padding:10px;box-shadow:var(--sh);transition:border-color .15s,box-shadow .15s;}
 .cmd-veg-card.selected{border-color:var(--g3);box-shadow:0 0 0 3px rgba(64,145,108,.12);}
-.cmd-veg-top{display:flex;align-items:center;gap:12px;cursor:pointer;}
-.cmd-veg-chk{width:22px;height:22px;accent-color:var(--g2);cursor:pointer;flex-shrink:0;}
-.cmd-veg-emoji{font-size:26px;flex-shrink:0;line-height:1;width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:var(--g7);border-radius:10px;}
-.cmd-veg-info{flex:1;}
-.cmd-veg-name{font-size:15px;font-weight:500;color:var(--text);}
-.cmd-veg-prix{font-size:12px;color:var(--tl);font-family:'DM Mono',monospace;margin-top:2px;}
-.cmd-veg-dispo{font-size:11px;background:var(--g6);color:var(--g1);padding:2px 8px;border-radius:10px;font-weight:500;}
-.cmd-veg-qty{display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--g7);display:none;align-items:center;gap:10px;}
+.cmd-veg-top{display:flex;align-items:center;gap:8px;cursor:pointer;flex-wrap:wrap;}
+.cmd-veg-chk{width:20px;height:20px;accent-color:var(--g2);cursor:pointer;flex-shrink:0;}
+.cmd-veg-emoji{font-size:20px;flex-shrink:0;line-height:1;width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:var(--g7);border-radius:9px;}
+.cmd-veg-name{font-size:13.5px;font-weight:500;color:var(--text);flex:1;min-width:0;}
+.cmd-veg-sub{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;align-items:center;}
+.cmd-veg-prix{font-size:11px;color:var(--tl);font-family:'DM Mono',monospace;}
+.cmd-veg-dispo{font-size:10.5px;background:var(--g6);color:var(--g1);padding:2px 7px;border-radius:9px;font-weight:500;}
+.cmd-veg-qty{display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--g7);align-items:center;gap:8px;flex-wrap:wrap;}
 .cmd-veg-card.selected .cmd-veg-qty{display:flex;}
-.cmd-qty-label{font-size:13px;color:var(--tm);flex:1;}
-.cmd-qty-input{width:80px;padding:8px 10px;border:1.5px solid var(--g5);border-radius:8px;font-size:16px;font-family:'DM Mono',monospace;text-align:center;outline:none;}
+.cmd-qty-label{font-size:12px;color:var(--tm);flex:1;min-width:70px;}
+.cmd-qty-input{width:64px;padding:7px 8px;border:1.5px solid var(--g5);border-radius:8px;font-size:15px;font-family:'DM Mono',monospace;text-align:center;outline:none;}
 .cmd-qty-input:focus{border-color:var(--g3);}
-.cmd-qty-unit{font-size:13px;color:var(--tl);}
+.cmd-qty-unit{font-size:12px;color:var(--tl);}
+@media(max-width:360px){.cmd-veg-grid{grid-template-columns:1fr;}}
 .cmd-footer{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--bd);padding:14px 16px calc(14px + env(safe-area-inset-bottom));box-shadow:0 -4px 20px rgba(0,0,0,.08);}
 .cmd-total{font-size:13px;color:var(--tl);margin-bottom:8px;text-align:center;}
 .cmd-total strong{color:var(--text);}
@@ -814,14 +816,12 @@ button.livr-badge{cursor:pointer;}
     <div class="cmd-select-wrap">
       <div class="cmd-two-col">
        <div class="cmd-col">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
-          <span style="width:42px;height:42px;flex-shrink:0;border-radius:11px;background:var(--g6);display:flex;align-items:center;justify-content:center;">
+        <div style="font-size:15px;font-weight:500;color:var(--g1);margin-bottom:12px;">Déjà client</div>
+        <div style="display:flex;flex-direction:column;align-items:center;text-align:center;margin-bottom:12px;">
+          <span style="width:42px;height:42px;border-radius:11px;background:var(--g6);display:flex;align-items:center;justify-content:center;margin-bottom:6px;">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--g1)" stroke-width="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           </span>
-          <span>
-            <span style="display:block;font-size:15px;font-weight:500;color:var(--g1);">Déjà client ?</span>
-            <span style="display:block;font-size:12.5px;color:var(--tm);margin-top:2px;">Tapez votre nom pour commander</span>
-          </span>
+          <span style="font-size:12.5px;color:var(--tm);">Tapez votre nom</span>
         </div>
         <div style="position:relative;">
           <input type="text" id="cmd-client-search" class="cmd-client-sel"
@@ -837,15 +837,14 @@ button.livr-badge{cursor:pointer;}
        </div>
        <div class="cmd-col">
         <div id="cmd-inscription-link">
-        <button onclick="toggleInscription()" style="width:100%;display:flex;align-items:center;gap:12px;padding:16px;border:1.5px solid var(--g4);border-radius:13px;background:#fff;cursor:pointer;font-family:'DM Sans',sans-serif;text-align:left;">
-          <span style="width:42px;height:42px;flex-shrink:0;border-radius:11px;background:var(--g6);display:flex;align-items:center;justify-content:center;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--g1)" stroke-width="1.8"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
-          </span>
-          <span>
-            <span style="display:block;font-size:15px;font-weight:500;color:var(--g1);">Nouveau client</span>
-            <span style="display:block;font-size:12.5px;color:var(--tm);margin-top:2px;">Créez votre fiche client en 1 minute</span>
-          </span>
-          <span style="margin-left:auto;color:var(--g3);font-size:20px;">›</span>
+        <button onclick="toggleInscription()" style="width:100%;display:flex;flex-direction:column;padding:0;border:none;background:none;cursor:pointer;font-family:'DM Sans',sans-serif;text-align:left;">
+          <div style="font-size:15px;font-weight:500;color:var(--g1);margin-bottom:12px;">Nouveau client</div>
+          <div style="display:flex;flex-direction:column;align-items:center;text-align:center;">
+            <span style="width:42px;height:42px;border-radius:11px;background:var(--g6);display:flex;align-items:center;justify-content:center;margin-bottom:6px;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--g1)" stroke-width="1.8"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+            </span>
+            <span style="font-size:12.5px;color:var(--tm);">Créer votre fiche (1 minute)</span>
+          </div>
         </button>
       </div>
       <div id="cmd-inscription-form" style="display:none;margin-top:12px;background:var(--g7);border-radius:11px;padding:14px;">
@@ -2484,22 +2483,24 @@ function renderCmdLegumes(veggies) {
   if (!veggies.length) { wrap.innerHTML = '<div class="empty-msg">Aucun légume disponible cette semaine</div>'; return; }
   const familles = {};
   veggies.forEach(v => {
-    const fam = v.famille || 'Autres';
+    const fam = v.famille || '';
     if (!familles[fam]) familles[fam] = [];
     familles[fam].push(v);
   });
-  wrap.innerHTML = Object.entries(familles).map(([fam, vegs]) => `
-    <div class="cmd-famille-title">${fam}</div>
+  wrap.innerHTML = '<div class="cmd-famille-title">Liste des légumes disponibles</div>' +
+    Object.entries(familles).map(([fam, vegs]) => `
+    ${fam ? `<div class="cmd-famille-title">${fam}</div>` : ''}
+    <div class="cmd-veg-grid">
     ${vegs.map(v => `
       <div class="cmd-veg-card" id="cmdcard-${v.id}">
         <div class="cmd-veg-top" onclick="toggleCmdVeg(${v.id})">
           <input type="checkbox" class="cmd-veg-chk" id="cmdchk-${v.id}" onclick="event.stopPropagation();toggleCmdVeg(${v.id},true)">
           <div class="cmd-veg-emoji">${emojiLegume(v.nom)}</div>
-          <div class="cmd-veg-info">
-            <div class="cmd-veg-name">${v.nom}</div>
-            <div class="cmd-veg-prix">${v.prix_kg ? v.prix_kg.toFixed(2) + ' €/' + (v.unite||'kg') : 'Prix sur devis'}</div>
-          </div>
-          <span class="cmd-veg-dispo">${v.kg_dispo} ${pluriel(v.kg_dispo, v.unite)} dispo</span>
+          <div class="cmd-veg-name">${v.nom}</div>
+        </div>
+        <div class="cmd-veg-sub">
+          <span class="cmd-veg-prix">${v.prix_kg ? v.prix_kg.toFixed(2) + ' €/' + (v.unite||'kg') : 'Prix sur devis'}</span>
+          <span class="cmd-veg-dispo">${v.kg_dispo} ${pluriel(v.kg_dispo, v.unite)}</span>
         </div>
         <div class="cmd-veg-qty">
           <span class="cmd-qty-label">Quantité souhaitée</span>
@@ -2507,6 +2508,7 @@ function renderCmdLegumes(veggies) {
           <span class="cmd-qty-unit">${v.unite||'kg'}</span>
         </div>
       </div>`).join('')}
+    </div>
   `).join('');
 }
 
