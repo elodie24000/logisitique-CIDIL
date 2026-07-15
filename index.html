@@ -2493,7 +2493,7 @@ function renderCmdLegumes(veggies) {
     ${vegs.map(v => `
       <div class="cmd-veg-card" id="cmdcard-${v.id}">
         <div class="cmd-veg-top" onclick="toggleCmdVeg(${v.id})">
-          <input type="checkbox" class="cmd-veg-chk" id="cmdchk-${v.id}" onclick="event.stopPropagation();toggleCmdVeg(${v.id})">
+          <input type="checkbox" class="cmd-veg-chk" id="cmdchk-${v.id}" onclick="event.stopPropagation();toggleCmdVeg(${v.id},true)">
           <div class="cmd-veg-emoji">${emojiLegume(v.nom)}</div>
           <div class="cmd-veg-info">
             <div class="cmd-veg-name">${v.nom}</div>
@@ -2517,10 +2517,10 @@ function cmdClientChange() {
   updateCmdTotal();
 }
 
-function toggleCmdVeg(id) {
+function toggleCmdVeg(id, fromCheckbox) {
   const chk = document.getElementById('cmdchk-'+id);
   const card = document.getElementById('cmdcard-'+id);
-  chk.checked = !chk.checked;
+  if (!fromCheckbox) chk.checked = !chk.checked;
   card.classList.toggle('selected', chk.checked);
   if (chk.checked) document.getElementById('cmdqty-'+id).focus();
   updateCmdTotal();
