@@ -198,8 +198,8 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 .filters::-webkit-scrollbar{display:none;}
 .flt{padding:6px 14px;border-radius:20px;border:1px solid var(--bd);background:var(--white);color:var(--tm);font-size:13px;cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif;flex-shrink:0;}
 .flt.active{background:var(--g2);color:#fff;border-color:var(--g2);}
-.jour-tabs{display:flex;gap:10px;margin-bottom:18px;}
-.jour-tab{flex:1;padding:14px 6px;border-radius:13px;border:1.5px solid var(--bd);background:var(--white);color:var(--tm);font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.jour-tabs{display:flex;gap:10px;margin-bottom:18px;overflow-x:auto;padding-bottom:2px;}
+.jour-tab{flex:0 0 auto;min-width:100px;padding:14px 10px;border-radius:13px;border:1.5px solid var(--bd);background:var(--white);color:var(--tm);font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;}
 .jour-tab.active{background:var(--g1);color:#fff;border-color:var(--g1);}
 #tournee-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start;}
 .tour-card{background:var(--white);border:1px solid var(--bd);border-radius:14px;margin-bottom:0;overflow:hidden;box-shadow:var(--sh);}
@@ -582,11 +582,7 @@ button.livr-badge{cursor:pointer;}
 
     <!-- PAGE TOURNÉE -->
     <div class="page" id="page-tournee">
-      <div class="jour-tabs">
-        <button class="jour-tab active" id="tab-mardi" onclick="showJour('mardi')">Mardi</button>
-        <button class="jour-tab" id="tab-jeudi" onclick="showJour('jeudi')">Jeudi</button>
-        <button class="jour-tab" id="tab-interne" onclick="showJour('interne')">Autres</button>
-      </div>
+      <div class="jour-tabs" id="jour-tabs"></div>
       <div id="tournee-list"><div class="empty-msg">Chargement…</div></div>
     </div>
 
@@ -1267,6 +1263,8 @@ function majBanniereInscriptions() {
 // ══════ TOURNÉE LIVREUR ══════
 let _tourneeRows = [];
 let _jourActif = 'mardi';
+const JOURS_ORDRE = ['lundi','mardi','mercredi','jeudi','vendredi','samedi'];
+const JOURS_LABELS = {lundi:'Lundi',mardi:'Mardi',mercredi:'Mercredi',jeudi:'Jeudi',vendredi:'Vendredi',samedi:'Samedi'};
 
 async function loadTournee() {
   const el = document.getElementById('tournee-list');
@@ -1278,14 +1276,24 @@ async function loadTournee() {
     el.innerHTML = '<div class="empty-msg">Erreur de chargement</div>';
     return;
   }
-  showJour(_jourActif);
+  renderJourTabs();
+  renderTournee();
+}
+
+// Un onglet par jour réellement demandé cette semaine. Mardi et Jeudi toujours affichés (jours habituels).
+function renderJourTabs() {
+  const present = new Set(_tourneeRows.filter(r => getClient(r.client_idx)?.nom).map(r => r.jour_livraison).filter(Boolean));
+  present.add('mardi'); present.add('jeudi');
+  const joursTries = JOURS_ORDRE.filter(j => present.has(j));
+  if (!joursTries.includes(_jourActif)) _jourActif = joursTries[0] || 'mardi';
+  document.getElementById('jour-tabs').innerHTML = joursTries.map(j =>
+    `<button class="jour-tab${j===_jourActif?' active':''}" onclick="showJour('${j}')">${JOURS_LABELS[j]}</button>`
+  ).join('');
 }
 
 function showJour(jour) {
   _jourActif = jour;
-  document.getElementById('tab-mardi').classList.toggle('active', jour==='mardi');
-  document.getElementById('tab-jeudi').classList.toggle('active', jour==='jeudi');
-  document.getElementById('tab-interne').classList.toggle('active', jour==='interne');
+  renderJourTabs();
   renderTournee();
 }
 
@@ -1299,17 +1307,9 @@ function emojiClient(idx) {
 
 function renderTournee() {
   const el = document.getElementById('tournee-list');
-  const isInterne = _jourActif === 'interne';
-  const rows = _tourneeRows.filter(r => {
-    const c = getClient(r.client_idx);
-    if (!c?.nom) return false;
-    const flexible = c.cat === 'Interne' || c.sans_delai;
-    return isInterne ? flexible : (!flexible && r.jour_livraison === _jourActif);
-  });
+  const rows = _tourneeRows.filter(r => getClient(r.client_idx)?.nom && r.jour_livraison === _jourActif);
   if (!rows.length) {
-    el.innerHTML = isInterne
-      ? `<div class="empty-msg">Aucune commande interne ou flexible cette semaine</div>`
-      : `<div class="empty-msg">Aucune commande à livrer le ${_jourActif} cette semaine</div>`;
+    el.innerHTML = `<div class="empty-msg">Aucune commande à livrer le ${JOURS_LABELS[_jourActif] || _jourActif} cette semaine</div>`;
     return;
   }
   el.innerHTML = rows.map(r => {
@@ -1321,14 +1321,12 @@ function renderTournee() {
     const adrEsc = (c.adresse||'').replace(/'/g,"\\'");
     const gps = c.adresse ? `<button type="button" class="tour-gps" onclick="event.stopPropagation();openItineraire('${adrEsc}')">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>Itinéraire GPS</button>` : '';
-    const jourTag = isInterne && r.jour_livraison ? `<div class="tour-adr" style="text-transform:capitalize;">${r.jour_livraison}</div>` : '';
     return `<div class="tour-card ${r.livre?'livre':''}" id="tour-${r.id}">
       <div class="tour-head" onclick="toggleTourCard(${r.id})">
         <div class="tour-emoji">${emojiClient(r.client_idx)}</div>
         <div style="flex:1;">
           <div class="tour-nom">${r.client_nom}</div>
           <div class="tour-adr">${items.length} article(s)${c.adresse?' · '+c.adresse:''}</div>
-          ${jourTag}
         </div>
         ${r.livre?`<span class="tour-done-tag">✓ ${heureLivraison(r.livre_at)}</span>`:''}
         <span class="tour-chevron" id="chev-${r.id}">▾</span>
@@ -1924,7 +1922,7 @@ function fmtSemaine(s) {
   return `Semaine du ${d.toLocaleDateString('fr-FR', opt)} au ${fin.toLocaleDateString('fr-FR', opt)}`;
 }
 
-function carteCommande(idx, mode) {
+function carteCommande(idx) {
   const c=getClient(idx); if(!c||!c.nom) return '';
   const od=state.orders[idx];
   let total=0,hasP=false;
@@ -1939,16 +1937,12 @@ function carteCommande(idx, mode) {
   const totalBloc = hasP ? (frais>0
     ? `<div class="co-total" style="font-weight:400;color:var(--tm);">Légumes : ${total.toFixed(2)} € · Livr. : ${frais.toFixed(2)} €</div><div class="co-total">Total : ${(total+frais).toFixed(2)} €</div>`
     : `<div class="co-total">Total : ${total.toFixed(2)} €</div>`) : '';
-  let statut = '';
-  if (mode === 'ext' || mode === 'interne') {
-    statut = od._livre
-      ? `<button class="livr-badge ok" onclick="toggleLivraison(${idx})">✓ Livré</button>`
-      : `<button class="livr-badge wait" onclick="toggleLivraison(${idx})">à livrer</button>`;
-  }
-  const jourLabel = (mode==='interne' && od._jour) ? `<div style="font-size:11px;color:var(--g3);text-transform:capitalize;margin-bottom:6px;">${od._jour}</div>` : '';
-  return `<div class="co-card ${od._livre&&mode?'co-livre':''}">
+  const statut = od._livre
+    ? `<button class="livr-badge ok" onclick="toggleLivraison(${idx})">✓ Livré</button>`
+    : `<button class="livr-badge wait" onclick="toggleLivraison(${idx})">à livrer</button>`;
+  return `<div class="co-card ${od._livre?'co-livre':''}">
     <div class="co-head"><span class="co-name">${c.nom}</span>${statut}</div>
-    <div class="co-body">${jourLabel}${lines}${totalBloc}</div>
+    <div class="co-body">${lines}${totalBloc}</div>
   </div>`;
 }
 
@@ -1967,33 +1961,26 @@ function renderOrders() {
   if (!el) return;
   const keys = Object.keys(state.orders);
 
-  // Répartir : mardi / jeudi / interne (+ clients "sans_delai" aux jours flexibles)
-  const mardi=[], jeudi=[], interne=[];
+  // Un groupe par jour réellement demandé. Mardi et Jeudi toujours affichés (jours habituels).
+  const parJour = {};
   keys.forEach(idx=>{
     const c=getClient(idx); if(!c||!c.nom) return;
-    if (c.cat==='Interne' || c.sans_delai) interne.push(idx);
-    else if (state.orders[idx]._jour==='jeudi') jeudi.push(idx);
-    else mardi.push(idx);
+    const jour = state.orders[idx]._jour || 'mardi';
+    (parJour[jour] = parJour[jour]||[]).push(idx);
   });
+  const joursPresents = new Set(Object.keys(parJour));
+  joursPresents.add('mardi'); joursPresents.add('jeudi');
+  const joursTries = JOURS_ORDRE.filter(j => joursPresents.has(j));
 
   let html='';
-  if (!mardi.length && !jeudi.length && !interne.length) {
+  if (!keys.length) {
     html += '<div class="empty-msg">Aucune commande cette semaine</div>';
   } else {
-    html += `<div class="cmd-jour-grid">
+    html += `<div class="cmd-jour-grid">` + joursTries.map(j => `
       <div class="cmd-jour-col">
-        <div class="cmd-jour-h">🗓️ Mardi <span>(${mardi.length})</span></div>
-        ${mardi.map(i=>carteCommande(i,'ext')).join('') || '<div class="empty-mini">Aucune</div>'}
-      </div>
-      <div class="cmd-jour-col">
-        <div class="cmd-jour-h">🗓️ Jeudi <span>(${jeudi.length})</span></div>
-        ${jeudi.map(i=>carteCommande(i,'ext')).join('') || '<div class="empty-mini">Aucune</div>'}
-      </div>
-    </div>`;
-    if (interne.length) {
-      html += '<div class="section-title" style="margin-top:22px;">Commandes internes & jours flexibles</div>';
-      html += `<div class="cmd-jour-grid">${interne.map(i=>carteCommande(i,'interne')).join('')}</div>`;
-    }
+        <div class="cmd-jour-h">🗓️ ${JOURS_LABELS[j]} <span>(${(parJour[j]||[]).length})</span></div>
+        ${(parJour[j]||[]).map(i=>carteCommande(i)).join('') || '<div class="empty-mini">Aucune</div>'}
+      </div>`).join('') + `</div>`;
   }
 
   // Semaines passées (accordéon)
