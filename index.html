@@ -407,13 +407,14 @@ button.livr-badge{cursor:pointer;}
 .cmd-veg-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .cmd-veg-card{background:var(--white);border:1.5px solid var(--bd);border-radius:12px;padding:10px;box-shadow:var(--sh);transition:border-color .15s,box-shadow .15s;}
 .cmd-veg-card.selected{border-color:var(--g3);box-shadow:0 0 0 3px rgba(64,145,108,.12);}
-.cmd-veg-top{display:flex;align-items:center;gap:8px;cursor:pointer;flex-wrap:wrap;}
-.cmd-veg-chk{width:20px;height:20px;accent-color:var(--g2);cursor:pointer;flex-shrink:0;}
-.cmd-veg-emoji{font-size:20px;flex-shrink:0;line-height:1;width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:var(--g7);border-radius:9px;}
-.cmd-veg-name{font-size:13.5px;font-weight:500;color:var(--text);flex:1;min-width:0;}
-.cmd-veg-sub{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;align-items:center;}
-.cmd-veg-prix{font-size:11px;color:var(--tl);font-family:'DM Mono',monospace;}
-.cmd-veg-dispo{font-size:10.5px;background:var(--g6);color:var(--g1);padding:2px 7px;border-radius:9px;font-weight:500;}
+.cmd-veg-top{cursor:pointer;}
+.cmd-veg-headrow{display:flex;align-items:center;gap:6px;margin-bottom:8px;}
+.cmd-veg-chk{width:18px;height:18px;accent-color:var(--g2);cursor:pointer;flex-shrink:0;}
+.cmd-veg-name{flex:1;text-align:center;font-size:14px;font-weight:500;color:var(--text);}
+.cmd-veg-icondispo{display:flex;flex-direction:column;align-items:center;gap:4px;margin-bottom:8px;}
+.cmd-veg-emoji{font-size:24px;line-height:1;width:38px;height:38px;display:flex;align-items:center;justify-content:center;background:var(--g7);border-radius:10px;}
+.cmd-veg-dispo{font-size:11px;color:var(--tm);}
+.cmd-veg-prixbadge{background:var(--g6);color:var(--g1);border-radius:8px;padding:6px 8px;text-align:center;font-size:13px;font-weight:500;font-family:'DM Mono',monospace;}
 .cmd-veg-qty{display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--g7);align-items:center;gap:8px;flex-wrap:wrap;}
 .cmd-veg-card.selected .cmd-veg-qty{display:flex;}
 .cmd-qty-label{font-size:12px;color:var(--tm);flex:1;min-width:70px;}
@@ -2494,13 +2495,15 @@ function renderCmdLegumes(veggies) {
     ${vegs.map(v => `
       <div class="cmd-veg-card" id="cmdcard-${v.id}">
         <div class="cmd-veg-top" onclick="toggleCmdVeg(${v.id})">
-          <input type="checkbox" class="cmd-veg-chk" id="cmdchk-${v.id}" onclick="event.stopPropagation();toggleCmdVeg(${v.id},true)">
-          <div class="cmd-veg-emoji">${emojiLegume(v.nom)}</div>
-          <div class="cmd-veg-name">${v.nom}</div>
-        </div>
-        <div class="cmd-veg-sub">
-          <span class="cmd-veg-prix">${v.prix_kg ? v.prix_kg.toFixed(2) + ' €/' + (v.unite||'kg') : 'Prix sur devis'}</span>
-          <span class="cmd-veg-dispo">${v.kg_dispo} ${pluriel(v.kg_dispo, v.unite)}</span>
+          <div class="cmd-veg-headrow">
+            <input type="checkbox" class="cmd-veg-chk" id="cmdchk-${v.id}" onclick="event.stopPropagation();toggleCmdVeg(${v.id},true)">
+            <div class="cmd-veg-name">${v.nom}</div>
+          </div>
+          <div class="cmd-veg-icondispo">
+            <span class="cmd-veg-emoji">${emojiLegume(v.nom)}</span>
+            <span class="cmd-veg-dispo">${v.kg_dispo} ${pluriel(v.kg_dispo, v.unite)} dispo</span>
+          </div>
+          <div class="cmd-veg-prixbadge">${v.prix_kg ? v.prix_kg.toFixed(2) + ' €/' + (v.unite||'kg') : 'Prix sur devis'}</div>
         </div>
         <div class="cmd-veg-qty">
           <span class="cmd-qty-label">Quantité souhaitée</span>
