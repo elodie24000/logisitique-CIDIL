@@ -1,4 +1,4 @@
-const CACHE = 'cidil-v51';
+const CACHE = 'cidil-v52';
 const ASSETS = [
   '/logisitique-CIDIL/',
   '/logisitique-CIDIL/index.html',

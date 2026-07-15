@@ -393,9 +393,9 @@ button.livr-badge{cursor:pointer;}
 .cmd-week-tag{display:inline-block;background:rgba(255,255,255,.12);color:rgba(255,255,255,.8);font-size:11px;font-family:'DM Mono',monospace;padding:4px 12px;border-radius:20px;margin-top:10px;}
 .cmd-body{padding:20px 16px 100px;}
 .cmd-select-wrap{background:var(--white);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:20px;box-shadow:var(--sh);}
-.cmd-two-col{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;align-items:start;}
-.cmd-two-col .cmd-col + .cmd-col{border-left:1px solid var(--g6);padding-left:20px;}
-@media(max-width:540px){.cmd-two-col .cmd-col + .cmd-col{border-left:none;padding-left:0;border-top:1px solid var(--g6);padding-top:16px;}}
+.cmd-two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;}
+.cmd-two-col .cmd-col + .cmd-col{border-left:1px solid var(--g6);padding-left:12px;}
+@media(max-width:360px){.cmd-two-col{grid-template-columns:1fr;}.cmd-two-col .cmd-col + .cmd-col{border-left:none;padding-left:0;border-top:1px solid var(--g6);padding-top:16px;}}
 .cmd-select-label{font-size:12px;font-weight:500;color:var(--tl);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;}
 .cmd-client-sel{width:100%;padding:10px 12px;border:1.5px solid var(--g5);border-radius:9px;font-size:15px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--white);outline:none;}
 .cmd-client-sel:focus{border-color:var(--g3);}
@@ -847,7 +847,7 @@ button.livr-badge{cursor:pointer;}
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--g1)" stroke-width="1.8"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
           </span>
           <span>
-            <span style="display:block;font-size:15px;font-weight:500;color:var(--g1);">Première commande ?</span>
+            <span style="display:block;font-size:15px;font-weight:500;color:var(--g1);">Nouveau client</span>
             <span style="display:block;font-size:12.5px;color:var(--tm);margin-top:2px;">Créez votre fiche client en 1 minute</span>
           </span>
           <span style="margin-left:auto;color:var(--g3);font-size:20px;">›</span>
