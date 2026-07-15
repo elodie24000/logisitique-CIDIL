@@ -940,6 +940,23 @@ const JOURS_INTERNE = [['lundi','Lundi'],['mardi','Mardi'],['mercredi','Mercredi
 
 function joursPourClient(c) { return (c && c.cat === 'Interne') ? JOURS_INTERNE : JOURS_EXT; }
 
+// Retire les jours dont la commande est fermée : mardi ferme le lundi 12h, jeudi ferme le mercredi 12h
+// (pas de délai pour Boutique/Labo, qui peuvent réapprovisionner n'importe quel jour)
+function joursDisponiblesPourClient(c) {
+  const tousJours = joursPourClient(c);
+  if (c && c.cat === 'Interne') return tousJours;
+  if (!state.semaine) return tousJours;
+  const lundi = new Date(state.semaine + 'T00:00:00');
+  const cutoffMardi = new Date(lundi); cutoffMardi.setHours(12,0,0,0);
+  const cutoffJeudi = new Date(lundi); cutoffJeudi.setDate(lundi.getDate()+2); cutoffJeudi.setHours(12,0,0,0);
+  const now = new Date();
+  return tousJours.filter(([val]) => {
+    if (val === 'mardi') return now < cutoffMardi;
+    if (val === 'jeudi') return now < cutoffJeudi;
+    return true;
+  });
+}
+
 function renderJourOptions(containerId, radioName, jours, onchangeFn, checkedVal) {
   const el = document.getElementById(containerId);
   if (!el) return;
@@ -1816,11 +1833,20 @@ function openOrderModal() {
       </div>
     </div>`;
   }).join('');
-  // Jour de livraison : options selon le type de client (interne = tous les jours)
+  // Jour de livraison : options selon le type de client (interne = tous les jours) et selon le délai encore ouvert
   const cli = getClient(idx);
   const jour = (state.orders[idx]||{})._jour || '';
   document.getElementById('mo-jour-titre').textContent = cli.cat === 'Interne' ? 'Jour de réassort souhaité' : 'Jour de livraison';
-  renderJourOptions('mo-jour-options', 'mo-livraison', joursPourClient(cli), 'moJourChange', jour);
+  let joursDispo = joursDisponiblesPourClient(cli);
+  // Garde le jour déjà choisi visible même si son délai vient de fermer (pour ne pas perdre l'info existante)
+  if (jour && !joursDispo.some(([v]) => v === jour)) {
+    const orig = joursPourClient(cli).find(([v]) => v === jour);
+    if (orig) joursDispo = [...joursDispo, orig];
+  }
+  renderJourOptions('mo-jour-options', 'mo-livraison', joursDispo, 'moJourChange', jour);
+  if (!joursDispo.length) {
+    document.getElementById('mo-jour-options').innerHTML = '<div class="empty-msg" style="margin:0;">Commandes fermées pour cette semaine</div>';
+  }
   document.getElementById('modal-order').classList.add('open');
 }
 
@@ -2340,7 +2366,11 @@ function cmdSelectClient(idx) {
   document.getElementById('cmd-legumes-wrap').style.display = 'block';
   document.getElementById('cmd-footer').style.display = 'block';
   document.getElementById('cmd-jour-titre').textContent = cli.cat === 'Interne' ? 'Jour de réassort souhaité' : 'Jour de livraison souhaité';
-  renderJourOptions('cmd-jour-options', 'livraison', joursPourClient(cli), 'cmdJourChange', null);
+  const joursDispo = joursDisponiblesPourClient(cli);
+  renderJourOptions('cmd-jour-options', 'livraison', joursDispo, 'cmdJourChange', null);
+  if (!joursDispo.length) {
+    document.getElementById('cmd-jour-options').innerHTML = '<div class="empty-msg" style="margin:0;">Commandes fermées pour cette semaine — revenez la semaine prochaine</div>';
+  }
   updateCmdTotal();
 }
 
@@ -2533,9 +2563,11 @@ async function submitClientOrder() {
   if (!items.length) return showToast('Sélectionnez au moins un légume');
   const livW = document.getElementById('cmd-livraison-wrap');
   const jour = document.querySelector('input[name="livraison"]:checked')?.value;
-  if (!jour) {
-    showToast('⚠ Choisissez d\'abord un jour');
+  const encoreOuvert = joursDisponiblesPourClient(getClient(idx)).some(([v]) => v === jour);
+  if (!jour || !encoreOuvert) {
+    showToast(jour ? '⚠ Les commandes pour ' + jour + ' sont fermées, choisissez un autre jour' : '⚠ Choisissez d\'abord un jour');
     if (livW) {
+      cmdSelectClient(idx); // rafraîchit les jours proposés
       livW.scrollIntoView({behavior:'smooth', block:'center'});
       livW.classList.add('flash-required');
       setTimeout(()=>livW.classList.remove('flash-required'), 1600);
