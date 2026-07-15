@@ -941,10 +941,10 @@ const JOURS_INTERNE = [['lundi','Lundi'],['mardi','Mardi'],['mercredi','Mercredi
 function joursPourClient(c) { return (c && c.cat === 'Interne') ? JOURS_INTERNE : JOURS_EXT; }
 
 // Retire les jours dont la commande est fermée : mardi ferme le lundi 12h, jeudi ferme le mercredi 12h
-// (pas de délai pour Boutique/Labo, qui peuvent réapprovisionner n'importe quel jour)
+// (pas de délai pour Boutique/Labo, ni pour les clients marqués "sans_delai")
 function joursDisponiblesPourClient(c) {
   const tousJours = joursPourClient(c);
-  if (c && c.cat === 'Interne') return tousJours;
+  if (c && (c.cat === 'Interne' || c.sans_delai)) return tousJours;
   if (!state.semaine) return tousJours;
   const lundi = new Date(state.semaine + 'T00:00:00');
   const cutoffMardi = new Date(lundi); cutoffMardi.setHours(12,0,0,0);
