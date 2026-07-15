@@ -585,7 +585,7 @@ button.livr-badge{cursor:pointer;}
       <div class="jour-tabs">
         <button class="jour-tab active" id="tab-mardi" onclick="showJour('mardi')">Mardi</button>
         <button class="jour-tab" id="tab-jeudi" onclick="showJour('jeudi')">Jeudi</button>
-        <button class="jour-tab" id="tab-interne" onclick="showJour('interne')">Interne</button>
+        <button class="jour-tab" id="tab-interne" onclick="showJour('interne')">Autres</button>
       </div>
       <div id="tournee-list"><div class="empty-msg">Chargement…</div></div>
     </div>
@@ -937,8 +937,13 @@ const ROLE_ICONS = { livreur:'🚚', encadrant:'🌿', boutique:'🛒', labo:'�
 const INTERNE_KEY = { 'Boutique':'boutique', 'Labo de transformation':'labo' };
 const JOURS_EXT = [['mardi','Mardi'],['jeudi','Jeudi']];
 const JOURS_INTERNE = [['lundi','Lundi'],['mardi','Mardi'],['mercredi','Mercredi'],['jeudi','Jeudi'],['vendredi','Vendredi'],['samedi','Samedi']];
+const JOURS_FLEXIBLE = [['lundi','Lundi'],['mardi','Mardi'],['mercredi','Mercredi'],['jeudi','Jeudi'],['vendredi','Vendredi']];
 
-function joursPourClient(c) { return (c && c.cat === 'Interne') ? JOURS_INTERNE : JOURS_EXT; }
+function joursPourClient(c) {
+  if (c && c.cat === 'Interne') return JOURS_INTERNE;
+  if (c && c.sans_delai) return JOURS_FLEXIBLE;
+  return JOURS_EXT;
+}
 
 // Retire les jours dont la commande est fermée : mardi ferme le lundi 12h, jeudi ferme le mercredi 12h
 // (pas de délai pour Boutique/Labo, ni pour les clients marqués "sans_delai")
@@ -1298,11 +1303,12 @@ function renderTournee() {
   const rows = _tourneeRows.filter(r => {
     const c = getClient(r.client_idx);
     if (!c?.nom) return false;
-    return isInterne ? c.cat === 'Interne' : (c.cat !== 'Interne' && r.jour_livraison === _jourActif);
+    const flexible = c.cat === 'Interne' || c.sans_delai;
+    return isInterne ? flexible : (!flexible && r.jour_livraison === _jourActif);
   });
   if (!rows.length) {
     el.innerHTML = isInterne
-      ? `<div class="empty-msg">Aucune commande interne cette semaine</div>`
+      ? `<div class="empty-msg">Aucune commande interne ou flexible cette semaine</div>`
       : `<div class="empty-msg">Aucune commande à livrer le ${_jourActif} cette semaine</div>`;
     return;
   }
@@ -1961,11 +1967,11 @@ function renderOrders() {
   if (!el) return;
   const keys = Object.keys(state.orders);
 
-  // Répartir : mardi / jeudi / interne
+  // Répartir : mardi / jeudi / interne (+ clients "sans_delai" aux jours flexibles)
   const mardi=[], jeudi=[], interne=[];
   keys.forEach(idx=>{
     const c=getClient(idx); if(!c||!c.nom) return;
-    if (c.cat==='Interne') interne.push(idx);
+    if (c.cat==='Interne' || c.sans_delai) interne.push(idx);
     else if (state.orders[idx]._jour==='jeudi') jeudi.push(idx);
     else mardi.push(idx);
   });
@@ -1985,7 +1991,7 @@ function renderOrders() {
       </div>
     </div>`;
     if (interne.length) {
-      html += '<div class="section-title" style="margin-top:22px;">Commandes internes</div>';
+      html += '<div class="section-title" style="margin-top:22px;">Commandes internes & jours flexibles</div>';
       html += `<div class="cmd-jour-grid">${interne.map(i=>carteCommande(i,'interne')).join('')}</div>`;
     }
   }
