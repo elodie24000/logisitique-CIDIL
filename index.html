@@ -361,9 +361,10 @@ button.livr-badge{cursor:pointer;}
 .cat-item{padding:8px 4px;border-bottom:1px solid var(--g7);}
 .cat-item:last-child{border-bottom:none;}
 .cat-item-top{display:flex;align-items:center;gap:10px;}
+.cat-emoji{font-size:19px;line-height:1;width:30px;height:30px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--g7);border-radius:8px;}
 .cat-chk{width:18px;height:18px;accent-color:var(--g2);cursor:pointer;flex-shrink:0;}
-.cat-nom{font-size:14px;flex:1;}
-.cat-inputs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px;padding-left:28px;}
+.cat-nom{font-size:14.5px;font-weight:500;flex:1;}
+.cat-inputs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px;padding-left:38px;}
 .cat-inputs input,.cat-inputs select,.cat-inputs div{display:none;}
 .cat-item.checked .cat-inputs input,.cat-item.checked .cat-inputs select,.cat-item.checked .cat-inputs div{display:block;}
 
@@ -1629,6 +1630,7 @@ function renderCatalogue() {
         <div class="cat-item" id="item-${v._uid}">
           <div class="cat-item-top">
             <input type="checkbox" class="cat-chk" id="cat-${v._uid}" value="${v.nom}" data-unite="${v._unite}" data-id="${v.id}" onchange="toggleItem('${v._uid}')">
+            <div class="cat-emoji">${emojiLegume(v.nom)}</div>
             <label class="cat-nom" for="cat-${v._uid}">${v.nom} <span style="font-size:11px;color:var(--tl);font-weight:400;">(${v._unite})</span></label>
           </div>
           <div class="cat-inputs">
