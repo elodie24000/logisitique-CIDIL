@@ -408,6 +408,7 @@ button.livr-badge{cursor:pointer;}
 .cmd-veg-card.selected{border-color:var(--g3);box-shadow:0 0 0 3px rgba(64,145,108,.12);}
 .cmd-veg-top{display:flex;align-items:center;gap:12px;cursor:pointer;}
 .cmd-veg-chk{width:22px;height:22px;accent-color:var(--g2);cursor:pointer;flex-shrink:0;}
+.cmd-veg-emoji{font-size:26px;flex-shrink:0;line-height:1;width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:var(--g7);border-radius:10px;}
 .cmd-veg-info{flex:1;}
 .cmd-veg-name{font-size:15px;font-weight:500;color:var(--text);}
 .cmd-veg-prix{font-size:12px;color:var(--tl);font-family:'DM Mono',monospace;margin-top:2px;}
@@ -2493,6 +2494,7 @@ function renderCmdLegumes(veggies) {
       <div class="cmd-veg-card" id="cmdcard-${v.id}">
         <div class="cmd-veg-top" onclick="toggleCmdVeg(${v.id})">
           <input type="checkbox" class="cmd-veg-chk" id="cmdchk-${v.id}" onclick="event.stopPropagation();toggleCmdVeg(${v.id})">
+          <div class="cmd-veg-emoji">${emojiLegume(v.nom)}</div>
           <div class="cmd-veg-info">
             <div class="cmd-veg-name">${v.nom}</div>
             <div class="cmd-veg-prix">${v.prix_kg ? v.prix_kg.toFixed(2) + ' €/' + (v.unite||'kg') : 'Prix sur devis'}</div>
