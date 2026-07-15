@@ -8,7 +8,7 @@ SUPA_URL = 'https://ulvrwtwxzhlrplvbcsrd.supabase.co'
 SUPA_KEY = os.environ['SUPABASE_KEY']
 BREVO_KEY = os.environ['BREVO_API_KEY']
 
-EXPEDITEUR_EMAIL = 'contact@cidil.fr'   # a adapter a l'adresse validee sur Brevo
+EXPEDITEUR_EMAIL = 'eti.maraichage1@cidil-asso.fr'
 EXPEDITEUR_NOM = 'CIDIL Maraîchage'
 LIEN_COMMANDE = 'https://elodie24000.github.io/logisitique-CIDIL/?commande'
 
