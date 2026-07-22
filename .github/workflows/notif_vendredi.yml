@@ -35,3 +35,17 @@ jobs:
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
           BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
         run: python scripts/send_email_vendredi.py
+
+  email-gestionnaire:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Envoi du recap au gestionnaire
+        env:
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+        run: python scripts/send_email_gestionnaire_vendredi.py
