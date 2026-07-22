@@ -1838,6 +1838,7 @@ async function loadCommandes() {
         state.orders[r.client_idx]._sbId = r.id;
         state.orders[r.client_idx]._jour = r.jour_livraison || '';
         state.orders[r.client_idx]._livre = !!r.livre;
+        state.orders[r.client_idx]._prete = !!r.prete;
       } else {
         if (!byWeek[r.semaine]) byWeek[r.semaine] = [];
         byWeek[r.semaine].push(r);
@@ -1991,10 +1992,14 @@ function carteCommande(idx) {
   const statut = od._livre
     ? `<button class="livr-badge ok" onclick="toggleLivraison(${idx})">✓ Livré</button>`
     : `<button class="livr-badge wait" onclick="toggleLivraison(${idx})">à livrer</button>`;
+  const preteBtn = od._prete
+    ? `<button class="co-adjust-btn" disabled style="opacity:.6;">✓ Bon de livraison envoyé</button>`
+    : `<button class="co-adjust-btn" onclick="marquerCommandePrete(${idx})">📦 Commande prête</button>`;
   return `<div class="co-card ${od._livre?'co-livre':''}">
     <div class="co-head"><span class="co-name">${c.nom}</span>${statut}</div>
     <div class="co-body">${lines}${totalBloc}
       <button class="co-adjust-btn" onclick="openAjusterModal(${idx})">✎ Ajuster la commande</button>
+      ${preteBtn}
     </div>
   </div>`;
 }
@@ -2007,6 +2012,29 @@ async function toggleLivraison(idx) {
     await sbPatch('commandes_clients', od._sbId, {livre:od._livre, livre_at: od._livre?new Date().toISOString():null});
     logActivity('livraison_maj', `${getClient(idx).nom} — ${od._livre?'livré':'à livrer'}`);
   } catch(e) { showToast('Erreur enregistrement'); console.error(e); }
+}
+
+const EDGE_FUNCTION_URL = `${SUPA_URL}/functions/v1/send-order-ready-email`;
+
+async function marquerCommandePrete(idx) {
+  const od = state.orders[idx];
+  if (!od || !od._sbId) { showToast('Commande introuvable'); return; }
+  try {
+    await sbPatch('commandes_clients', od._sbId, { prete: true, prete_at: new Date().toISOString() });
+    const res = await fetch(EDGE_FUNCTION_URL, {
+      method: 'POST',
+      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ commande_id: od._sbId })
+    });
+    if (!res.ok) throw new Error(await res.text());
+    od._prete = true;
+    logActivity('commande_prete', `${getClient(idx).nom} — bon de livraison envoyé au gestionnaire`);
+    showToast('✓ Bon de livraison envoyé');
+  } catch(e) {
+    showToast('Commande marquée prête, mais erreur envoi email');
+    console.error(e);
+  }
+  renderOrders();
 }
 
 // ══════ AJUSTER LA COMMANDE AU RÉEL (encadrant) ══════
