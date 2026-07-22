@@ -10,8 +10,10 @@ BREVO_KEY = os.environ['BREVO_API_KEY']
 
 EXPEDITEUR_EMAIL = 'eti.maraichage1@cidil-asso.fr'
 EXPEDITEUR_NOM = 'CIDIL Maraîchage'
-DEST_EMAIL = 'plassin.elodie24@gmail.com'
-DEST_NOM = 'Gestionnaire CIDIL'
+DESTINATAIRES = [
+    {'email': 'comptable@cidil-asso.fr', 'name': 'Comptable CIDIL'},
+    {'email': 'coordination@cidil-asso.fr', 'name': 'Coordination CIDIL'},
+]
 LIEN_APP = 'https://elodie24000.github.io/logisitique-CIDIL/'
 
 H_SUPA = {'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY}
@@ -101,8 +103,8 @@ def envoyer_email(recap_html, nb_commandes, semaine_str):
     """
     body = json.dumps({
         'sender': {'email': EXPEDITEUR_EMAIL, 'name': EXPEDITEUR_NOM},
-        'to': [{'email': DEST_EMAIL, 'name': DEST_NOM}],
-        'subject': f'CIDIL - Récap des commandes livrées (semaine du {semaine_str})',
+        'to': DESTINATAIRES,
+        'subject': f'CIDIL - Récap des commandes réalisées (semaine du {semaine_str})',
         'htmlContent': html
     }).encode('utf-8')
     req = urllib.request.Request(
