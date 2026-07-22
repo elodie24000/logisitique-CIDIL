@@ -38,6 +38,31 @@ def get_legumes_semaine(semaine_str):
     )
     return json.loads(urllib.request.urlopen(req).read())
 
+def get_legumes_semaine_precedente(semaine_str):
+    req = urllib.request.Request(
+        f'{SUPA_URL}/rest/v1/legumes?semaine=lt.{semaine_str}&order=semaine.desc&limit=50'
+        '&select=nom,kg_dispo,prix_kg,unite,famille,semaine',
+        headers=H_SUPA
+    )
+    rows = json.loads(urllib.request.urlopen(req).read())
+    if not rows:
+        return []
+    derniere_semaine = rows[0]['semaine']
+    return [r for r in rows if r['semaine'] == derniere_semaine]
+
+def dupliquer_legumes(semaine_str, legumes):
+    for l in legumes:
+        body = json.dumps({
+            'nom': l['nom'], 'kg_dispo': l.get('kg_dispo'), 'prix_kg': l.get('prix_kg'),
+            'semaine': semaine_str, 'unite': l.get('unite') or 'kg', 'famille': l.get('famille') or ''
+        }).encode('utf-8')
+        req = urllib.request.Request(
+            f'{SUPA_URL}/rest/v1/legumes', data=body,
+            headers={**H_SUPA, 'Content-Type': 'application/json', 'Prefer': 'return=representation'},
+            method='POST'
+        )
+        urllib.request.urlopen(req)
+
 def get_clients_avec_email():
     req = urllib.request.Request(
         f'{SUPA_URL}/rest/v1/clients?select=nom,email&email=not.is.null&cat=neq.Interne',
@@ -107,6 +132,11 @@ print(f"Semaine ciblee : {semaine}")
 
 legumes = get_legumes_semaine(semaine)
 print(f"{len(legumes)} legume(s) trouve(s) pour cette semaine")
+if not legumes:
+    legumes = get_legumes_semaine_precedente(semaine)
+    if legumes:
+        print(f"Liste non mise a jour par l'encadrant : reprise de {len(legumes)} legume(s) de la semaine precedente")
+        dupliquer_legumes(semaine, legumes)
 legumes_html = bloc_legumes_html(legumes)
 
 clients = get_clients_avec_email()
