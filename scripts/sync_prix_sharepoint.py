@@ -117,7 +117,10 @@ def lire_prix(token, drive_id, item_id):
 
 
 def norm(s):
-    return re.sub(r'\s+', ' ', (s or '').strip()).upper()
+    v = re.sub(r'\s+', ' ', (s or '').strip()).upper()
+    if v in ('KGS', 'KG.'):
+        v = 'KG'
+    return v
 
 
 def sb_get(table, params):
