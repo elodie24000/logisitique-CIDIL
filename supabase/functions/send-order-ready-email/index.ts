@@ -12,6 +12,9 @@ const DESTINATAIRES = [
   { email: 'comptable@cidil-asso.fr', name: 'Comptable CIDIL' },
   { email: 'coordination@cidil-asso.fr', name: 'Coordination CIDIL' },
 ];
+const CC = [
+  { email: 'eti.maraichage1@cidil-asso.fr', name: 'CIDIL Maraîchage' },
+];
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -104,6 +107,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         sender: { email: EXPEDITEUR_EMAIL, name: EXPEDITEUR_NOM },
         to: DESTINATAIRES,
+        cc: CC,
         subject: `CIDIL - BL n°${numeroBL} - Commande prête : ${cmd.client_nom}`,
         htmlContent: html,
       }),
