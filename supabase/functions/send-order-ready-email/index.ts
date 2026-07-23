@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
     }
 
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/commandes_clients?id=eq.${commande_id}&select=client_nom,jour_livraison,semaine,items,total`,
+      `${SUPABASE_URL}/rest/v1/commandes_clients?id=eq.${commande_id}&select=client_nom,jour_livraison,semaine,items,total,numero_bl`,
       { headers: { apikey: SERVICE_ROLE_KEY, Authorization: `Bearer ${SERVICE_ROLE_KEY}` } }
     );
     const rows = await res.json();
@@ -44,6 +44,24 @@ Deno.serve(async (req) => {
     if (!cmd) {
       return new Response(JSON.stringify({ error: 'Commande introuvable' }), { status: 404, headers: CORS_HEADERS });
     }
+
+    // Attribue un numéro de BL séquentiel (1, 2, 3...) la première fois seulement
+    let numeroBL = cmd.numero_bl;
+    if (!numeroBL) {
+      const countRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/commandes_clients?numero_bl=not.is.null&select=numero_bl`,
+        { headers: { apikey: SERVICE_ROLE_KEY, Authorization: `Bearer ${SERVICE_ROLE_KEY}`, Prefer: 'count=exact' } }
+      );
+      const existants = await countRes.json();
+      numeroBL = existants.length + 1;
+      await fetch(`${SUPABASE_URL}/rest/v1/commandes_clients?id=eq.${commande_id}`, {
+        method: 'PATCH',
+        headers: { apikey: SERVICE_ROLE_KEY, Authorization: `Bearer ${SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ numero_bl: numeroBL }),
+      });
+    }
+
+    const dateStr = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
 
     const items = typeof cmd.items === 'string' ? JSON.parse(cmd.items) : (cmd.items || []);
     let lignes = '';
@@ -65,9 +83,11 @@ Deno.serve(async (req) => {
     const html = `
     <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;">
       <div style="background:#0d2818;padding:24px;text-align:center;border-radius:12px 12px 0 0;">
-        <h1 style="color:#fff;font-size:20px;margin:0;">Bon de livraison</h1>
+        <h1 style="color:#fff;font-size:20px;margin:0;">BON DE LIVRAISON</h1>
+        <p style="color:#c9e5d2;font-size:13px;margin:4px 0 0;">N° ${numeroBL}</p>
       </div>
       <div style="padding:24px;background:#f7f6f2;border-radius:0 0 12px 12px;">
+        <p style="color:#666;font-size:13px;margin:0 0 12px;">Date : ${dateStr}</p>
         <p><strong>${cmd.client_nom}</strong></p>
         <p style="color:#666;font-size:13px;margin-top:-8px;">Livraison : ${cmd.jour_livraison || ''}</p>
         <div style="background:#fff;border-radius:10px;padding:14px 16px;margin:18px 0;">
@@ -84,7 +104,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         sender: { email: EXPEDITEUR_EMAIL, name: EXPEDITEUR_NOM },
         to: DESTINATAIRES,
-        subject: `CIDIL - Commande prête : ${cmd.client_nom}`,
+        subject: `CIDIL - BL n°${numeroBL} - Commande prête : ${cmd.client_nom}`,
         htmlContent: html,
       }),
     });
