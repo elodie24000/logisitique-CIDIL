@@ -38,7 +38,8 @@ def pluriel(qty, unite):
 def get_commandes_livrees(semaine_str):
     req = urllib.request.Request(
         f'{SUPA_URL}/rest/v1/commandes_clients?semaine=eq.{semaine_str}&livre=eq.true'
-        '&select=client_nom,jour_livraison,items,total',
+        '&select=client_nom,jour_livraison,items,total,numero_bl'
+        '&order=numero_bl.asc',
         headers=H_SUPA
     )
     return json.loads(urllib.request.urlopen(req).read())
@@ -63,8 +64,13 @@ def bloc_recap_html(commandes):
             items_txt += f'{it.get("nom")} : {qty} {unite}<br>'
         total = c.get('total') or 0
         total_general += total
+        numero_bl = c.get('numero_bl')
+        bl_txt = f'BL n°{numero_bl}' if numero_bl else 'Sans BL'
         lignes += (
             f'<tr>'
+            f'<td style="padding:10px 0;border-bottom:1px solid #e5e3dc;vertical-align:top;white-space:nowrap;color:#0d2818;font-weight:600;">'
+            f'{bl_txt}'
+            f'</td>'
             f'<td style="padding:10px 0;border-bottom:1px solid #e5e3dc;vertical-align:top;">'
             f'<strong>{c.get("client_nom")}</strong><br>'
             f'<span style="color:#888;font-size:12px;">{c.get("jour_livraison") or ""}</span>'
@@ -75,7 +81,7 @@ def bloc_recap_html(commandes):
             f'</tr>'
         )
     lignes += (
-        f'<tr><td colspan="2" style="padding:10px 0;font-weight:bold;">Total de la semaine</td>'
+        f'<tr><td colspan="3" style="padding:10px 0;font-weight:bold;">Total de la semaine</td>'
         f'<td style="padding:10px 0;text-align:right;font-weight:bold;">{total_general:.2f} €</td></tr>'
     )
     return f'<table style="width:100%;border-collapse:collapse;font-size:14px;">{lignes}</table>'
@@ -89,7 +95,7 @@ def envoyer_email(recap_html, nb_commandes, semaine_str):
       </div>
       <div style="padding:24px;background:#f7f6f2;border-radius:0 0 12px 12px;">
         <p>Bonjour,</p>
-        <p>Voici le récapitulatif des <strong>{nb_commandes} commande(s) livrée(s)</strong> pour la semaine du {semaine_str}.</p>
+        <p>Voici le récapitulatif des <strong>{nb_commandes} commande(s) livrée(s)</strong> pour la semaine du {semaine_str} (ce récapitulatif regroupe les BL déjà envoyés, ce n'est pas un BL en soi).</p>
         <div style="background:#fff;border-radius:10px;padding:14px 16px;margin:18px 0;">
           {recap_html}
         </div>
