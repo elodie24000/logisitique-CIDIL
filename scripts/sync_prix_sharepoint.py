@@ -141,18 +141,21 @@ print(f"{len(valeurs)} lignes lues dans le fichier")
 catalogue = sb_get('catalogue', 'select=id,nom,unites,famille')
 par_nom = {c['nom']: c for c in catalogue}
 
-semaine_courante = (date.today() - timedelta(days=date.today().weekday())).isoformat()
-legumes_semaine = sb_get('legumes', f'semaine=eq.{semaine_courante}&select=id,nom,prix_kg')
+legumes_toutes_semaines = sb_get('legumes', 'select=id,nom,prix_kg,semaine')
 legumes_par_nom = {}
-for l in legumes_semaine:
+for l in legumes_toutes_semaines:
     legumes_par_nom.setdefault(l['nom'], []).append(l)
 
 
 def maj_legume_semaine(nom, prix):
-    for l in legumes_par_nom.get(nom, []):
+    lignes = legumes_par_nom.get(nom, [])
+    maj_count = 0
+    for l in lignes:
         if l.get('prix_kg') != prix:
             sb_patch('legumes', l['id'], {'prix_kg': prix})
-            print(f"    (prix mis a jour aussi sur la liste de la semaine en cours)")
+            maj_count += 1
+    if maj_count:
+        print(f"    (prix mis a jour sur {maj_count} liste(s) hebdomadaire(s) existante(s))")
 
 
 maj, crees, ignores = 0, 0, 0
