@@ -259,11 +259,12 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 .veg-name{flex:1;font-size:14px;font-weight:500;}
 .veg-info{font-size:12px;color:var(--tl);font-family:'DM Mono',monospace;}
 #veg-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start;}
-.veg-card{display:flex;align-items:center;gap:10px;background:var(--white);border:1px solid var(--bd);border-radius:12px;padding:10px 12px;box-shadow:var(--sh);}
+.veg-card{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;background:var(--white);border:1px solid var(--bd);border-radius:12px;padding:14px 12px 10px;box-shadow:var(--sh);}
 .veg-emoji{font-size:30px;flex-shrink:0;line-height:1;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:var(--g7);border-radius:11px;}
-.veg-card-info{flex:1;min-width:0;}
-.veg-card .veg-name{font-size:14px;font-weight:500;margin-bottom:2px;}
-.veg-card .btn-rm{flex-shrink:0;}
+.veg-card-info{min-width:0;display:flex;flex-direction:column;align-items:center;}
+.veg-card .veg-name{font-size:14px;font-weight:500;margin-bottom:2px;text-align:center;}
+.veg-card .veg-info{text-align:center;}
+.veg-card .btn-rm{position:absolute;top:8px;right:8px;flex-shrink:0;}
 .btn-rm{
   width:28px;height:28px;border-radius:7px;border:1px solid var(--bd);
   background:var(--white);color:var(--tl);cursor:pointer;
@@ -348,7 +349,7 @@ button.livr-badge{cursor:pointer;}
 .cc-edit:active{background:var(--g6);}
 .btn-effacer{display:inline-flex;align-items:center;gap:8px;padding:12px 18px;border:1.5px solid #d9534f;border-radius:11px;background:var(--white);color:#d9534f;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;}
 .btn-effacer:active{background:#d9534f;color:#fff;}
-.recap-veg-card{background:var(--white);border:1px solid var(--bd);border-radius:12px;padding:14px;}
+.recap-veg-card{background:var(--white);border:1px solid var(--bd);border-radius:12px;padding:14px;text-align:center;}
 .rvn{font-size:13px;font-weight:500;margin-bottom:4px;}
 .rvk{font-size:24px;font-weight:500;font-family:'DM Mono',monospace;color:var(--g1);}
 .rvs{font-size:12px;color:var(--tl);}
@@ -417,12 +418,12 @@ button.livr-badge{cursor:pointer;}
 .cmd-veg-top{cursor:pointer;}
 .cmd-veg-headrow{display:flex;align-items:center;gap:6px;margin-bottom:10px;}
 .cmd-veg-chk{width:18px;height:18px;accent-color:var(--g2);cursor:pointer;flex-shrink:0;}
-.cmd-veg-name{flex:1;text-align:left;font-size:14px;font-weight:500;color:var(--text);}
-.cmd-veg-icondispo{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;}
+.cmd-veg-name{flex:1;text-align:center;font-size:14px;font-weight:500;color:var(--text);}
+.cmd-veg-icondispo{display:flex;flex-direction:column;align-items:center;gap:4px;margin-bottom:8px;}
 .cmd-veg-emoji{font-size:24px;line-height:1;width:38px;height:38px;display:flex;align-items:center;justify-content:center;background:var(--g7);border-radius:10px;flex-shrink:0;}
-.cmd-veg-infos{display:flex;flex-direction:column;align-items:flex-end;gap:5px;}
-.cmd-veg-dispo{font-size:12px;font-weight:500;color:var(--text);text-align:right;}
-.cmd-veg-prixbadge{background:var(--g6);color:var(--g1);border-radius:8px;padding:5px 8px;text-align:right;font-size:12px;font-weight:500;font-family:'DM Mono',monospace;white-space:nowrap;}
+.cmd-veg-infos{display:flex;flex-direction:column;align-items:center;gap:5px;}
+.cmd-veg-dispo{font-size:12px;font-weight:500;color:var(--text);text-align:center;}
+.cmd-veg-prixbadge{background:var(--g6);color:var(--g1);border-radius:8px;padding:5px 8px;text-align:center;font-size:12px;font-weight:500;font-family:'DM Mono',monospace;white-space:nowrap;}
 .cmd-veg-qty{display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--g7);align-items:center;gap:8px;flex-wrap:wrap;}
 .cmd-veg-card.selected .cmd-veg-qty{display:flex;}
 .cmd-qty-label{font-size:12px;color:var(--tm);flex:1;min-width:70px;}
@@ -1805,12 +1806,12 @@ function renderVeggies() {
   if (!state.veggies.length) { el.innerHTML='<div class="empty-msg">Aucun légume · Ajoutez-en ci-dessous</div>'; return; }
   el.innerHTML = state.veggies.map(v=>`
     <div class="veg-card">
+      <button class="btn-rm" onclick="removeVeggie(${v.id})">✕</button>
       <div class="veg-emoji">${emojiLegume(v.nom)}</div>
       <div class="veg-card-info">
         <div class="veg-name">${v.nom}</div>
         <div class="veg-info">${v.kg} ${pluriel(v.kg, v.unite)}${v.prix!==null?' · '+v.prix.toFixed(2)+' €/'+(v.unite||'kg'):' · NC'}</div>
       </div>
-      <button class="btn-rm" onclick="removeVeggie(${v.id})">✕</button>
     </div>`).join('');
 }
 
