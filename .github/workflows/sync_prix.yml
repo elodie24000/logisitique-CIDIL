@@ -1,0 +1,23 @@
+name: Synchronisation des prix (SharePoint)
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'   # Chaque lundi 8h heure française (6h UTC)
+  workflow_dispatch:        # Permet aussi un declenchement manuel pour tester
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Synchronisation des prix depuis le fichier SharePoint
+        env:
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: python scripts/sync_prix_sharepoint.py
