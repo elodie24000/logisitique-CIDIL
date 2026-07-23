@@ -54,7 +54,12 @@ Deno.serve(async (req) => {
       }
       const qty = it.quantite_reelle != null ? it.quantite_reelle : it.quantite;
       const unite = pluriel(qty, it.unite);
-      lignes += `<tr><td style="padding:6px 0;border-bottom:1px solid #e5e3dc;">${it.nom}</td><td style="padding:6px 0;border-bottom:1px solid #e5e3dc;text-align:right;">${qty} ${unite}</td></tr>`;
+      const prixUnit = it.prix_kg;
+      const sousTotal = prixUnit != null ? qty * prixUnit : null;
+      const prixTxt = prixUnit != null
+        ? `<div style="font-size:12px;color:#888;">${prixUnit.toFixed(2)} €/${it.unite || 'kg'}${sousTotal != null ? ' · ' + sousTotal.toFixed(2) + ' €' : ''}</div>`
+        : '';
+      lignes += `<tr><td style="padding:6px 0;border-bottom:1px solid #e5e3dc;">${it.nom}${prixTxt}</td><td style="padding:6px 0;border-bottom:1px solid #e5e3dc;text-align:right;vertical-align:top;">${qty} ${unite}</td></tr>`;
     }
 
     const html = `
