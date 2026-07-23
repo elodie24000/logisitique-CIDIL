@@ -2,6 +2,8 @@
 // quand l'encadrant technique clique sur "Commande prête".
 // La clé Brevo reste secrète (stockée côté serveur), jamais exposée au navigateur.
 
+import { PDFDocument, StandardFonts } from 'npm:pdf-lib@1.17.1';
+
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY')!;
@@ -27,6 +29,57 @@ function pluriel(qty: number, unite: string) {
   if (u === 'botte') return 'bottes';
   if (u === 'piece' || u === 'pièce') return 'pièces';
   return u;
+}
+
+function toBase64(bytes: Uint8Array) {
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+
+function sansAccents(s: string) {
+  return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+async function buildPdfBase64(numeroBL: number, dateStr: string, cmd: any, items: any[]) {
+  const pdfDoc = await PDFDocument.create();
+  const page = pdfDoc.addPage([420, 595]);
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  let y = 550;
+  const left = 40;
+
+  page.drawText('BON DE LIVRAISON', { x: left, y, size: 18, font: fontBold });
+  y -= 22;
+  page.drawText(`N ${numeroBL}`, { x: left, y, size: 12, font });
+  y -= 18;
+  page.drawText(`Date : ${sansAccents(dateStr)}`, { x: left, y, size: 10, font });
+  y -= 24;
+  page.drawText(sansAccents(cmd.client_nom), { x: left, y, size: 13, font: fontBold });
+  y -= 16;
+  page.drawText(`Livraison : ${sansAccents(cmd.jour_livraison || '')}`, { x: left, y, size: 10, font });
+  y -= 26;
+
+  for (const it of items) {
+    if (y < 60) break;
+    if (it.dispo === false) {
+      page.drawText(sansAccents(it.nom), { x: left, y, size: 10, font });
+      page.drawText('Non disponible', { x: 300, y, size: 10, font });
+      y -= 16;
+      continue;
+    }
+    const qty = it.quantite_reelle != null ? it.quantite_reelle : it.quantite;
+    const unite = pluriel(qty, it.unite);
+    page.drawText(sansAccents(it.nom), { x: left, y, size: 10, font });
+    page.drawText(`${qty} ${sansAccents(unite)}`, { x: 300, y, size: 10, font });
+    y -= 16;
+  }
+
+  y -= 10;
+  page.drawText(`Total : ${(cmd.total || 0).toFixed(2)} EUR`, { x: left, y, size: 12, font: fontBold });
+
+  const bytes = await pdfDoc.save();
+  return toBase64(bytes);
 }
 
 Deno.serve(async (req) => {
@@ -101,6 +154,8 @@ Deno.serve(async (req) => {
       </div>
     </div>`;
 
+    const pdfBase64 = await buildPdfBase64(numeroBL, dateStr, cmd, items);
+
     const brevoRes = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json', accept: 'application/json' },
@@ -110,6 +165,7 @@ Deno.serve(async (req) => {
         cc: CC,
         subject: `CIDIL - BL n°${numeroBL} - Commande prête : ${cmd.client_nom}`,
         htmlContent: html,
+        attachment: [{ content: pdfBase64, name: `BL_n${numeroBL}_${cmd.client_nom}.pdf` }],
       }),
     });
 

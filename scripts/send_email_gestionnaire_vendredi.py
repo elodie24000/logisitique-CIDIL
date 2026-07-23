@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """Envoie chaque vendredi a 10h un email au gestionnaire recapitulant
 toutes les commandes livrees de la semaine en cours (lundi -> vendredi)."""
-import os, json, urllib.request
+import os, json, base64, urllib.request
 from datetime import date, timedelta
+from fpdf import FPDF
 
 SUPA_URL = 'https://ulvrwtwxzhlrplvbcsrd.supabase.co'
 SUPA_KEY = os.environ['SUPABASE_KEY']
@@ -87,7 +88,44 @@ def bloc_recap_html(commandes):
     return f'<table style="width:100%;border-collapse:collapse;font-size:14px;">{lignes}</table>'
 
 
-def envoyer_email(recap_html, nb_commandes, semaine_str):
+def build_pdf(commandes, semaine_str, total_general):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font('Helvetica', 'B', 16)
+    pdf.cell(0, 10, 'Recapitulatif des BL', ln=1)
+    pdf.set_font('Helvetica', '', 10)
+    pdf.cell(0, 8, f'Semaine du {semaine_str}', ln=1)
+    pdf.ln(4)
+
+    for c in commandes:
+        items = c.get('items') or []
+        if isinstance(items, str):
+            items = json.loads(items)
+        numero_bl = c.get('numero_bl')
+        bl_txt = f'BL n{numero_bl}' if numero_bl else 'Sans BL'
+
+        pdf.set_font('Helvetica', 'B', 11)
+        pdf.cell(0, 7, f'{bl_txt} - {c.get("client_nom")}', ln=1)
+        pdf.set_font('Helvetica', '', 9)
+        for it in items:
+            if it.get('dispo') is False:
+                pdf.cell(0, 5, f'  {it.get("nom")} : non disponible', ln=1)
+                continue
+            qty = it.get('quantite_reelle', it.get('quantite'))
+            unite = pluriel(qty, it.get('unite'))
+            pdf.cell(0, 5, f'  {it.get("nom")} : {qty} {unite}', ln=1)
+        pdf.set_font('Helvetica', '', 9)
+        pdf.cell(0, 6, f'  Total : {(c.get("total") or 0):.2f} EUR', ln=1)
+        pdf.ln(2)
+
+    pdf.set_font('Helvetica', 'B', 12)
+    pdf.cell(0, 8, f'Total general : {total_general:.2f} EUR', ln=1)
+
+    out = pdf.output(dest='S')
+    return bytes(out) if not isinstance(out, (bytes, bytearray)) else bytes(out)
+
+
+def envoyer_email(recap_html, nb_commandes, semaine_str, pdf_bytes):
     html = f"""
     <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;">
       <div style="background:#0d2818;padding:24px;text-align:center;border-radius:12px 12px 0 0;">
@@ -107,11 +145,13 @@ def envoyer_email(recap_html, nb_commandes, semaine_str):
       </div>
     </div>
     """
+    pdf_b64 = base64.b64encode(pdf_bytes).decode('ascii')
     body = json.dumps({
         'sender': {'email': EXPEDITEUR_EMAIL, 'name': EXPEDITEUR_NOM},
         'to': DESTINATAIRES,
         'subject': f'CIDIL - Récap des commandes réalisées (semaine du {semaine_str})',
-        'htmlContent': html
+        'htmlContent': html,
+        'attachment': [{'content': pdf_b64, 'name': f'Recap_BL_{semaine_str}.pdf'}]
     }).encode('utf-8')
     req = urllib.request.Request(
         'https://api.brevo.com/v3/smtp/email',
@@ -128,6 +168,8 @@ print(f"Semaine ciblee : {semaine}")
 commandes = get_commandes_livrees(semaine)
 print(f"{len(commandes)} commande(s) livree(s) trouvee(s)")
 
+total_general = sum(c.get('total') or 0 for c in commandes)
 recap_html = bloc_recap_html(commandes)
-envoyer_email(recap_html, len(commandes), semaine)
+pdf_bytes = build_pdf(commandes, semaine, total_general)
+envoyer_email(recap_html, len(commandes), semaine, pdf_bytes)
 print("Email gestionnaire envoye")
