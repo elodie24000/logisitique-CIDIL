@@ -154,19 +154,30 @@ Deno.serve(async (req) => {
       </div>
     </div>`;
 
-    const pdfBase64 = await buildPdfBase64(numeroBL, dateStr, cmd, items);
+    let pdfBase64: string | null = null;
+    let pdfErreur: string | null = null;
+    try {
+      pdfBase64 = await buildPdfBase64(numeroBL, dateStr, cmd, items);
+    } catch (e) {
+      pdfErreur = String(e);
+    }
+
+    const nomFichier = sansAccents(cmd.client_nom).replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+    const emailBody: any = {
+      sender: { email: EXPEDITEUR_EMAIL, name: EXPEDITEUR_NOM },
+      to: DESTINATAIRES,
+      cc: CC,
+      subject: `CIDIL - BL n°${numeroBL} - Commande prête : ${cmd.client_nom}`,
+      htmlContent: html,
+    };
+    if (pdfBase64) {
+      emailBody.attachment = [{ content: pdfBase64, name: `BL_n${numeroBL}_${nomFichier}.pdf` }];
+    }
 
     const brevoRes = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json', accept: 'application/json' },
-      body: JSON.stringify({
-        sender: { email: EXPEDITEUR_EMAIL, name: EXPEDITEUR_NOM },
-        to: DESTINATAIRES,
-        cc: CC,
-        subject: `CIDIL - BL n°${numeroBL} - Commande prête : ${cmd.client_nom}`,
-        htmlContent: html,
-        attachment: [{ content: pdfBase64, name: `BL_n${numeroBL}_${cmd.client_nom}.pdf` }],
-      }),
+      body: JSON.stringify(emailBody),
     });
 
     if (!brevoRes.ok) {
@@ -174,7 +185,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Echec envoi Brevo', detail: errTxt }), { status: 502, headers: CORS_HEADERS });
     }
 
-    return new Response(JSON.stringify({ ok: true }), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ ok: true, pdf_attache: !!pdfBase64, pdf_erreur: pdfErreur }), { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
   } catch (e) {
     return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: CORS_HEADERS });
   }
