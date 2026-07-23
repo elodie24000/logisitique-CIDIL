@@ -6,7 +6,7 @@ A=libelle, B=variete, C=unite, BE=prix moyen HT bio).
 La correspondance entre les lignes du fichier et les fiches de l'app a ete
 validee manuellement avec la gestionnaire (regles ci-dessous). Les produits
 absents du fichier ou sans prix renseigne sont ignores."""
-import os, json, base64, urllib.request, urllib.error, urllib.parse
+import os, json, re, base64, urllib.request, urllib.error, urllib.parse
 from datetime import date, timedelta
 
 TENANT_ID = os.environ['AZURE_TENANT_ID']
@@ -25,62 +25,66 @@ SHAREPOINT_URL = (
 )
 SHEET_NAME = 'MISE A JOUR '
 
-# Association (libelle, variete) du fichier Excel -> mise a jour a appliquer au catalogue.
+# Association (libelle, variete, unite) du fichier Excel -> mise a jour a appliquer au catalogue.
+# L'unite du fichier fait partie de la cle car certains legumes ont plusieurs lignes
+# avec le meme libelle/variete mais des unites (et donc des prix) differentes (ex: Melon).
 # 'nom' : nom de la fiche catalogue a mettre a jour (creee si besoin pour les cas separes kg/botte/piece)
 # 'unite' : unite a appliquer sur cette fiche (harmonisation demandee par la gestionnaire)
-# 'famille_source' : nom d'une fiche existante dont on recopie la famille (pour les nouvelles fiches)
 MAPPING = {
-    ('AIL', 'THÉRADOR'): {'nom': 'Ail', 'unite': 'kg'},
-    ('AUBERGINE', 'BLACK PEARL / BARBENTANE / ZEBRINA'): {'nom': 'Aubergine', 'unite': 'kg'},
-    ('BETTERAVE ROUGE', 'PRIMEUR CRUE BOTTE'): {'nom': 'Betterave', 'unite': 'botte', 'split_from': 'Betterave', 'nom_split': 'Betterave botte'},
-    ('BETTERAVE ROUGE', 'PRIMEUR CRUE KG'): {'nom': 'Betterave', 'unite': 'kg'},
-    ('BETTERAVE ROUGE', 'RONDE PRIMEUR CUITE'): {'nom': 'Betterave cuite', 'unite': 'kg'},
-    ('BLETTE', 'BLANCHE OU COULEUR'): {'nom': 'Blette', 'unite': None},
-    ('BOUQUET AROMATIQUE', 'CORIANDRE'): {'nom': 'Coriandre', 'unite': 'botte'},
-    ('BOUQUET AROMATIQUE', 'CIBOULETTE'): {'nom': 'Ciboulette', 'unite': 'botte'},
-    ('BOUQUET AROMATIQUE', 'BASILIC'): {'nom': 'Basilic', 'unite': 'botte'},
-    ('BOUQUET AROMATIQUE', 'PERSIL'): {'nom': 'Persil', 'unite': 'botte'},
-    ('CAROTTE', 'FANE'): {'nom': 'Carotte', 'unite': 'botte', 'split_from': 'Carotte', 'nom_split': 'Carotte botte'},
-    ('CAROTTE', 'VRAC'): {'nom': 'Carotte', 'unite': 'kg'},
-    ('CÉLERI', 'BRANCHE'): {'nom': 'Céleri branche', 'unite': 'kg'},
-    ('CÉLERI', 'RAVE'): {'nom': 'Céleri-rave', 'unite': 'kg'},
-    ('CHOU', 'BLANC'): {'nom': 'Chou cabus blanc', 'unite': 'kg'},
-    ('CHOU', 'BROCOLI'): {'nom': 'Brocoli', 'unite': 'kg'},
-    ('CHOU', 'CHINOIS'): {'nom': 'Chou chinois', 'unite': 'kg'},
-    ('CHOU', 'FLEUR'): {'nom': 'Chou-fleur', 'unite': 'kg'},
-    ('CHOU', 'RAVE'): {'nom': 'Chou-rave', 'unite': 'pièce'},
-    ('CHOU', 'VERT FRISÉ'): {'nom': 'Chou vert', 'unite': None},
-    ('CONCOMBRE', 'LONG PRO'): {'nom': 'Concombre long vert', 'unite': 'pièce'},
-    ('CONCOMBRE', 'EPINEUX'): {'nom': 'Concombre épineux (court)', 'unite': 'kg'},
-    ('COURGETTE', 'JAUNE'): {'nom': 'Courgette jaune', 'unite': 'kg'},
-    ('COURGETTE', 'VERTE'): {'nom': 'Courgette verte', 'unite': 'kg'},
-    ('FENOUIL', ''): {'nom': 'Fenouil', 'unite': 'kg'},
-    ('FÈVE', 'FINE'): {'nom': 'Fève', 'unite': 'kg'},
-    ('FRAISE', ''): {'nom': 'Fraise', 'unite': 'kg'},
-    ('HARICOT', 'VERT FIN'): {'nom': 'Haricot vert', 'unite': 'kg'},
-    ('MÂCHE', 'VERTE'): {'nom': 'Mâche', 'unite': 'kg'},
-    ('MELON', 'MAKEBA PIÈCE'): {'nom': 'Melon', 'unite': 'pièce', 'split_from': 'Melon', 'nom_split': 'Melon pièce'},
-    ('MELON', 'MAKEBA KG'): {'nom': 'Melon', 'unite': 'kg'},
-    ('MESCLUN', 'JEUNE POUSSE SALADE'): {'nom': 'Mesclun', 'unite': 'kg'},
-    ('NAVET', 'ROND VIOLET PRIMEUR'): {'nom': 'Navet violet', 'unite': 'botte', 'split_from': 'Navet violet', 'nom_split': 'Navet violet botte'},
-    ('OIGNON', 'BLANC'): {'nom': 'Oignon blanc', 'unite': 'kg'},
-    ('OIGNON', 'JAUNE'): {'nom': 'Oignon jaune', 'unite': 'kg'},
-    ('PATATE', 'DOUCE LONGUE'): {'nom': 'Patate douce', 'unite': 'kg'},
-    ('PASTÈQUE', ''): {'nom': 'Pastèque', 'unite': 'kg'},
-    ("PIMENT D'ESPELETTE", 'GORIA'): {'nom': 'Piment', 'unite': 'kg'},
-    ('POIS', 'ÉCOSSER'): {'nom': 'Pois', 'unite': 'kg'},
-    ('POIVRON', 'VERT'): {'nom': 'Poivron vert', 'unite': 'kg'},
-    ('POMME DE TERRE', 'PRIMEUR'): {'nom': 'Pomme de terre primeurs', 'unite': 'kg'},
-    ('POMME DE TERRE', 'CONSERVATION'): {'nom': 'Pomme de terre conservation', 'unite': 'kg'},
-    ('RADIS', 'ROSE'): {'nom': 'Radis botte', 'unite': None},
-    ('RADIS', 'NOIR'): {'nom': 'Radis noir', 'unite': 'kg'},
-    ('RADIS', 'BLANC'): {'nom': 'Radis blanc', 'unite': 'kg'},
-    ('SALADE', 'BATAVIA'): {'nom': 'Batavia', 'unite': 'pièce'},
-    ('SALADE', 'FEUILLE DE CHÊNE'): {'nom': 'Feuille de chêne', 'unite': 'pièce'},
-    ('SALADE', 'LAITUE POMMÉE'): {'nom': 'Laitue', 'unite': 'pièce'},
-    ('TOMATE', 'CERISE'): {'nom': 'Tomate cerise', 'unite': 'kg'},
-    ('TOMATE', 'CÔTELÉE ANCIENNE'): {'nom': 'Tomate ancienne', 'unite': 'kg'},
-    ('TOMATE', 'RONDE'): {'nom': 'Tomate classique', 'unite': 'kg'},
+    ('AIL', 'THÉRADOR', 'KG'): {'nom': 'Ail', 'unite': 'kg'},
+    ('AUBERGINE', 'BLACK PEARL / BARBENTANE / ZEBRINA', 'KG'): {'nom': 'Aubergine', 'unite': 'kg'},
+    ('BETTERAVE ROUGE', 'PRIMEUR CRUE BOTTE', 'BOTTE'): {'nom': 'Betterave', 'unite': 'botte', 'split_from': 'Betterave', 'nom_split': 'Betterave botte'},
+    ('BETTERAVE ROUGE', 'PRIMEUR CRUE KG', 'KG'): {'nom': 'Betterave', 'unite': 'kg'},
+    ('BETTERAVE ROUGE', 'RONDE PRIMEUR CUITE', 'KG'): {'nom': 'Betterave cuite', 'unite': 'kg'},
+    ('BLETTE', 'BLANCHE OU COULEUR', 'KG'): {'nom': 'Blette', 'unite': None},
+    ('BOUQUET AROMATIQUE', 'CORIANDRE', 'BOUQUET'): {'nom': 'Coriandre', 'unite': 'botte'},
+    ('BOUQUET AROMATIQUE', 'CIBOULETTE', 'BOUQUET'): {'nom': 'Ciboulette', 'unite': 'botte'},
+    ('BOUQUET AROMATIQUE', 'BASILIC', 'BOUQUET'): {'nom': 'Basilic', 'unite': 'botte'},
+    ('BOUQUET AROMATIQUE', 'PERSIL', 'BOUQUET'): {'nom': 'Persil', 'unite': 'botte'},
+    ('CAROTTE', 'FANE', 'LA BOTTE'): {'nom': 'Carotte', 'unite': 'botte', 'split_from': 'Carotte', 'nom_split': 'Carotte botte'},
+    ('CAROTTE', 'VRAC', 'KG'): {'nom': 'Carotte', 'unite': 'kg'},
+    ('CÉLERI', 'BRANCHE', 'KG'): {'nom': 'Céleri branche', 'unite': 'kg'},
+    ('CÉLERI', 'RAVE', 'KG'): {'nom': 'Céleri-rave', 'unite': 'kg'},
+    ('CHOU', 'BLANC', 'KG'): {'nom': 'Chou cabus blanc', 'unite': 'kg'},
+    ('CHOU', 'ROUGE', 'KG'): {'nom': 'Chou cabus rouge', 'unite': 'kg'},
+    ('CHOU', 'BROCOLI', 'KG'): {'nom': 'Brocoli', 'unite': 'kg'},
+    ('CHOU', 'CHINOIS', 'KG'): {'nom': 'Chou chinois', 'unite': 'kg'},
+    ('CHOU', 'FLEUR', 'KG'): {'nom': 'Chou-fleur', 'unite': 'kg'},
+    ('CHOU', 'RAVE', 'PIÈCE'): {'nom': 'Chou-rave', 'unite': 'pièce'},
+    ('CHOU', 'VERT FRISÉ', 'KG'): {'nom': 'Chou vert', 'unite': None},
+    ('CONCOMBRE', 'LONG PRO', 'PIÈCE'): {'nom': 'Concombre long vert', 'unite': 'pièce'},
+    ('CONCOMBRE', 'EPINEUX', 'KG'): {'nom': 'Concombre épineux (court)', 'unite': 'kg'},
+    ('COURGETTE', 'JAUNE', 'KG'): {'nom': 'Courgette jaune', 'unite': 'kg'},
+    ('COURGETTE', 'VERTE', 'KG'): {'nom': 'Courgette verte', 'unite': 'kg'},
+    ('FENOUIL', '', 'KG'): {'nom': 'Fenouil', 'unite': 'kg'},
+    ('FÈVE', 'FINE', 'KG'): {'nom': 'Fève', 'unite': 'kg'},
+    ('FRAISE', '', 'KG'): {'nom': 'Fraise', 'unite': 'kg'},
+    ('HARICOT', 'VERT FIN', 'KG'): {'nom': 'Haricot vert', 'unite': 'kg'},
+    ('MÂCHE', 'VERTE', 'KG'): {'nom': 'Mâche', 'unite': 'kg'},
+    ('MELON', 'MAKEBA', 'PIÈCE'): {'nom': 'Melon', 'unite': 'pièce', 'split_from': 'Melon', 'nom_split': 'Melon pièce'},
+    ('MELON', 'MAKEBA', 'KG'): {'nom': 'Melon', 'unite': 'kg'},
+    ('MESCLUN', 'JEUNE POUSSE SALADE', 'KG'): {'nom': 'Mesclun', 'unite': 'kg'},
+    ('NAVET', 'ROND VIOLET PRIMEUR', 'BOTTE'): {'nom': 'Navet violet', 'unite': 'botte', 'split_from': 'Navet violet', 'nom_split': 'Navet violet botte'},
+    ('OIGNON', 'BLANC', 'KG'): {'nom': 'Oignon blanc', 'unite': 'kg'},
+    ('OIGNON', 'JAUNE', 'KG'): {'nom': 'Oignon jaune', 'unite': 'kg'},
+    ('PATATE', 'DOUCE LONGUE', 'KG'): {'nom': 'Patate douce', 'unite': 'kg'},
+    ('PASTÈQUE', '', 'KG'): {'nom': 'Pastèque', 'unite': 'kg'},
+    ("PIMENT D'ESPELETTE", 'GORIA', 'KG'): {'nom': 'Piment', 'unite': 'kg'},
+    ('POIS', 'ÉCOSSER', 'KG'): {'nom': 'Pois', 'unite': 'kg'},
+    ('POIVRON', 'VERT', 'KG'): {'nom': 'Poivron vert', 'unite': 'kg'},
+    ('POMME DE TERRE', 'PRIMEUR', 'KG'): {'nom': 'Pomme de terre primeurs', 'unite': 'kg'},
+    ('POMME DE TERRE', 'CONSERVATION', 'KG'): {'nom': 'Pomme de terre conservation', 'unite': 'kg'},
+    ('RADIS', 'ROSE', 'BOTTE'): {'nom': 'Radis botte', 'unite': None},
+    ('RADIS', 'NOIR', 'KG'): {'nom': 'Radis noir', 'unite': 'kg'},
+    ('RADIS', 'BLANC', 'KG'): {'nom': 'Radis blanc', 'unite': 'kg'},
+    ('SALADE', 'BATAVIA', 'PIÈCE'): {'nom': 'Batavia', 'unite': 'pièce'},
+    ('SALADE', 'FEUILLE DE CHÊNE', 'PIÈCE'): {'nom': 'Feuille de chêne', 'unite': 'pièce'},
+    ('SALADE', 'LAITUE POMMÉE', 'PIÈCE'): {'nom': 'Laitue', 'unite': 'pièce'},
+    ('TOMATE', 'CERISE', 'KG'): {'nom': 'Tomate cerise', 'unite': 'kg'},
+    ('TOMATE', 'CÔTELÉE ANCIENNE', 'KG'): {'nom': 'Tomate ancienne', 'unite': 'kg'},
+    ('TOMATE', 'ANCIENNE', 'KG'): {'nom': 'Tomate ancienne', 'unite': 'kg'},
+    ('TOMATE', 'RONDE', 'KG'): {'nom': 'Tomate classique', 'unite': 'kg'},
+    ('TOMATE', 'CLASSIQUE', 'KG'): {'nom': 'Tomate classique', 'unite': 'kg'},
 }
 
 
@@ -113,7 +117,7 @@ def lire_prix(token, drive_id, item_id):
 
 
 def norm(s):
-    return (s or '').strip().upper()
+    return re.sub(r'\s+', ' ', (s or '').strip()).upper()
 
 
 def sb_get(table, params):
@@ -159,16 +163,19 @@ def maj_legume_semaine(nom, prix):
 
 
 maj, crees, ignores = 0, 0, 0
+non_reconnues = []
 for row in valeurs[1:]:
     libelle = norm(row[0] if len(row) > 0 else '')
     variete = norm(row[1] if len(row) > 1 else '')
+    unite = norm(row[2] if len(row) > 2 else '')
     prix = row[56] if len(row) > 56 else None
     if not isinstance(prix, (int, float)) or prix <= 0:
         ignores += 1
         continue
-    regle = MAPPING.get((libelle, variete))
+    regle = MAPPING.get((libelle, variete, unite))
     if not regle:
         ignores += 1
+        non_reconnues.append((libelle, variete, unite, prix))
         continue
 
     if 'split_from' in regle:
@@ -204,4 +211,9 @@ for row in valeurs[1:]:
     print(f"  {regle['nom']} -> {prix}")
     maj += 1
 
-print(f"\n{maj} prix mis a jour, {crees} nouvelle(s) fiche(s) creee(s), {ignores} ligne(s) ignoree(s) (sans prix ou hors correspondance connue)")
+print(f"\n{maj} prix mis a jour, {crees} nouvelle(s) fiche(s) creee(s), {ignores} ligne(s) ignoree(s)")
+
+if non_reconnues:
+    print(f"\nATTENTION : {len(non_reconnues)} ligne(s) avec un prix mais SANS correspondance connue (a verifier / ajouter au mapping) :")
+    for libelle, variete, unite, prix in non_reconnues:
+        print(f"  - {libelle} / {variete} / {unite} -> {prix}")
