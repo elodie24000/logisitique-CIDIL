@@ -19,7 +19,7 @@ const CC = [
 ];
 
 const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://elodie24000.github.io',
   'Access-Control-Allow-Headers': 'authorization, apikey, content-type',
 };
 
