@@ -7,6 +7,7 @@ La correspondance entre les lignes du fichier et les fiches de l'app a ete
 validee manuellement avec la gestionnaire (regles ci-dessous). Les produits
 absents du fichier ou sans prix renseigne sont ignores."""
 import os, json, base64, urllib.request, urllib.error, urllib.parse
+from datetime import date, timedelta
 
 TENANT_ID = os.environ['AZURE_TENANT_ID']
 CLIENT_ID = os.environ['AZURE_CLIENT_ID']
@@ -140,6 +141,20 @@ print(f"{len(valeurs)} lignes lues dans le fichier")
 catalogue = sb_get('catalogue', 'select=id,nom,unites,famille')
 par_nom = {c['nom']: c for c in catalogue}
 
+semaine_courante = (date.today() - timedelta(days=date.today().weekday())).isoformat()
+legumes_semaine = sb_get('legumes', f'semaine=eq.{semaine_courante}&select=id,nom,prix_kg')
+legumes_par_nom = {}
+for l in legumes_semaine:
+    legumes_par_nom.setdefault(l['nom'], []).append(l)
+
+
+def maj_legume_semaine(nom, prix):
+    for l in legumes_par_nom.get(nom, []):
+        if l.get('prix_kg') != prix:
+            sb_patch('legumes', l['id'], {'prix_kg': prix})
+            print(f"    (prix mis a jour aussi sur la liste de la semaine en cours)")
+
+
 maj, crees, ignores = 0, 0, 0
 for row in valeurs[1:]:
     libelle = norm(row[0] if len(row) > 0 else '')
@@ -169,6 +184,8 @@ for row in valeurs[1:]:
             par_nom[nouveau_nom] = created[0]
             crees += 1
         print(f"  {nouveau_nom} ({regle['unite']}) -> {prix}")
+        if regle['split_from'] in legumes_par_nom:
+            print(f"    (attention : {regle['split_from']} est deja publie cette semaine, prix a verifier manuellement car plusieurs unites possibles)")
         maj += 1
         continue
 
@@ -180,6 +197,7 @@ for row in valeurs[1:]:
     if regle['unite']:
         body['unites'] = regle['unite']
     sb_patch('catalogue', cible['id'], body)
+    maj_legume_semaine(regle['nom'], prix)
     print(f"  {regle['nom']} -> {prix}")
     maj += 1
 
