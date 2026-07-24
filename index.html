@@ -1430,6 +1430,17 @@ function pluriel(qty, unite) {
 }
 
 // ══════ SEMAINE ══════
+// Renvoie le lundi de la semaine à proposer pour la commande : la semaine en cours
+// tant qu'un créneau (mardi ou jeudi) est encore ouvert, sinon la semaine suivante.
+function semaineCommandeActive() {
+  const now = new Date();
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const lundi = new Date(d); lundi.setDate(d.getDate() - ((d.getDay()+6)%7));
+  const cutoffJeudi = new Date(lundi); cutoffJeudi.setDate(lundi.getDate()+2); cutoffJeudi.setHours(12,0,0,0);
+  if (now < cutoffJeudi) return lundi;
+  const lundiSuivant = new Date(lundi); lundiSuivant.setDate(lundi.getDate()+7);
+  return lundiSuivant;
+}
 function initSemaine() {
   if (!state.semaine) {
     const d = new Date();
@@ -2619,9 +2630,10 @@ async function initCommandeClient() {
   const insF = document.getElementById('cmd-inscription-form'); if (insF) insF.style.display = 'none';
   const insL = document.getElementById('cmd-inscription-link'); if (insL) insL.style.display = '';
 
-  // Semaine courante
-  const d = new Date(); d.setDate(d.getDate() - d.getDay() + 1);
+  // Semaine à proposer pour la commande (bascule sur la semaine suivante une fois jeudi 12h passé)
+  const d = semaineCommandeActive();
   const semaine = [d.getFullYear(), String(d.getMonth()+1).padStart(2,'0'), String(d.getDate()).padStart(2,'0')].join('-');
+  state.semaine = semaine;
   const fin = new Date(d); fin.setDate(d.getDate() + 6);
   const fmt = v => v.toLocaleDateString('fr-FR', {day:'numeric', month:'long'});
   document.getElementById('cmd-week-tag').textContent = 'Semaine du ' + fmt(d) + ' au ' + fmt(fin);
@@ -2778,7 +2790,7 @@ async function submitClientOrder() {
 
 // Init
 (()=>{
-  const d=new Date(); d.setDate(d.getDate()-d.getDay()+1);
+  const d=semaineCommandeActive();
   state.semaine=[d.getFullYear(), String(d.getMonth()+1).padStart(2,'0'), String(d.getDate()).padStart(2,'0')].join('-');
   if (window.location.search.includes('commande')) initCommandeClient();
 })();
