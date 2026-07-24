@@ -175,6 +175,7 @@ for row in valeurs[1:]:
     if not isinstance(prix, (int, float)) or prix <= 0:
         ignores += 1
         continue
+    prix = round(prix, 2)
     regle = MAPPING.get((libelle, variete, unite))
     if not regle:
         ignores += 1
