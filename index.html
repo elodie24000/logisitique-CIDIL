@@ -2751,8 +2751,7 @@ async function submitClientOrder() {
     }
     return;
   }
-  const d = new Date(); d.setDate(d.getDate() - d.getDay() + 1);
-  const semaine = [d.getFullYear(), String(d.getMonth()+1).padStart(2,'0'), String(d.getDate()).padStart(2,'0')].join('-');
+  const semaine = state.semaine;
   try {
     // Revérifie le stock réel juste avant l'envoi (évite qu'un autre client ait déjà tout pris)
     const ids = items.map(i => i.legume_id).join(',');
