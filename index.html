@@ -902,6 +902,13 @@ button.livr-badge{cursor:pointer;}
     </div>
     <div id="cmd-legumes-wrap" style="display:none;">
       <div id="cmd-legumes-list"></div>
+      <div id="cmd-mode-wrap" style="margin-top:16px;">
+        <div class="cmd-select-label">Comment récupérez-vous votre commande ?</div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <div class="jour-opt jour-selected" id="cmd-mode-livraison" onclick="cmdModeChange('livraison')">🚚 Livraison</div>
+          <div class="jour-opt" id="cmd-mode-retrait" onclick="cmdModeChange('retrait')">🏠 Je viens chercher sur place</div>
+        </div>
+      </div>
       <div id="cmd-livraison-wrap" style="margin-top:16px;">
         <div class="cmd-select-label" id="cmd-jour-titre">Jour de livraison souhaité</div>
         <div id="cmd-jour-options" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"></div>
@@ -1854,6 +1861,7 @@ async function loadCommandes() {
         state.orders[r.client_idx]._jour = r.jour_livraison || '';
         state.orders[r.client_idx]._livre = !!r.livre;
         state.orders[r.client_idx]._prete = !!r.prete;
+        state.orders[r.client_idx]._mode = r.mode_livraison || 'livraison';
       } else {
         if (!byWeek[r.semaine]) byWeek[r.semaine] = [];
         byWeek[r.semaine].push(r);
@@ -2000,10 +2008,14 @@ function carteCommande(idx) {
       : `${qty} ${pluriel(qty,v.unite||'kg')}`;
     return `<div class="co-line"><span>${v.nom}</span><span style="font-family:'DM Mono',monospace;">${qtyLabel}${sub?' · '+(sub.toFixed(2))+' €':''}</span></div>`;
   }).filter(Boolean).join('');
-  const frais=fraisLivraison(c);
+  const modeRetrait = od._mode === 'retrait';
+  const frais = modeRetrait ? 0 : fraisLivraison(c);
   const totalBloc = hasP ? (frais>0
     ? `<div class="co-total" style="font-weight:400;color:var(--tm);">Légumes : ${total.toFixed(2)} € · Livr. : ${frais.toFixed(2)} €</div><div class="co-total">Total : ${(total+frais).toFixed(2)} €</div>`
     : `<div class="co-total">Total : ${total.toFixed(2)} €</div>`) : '';
+  const modeBadge = modeRetrait
+    ? `<div class="co-line" style="color:var(--g1);font-weight:500;">🏠 Vient chercher sur place</div>`
+    : `<div class="co-line" style="color:var(--g1);font-weight:500;">🚚 Livraison</div>`;
   const statut = od._livre
     ? `<button class="livr-badge ok" onclick="toggleLivraison(${idx})">✓ Livré</button>`
     : `<button class="livr-badge wait" onclick="toggleLivraison(${idx})">à livrer</button>`;
@@ -2012,7 +2024,7 @@ function carteCommande(idx) {
     : `<button class="co-adjust-btn" onclick="marquerCommandePrete(${idx})">📦 Commande prête</button>`;
   return `<div class="co-card ${od._livre?'co-livre':''}">
     <div class="co-head"><span class="co-name">${c.nom}</span>${statut}</div>
-    <div class="co-body">${lines}${totalBloc}
+    <div class="co-body">${modeBadge}${lines}${totalBloc}
       <button class="co-adjust-btn" onclick="openAjusterModal(${idx})">✎ Ajuster la commande</button>
       ${preteBtn}
     </div>
@@ -2504,6 +2516,13 @@ async function subscribePush() {
 
 // ══════ PAGE COMMANDE CLIENT ══════
 let _cmdClientIdx = null;
+let _cmdMode = 'livraison';
+function cmdModeChange(mode) {
+  _cmdMode = mode;
+  document.getElementById('cmd-mode-livraison').classList.toggle('jour-selected', mode==='livraison');
+  document.getElementById('cmd-mode-retrait').classList.toggle('jour-selected', mode==='retrait');
+  updateCmdTotal();
+}
 
 function cmdRetourLogin() {
   document.getElementById('screen-commande-client').style.display = 'none';
@@ -2525,6 +2544,7 @@ function cmdSearchClient(val) {
 
 function cmdSelectClient(idx) {
   _cmdClientIdx = idx;
+  cmdModeChange('livraison');
   document.getElementById('cmd-client-search').value = '';
   document.getElementById('cmd-client-results').style.display = 'none';
   const choisi = document.getElementById('cmd-client-choisi');
@@ -2716,7 +2736,7 @@ function updateCmdTotal() {
   });
   const el = document.getElementById('cmd-total');
   if (lines === 0) { el.textContent = ''; return; }
-  const frais = fraisLivraison(getClient(_cmdClientIdx));
+  const frais = _cmdMode === 'livraison' ? fraisLivraison(getClient(_cmdClientIdx)) : 0;
   if (hasPrice) {
     const ttc = total + frais;
     el.innerHTML = `<strong>${lines} article(s)</strong> · Légumes : ${total.toFixed(2)} €`
@@ -2770,6 +2790,7 @@ async function submitClientOrder() {
       client_idx: idx,
       semaine,
       jour_livraison: jour,
+      mode_livraison: _cmdMode,
       items: JSON.stringify(items),
       total: items.reduce((s,i) => s + (i.prix_kg||0)*i.quantite, 0)
     });
