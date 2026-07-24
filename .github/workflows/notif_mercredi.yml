@@ -1,8 +1,8 @@
-name: Rappel lundi 8h (push + email) - cloture mardi 12h
+name: Rappel mercredi 8h (push + email) - cloture jeudi 12h
 
 on:
   schedule:
-    - cron: '0 6 * * 1'   # Chaque lundi 8h heure française (6h UTC)
+    - cron: '0 6 * * 3'   # Chaque mercredi 8h heure française (6h UTC)
   workflow_dispatch:        # Permet aussi un declenchement manuel pour tester
 
 jobs:
@@ -20,7 +20,7 @@ jobs:
         env:
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
           VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
-          JOUR_LIVRAISON: mardi
+          JOUR_LIVRAISON: jeudi
         run: python scripts/send_push_rappel_cloture.py
 
   email:
@@ -35,5 +35,5 @@ jobs:
         env:
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
           BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
-          JOUR_LIVRAISON: mardi
+          JOUR_LIVRAISON: jeudi
         run: python scripts/send_email_rappel_cloture.py

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-"""Envoie une notification push à tous les abonnés (lundi matin)."""
+"""Envoie une notification push a tous les abonnes, le matin ou les commandes
+vont fermer (lundi 8h pour la livraison de mardi, mercredi 8h pour jeudi)."""
 import os, json, urllib.request
 from pywebpush import webpush, WebPushException
 
@@ -7,6 +8,7 @@ SUPA_URL = 'https://ulvrwtwxzhlrplvbcsrd.supabase.co'
 SUPA_KEY = os.environ['SUPABASE_KEY']
 VAPID_PRIVATE = os.environ['VAPID_PRIVATE_KEY']
 VAPID_CLAIMS = {'sub': 'mailto:plassin.elodie24@gmail.com'}
+JOUR_LIVRAISON = os.environ['JOUR_LIVRAISON']  # 'mardi' ou 'jeudi'
 
 H = {'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY}
 
@@ -21,7 +23,7 @@ def delete_sub(sid):
 
 payload = json.dumps({
     'title': 'CIDIL Maraîchage 🥕',
-    'body': 'Dernière chance pour commander pour la livraison de mardi ! Clôture aujourd\'hui à 12h.',
+    'body': f"Dernière chance pour commander pour la livraison de {JOUR_LIVRAISON} ! Clôture aujourd'hui à 12h.",
     'url': 'https://elodie24000.github.io/logisitique-CIDIL/?commande'
 })
 
@@ -38,7 +40,7 @@ for s in subs:
         code = getattr(e.response, 'status_code', None)
         print(f"Echec {s['id']} (code {code})")
         if code in (404, 410):
-            delete_sub(s['id'])  # abonnement périmé : on le retire
+            delete_sub(s['id'])
     except Exception as e:
         print(f"Erreur {s['id']}: {e}")
 
