@@ -21,7 +21,7 @@ def delete_sub(sid):
 
 payload = json.dumps({
     'title': 'CIDIL Maraîchage 🥕',
-    'body': 'Les commandes de la semaine sont ouvertes ! Cliquez pour commander vos légumes.',
+    'body': 'Dernière chance pour commander pour la livraison de mardi ! Clôture aujourd\'hui à 12h.',
     'url': 'https://elodie24000.github.io/logisitique-CIDIL/?commande'
 })
 
