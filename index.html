@@ -261,9 +261,10 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 #veg-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start;}
 .veg-card{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;background:var(--white);border:1px solid var(--bd);border-radius:12px;padding:14px 12px 10px;box-shadow:var(--sh);}
 .veg-emoji{font-size:30px;flex-shrink:0;line-height:1;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:var(--g7);border-radius:11px;}
-.veg-card-info{min-width:0;display:flex;flex-direction:column;align-items:center;}
+.veg-card-info{min-width:0;display:flex;flex-direction:column;align-items:center;gap:5px;}
 .veg-card .veg-name{font-size:14px;font-weight:500;margin-bottom:2px;text-align:center;}
-.veg-card .veg-info{text-align:center;}
+.veg-card .veg-dispo-line{font-size:12px;font-weight:500;color:var(--text);text-align:center;}
+.veg-card .veg-prix-badge{background:var(--g6);color:var(--g1);border-radius:8px;padding:5px 8px;text-align:center;font-size:12px;font-weight:500;font-family:'DM Mono',monospace;white-space:nowrap;}
 .veg-card .btn-rm{position:absolute;top:8px;right:8px;flex-shrink:0;}
 .btn-rm{
   width:28px;height:28px;border-radius:7px;border:1px solid var(--bd);
@@ -352,7 +353,7 @@ button.livr-badge{cursor:pointer;}
 .recap-veg-card{background:var(--white);border:1px solid var(--bd);border-radius:12px;padding:14px;text-align:center;}
 .rvn{font-size:13px;font-weight:500;margin-bottom:4px;}
 .rvk{font-size:24px;font-weight:500;font-family:'DM Mono',monospace;color:var(--g1);}
-.rvs{font-size:12px;color:var(--tl);}
+.rvs{display:inline-block;margin-top:6px;background:var(--g6);color:var(--g1);border-radius:8px;padding:5px 8px;font-size:12px;font-weight:500;font-family:'DM Mono',monospace;}
 
 /* toast */
 .toast{
@@ -1810,7 +1811,8 @@ function renderVeggies() {
       <div class="veg-emoji">${emojiLegume(v.nom)}</div>
       <div class="veg-card-info">
         <div class="veg-name">${v.nom}</div>
-        <div class="veg-info">${v.kg} ${pluriel(v.kg, v.unite)}${v.prix!==null?' · '+v.prix.toFixed(2)+' €/'+(v.unite||'kg'):' · NC'}</div>
+        <div class="veg-dispo-line">${v.kg} ${pluriel(v.kg, v.unite)} dispo</div>
+        <div class="veg-prix-badge">${v.prix!==null ? v.prix.toFixed(2)+' €/'+(v.unite||'kg') : 'Prix NC'}</div>
       </div>
     </div>`).join('');
 }
