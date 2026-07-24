@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Synchronise les prix du catalogue depuis le fichier SharePoint
 "Prix vente legumes - CIDIL - 2025.xlsx", onglet "MISE A JOUR " (colonnes
-A=libelle, B=variete, C=unite, BE=prix moyen HT bio).
+A=libelle, B=variete, C=unite, BN=prix moyen PRO).
 
 La correspondance entre les lignes du fichier et les fiches de l'app a ete
 validee manuellement avec la gestionnaire (regles ci-dessous). Les produits
@@ -171,7 +171,7 @@ for row in valeurs[1:]:
     libelle = norm(row[0] if len(row) > 0 else '')
     variete = norm(row[1] if len(row) > 1 else '')
     unite = norm(row[2] if len(row) > 2 else '')
-    prix = row[56] if len(row) > 56 else None
+    prix = row[65] if len(row) > 65 else None  # colonne BN = "PRIX MOYEN PRO"
     if not isinstance(prix, (int, float)) or prix <= 0:
         ignores += 1
         continue
