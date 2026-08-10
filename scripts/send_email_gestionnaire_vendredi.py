@@ -36,19 +36,22 @@ def pluriel(qty, unite):
     return u
 
 
-def get_commandes_livrees(semaine_str):
+def get_commandes_semaine(semaine_str):
     req = urllib.request.Request(
-        f'{SUPA_URL}/rest/v1/commandes_clients?semaine=eq.{semaine_str}&livre=eq.true'
-        '&select=client_nom,jour_livraison,items,total,numero_bl'
+        f'{SUPA_URL}/rest/v1/commandes_clients?semaine=eq.{semaine_str}'
+        '&select=client_nom,jour_livraison,items,total,numero_bl,livre'
         '&order=numero_bl.asc',
         headers=H_SUPA
     )
-    return json.loads(urllib.request.urlopen(req).read())
+    rows = json.loads(urllib.request.urlopen(req).read())
+    livrees = [r for r in rows if r.get('livre')]
+    non_livrees = [r for r in rows if not r.get('livre')]
+    return livrees, non_livrees
 
 
-def bloc_recap_html(commandes):
+def bloc_recap_html(commandes, titre_vide):
     if not commandes:
-        return '<p>Aucune commande livrée cette semaine.</p>'
+        return f'<p>{titre_vide}</p>'
 
     lignes = ''
     total_general = 0
@@ -88,7 +91,7 @@ def bloc_recap_html(commandes):
     return f'<table style="width:100%;border-collapse:collapse;font-size:14px;">{lignes}</table>'
 
 
-def build_pdf(commandes, semaine_str, total_general):
+def build_pdf(livrees, non_livrees, semaine_str):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font('Helvetica', 'B', 16)
@@ -97,35 +100,54 @@ def build_pdf(commandes, semaine_str, total_general):
     pdf.cell(0, 8, f'Semaine du {semaine_str}', ln=1)
     pdf.ln(4)
 
-    for c in commandes:
-        items = c.get('items') or []
-        if isinstance(items, str):
-            items = json.loads(items)
-        numero_bl = c.get('numero_bl')
-        bl_txt = f'BL n{numero_bl}' if numero_bl else 'Sans BL'
+    def section(titre, commandes):
+        pdf.set_font('Helvetica', 'B', 13)
+        pdf.cell(0, 8, titre, ln=1)
+        pdf.ln(1)
+        if not commandes:
+            pdf.set_font('Helvetica', '', 9)
+            pdf.cell(0, 6, '  Aucune', ln=1)
+            pdf.ln(2)
+            return 0
+        sous_total = 0
+        for c in commandes:
+            items = c.get('items') or []
+            if isinstance(items, str):
+                items = json.loads(items)
+            numero_bl = c.get('numero_bl')
+            bl_txt = f'BL n{numero_bl}' if numero_bl else 'Sans BL'
 
-        pdf.set_font('Helvetica', 'B', 11)
-        pdf.cell(0, 7, f'{bl_txt} - {c.get("client_nom")}', ln=1)
-        pdf.set_font('Helvetica', '', 9)
-        for it in items:
-            if it.get('dispo') is False:
-                pdf.cell(0, 5, f'  {it.get("nom")} : non disponible', ln=1)
-                continue
-            qty = it.get('quantite_reelle', it.get('quantite'))
-            unite = pluriel(qty, it.get('unite'))
-            pdf.cell(0, 5, f'  {it.get("nom")} : {qty} {unite}', ln=1)
-        pdf.set_font('Helvetica', '', 9)
-        pdf.cell(0, 6, f'  Total : {(c.get("total") or 0):.2f} EUR', ln=1)
-        pdf.ln(2)
+            pdf.set_font('Helvetica', 'B', 11)
+            pdf.cell(0, 7, f'{bl_txt} - {c.get("client_nom")}', ln=1)
+            pdf.set_font('Helvetica', '', 9)
+            for it in items:
+                if it.get('dispo') is False:
+                    pdf.cell(0, 5, f'  {it.get("nom")} : non disponible', ln=1)
+                    continue
+                qty = it.get('quantite_reelle', it.get('quantite'))
+                unite = pluriel(qty, it.get('unite'))
+                pdf.cell(0, 5, f'  {it.get("nom")} : {qty} {unite}', ln=1)
+            total = c.get('total') or 0
+            sous_total += total
+            pdf.set_font('Helvetica', '', 9)
+            pdf.cell(0, 6, f'  Total : {total:.2f} EUR', ln=1)
+            pdf.ln(2)
+        pdf.set_font('Helvetica', 'B', 10)
+        pdf.cell(0, 7, f'Sous-total {titre} : {sous_total:.2f} EUR', ln=1)
+        pdf.ln(4)
+        return sous_total
+
+    total_livrees = section('Commandes livrees', livrees)
+    total_non_livrees = section('Commandes non confirmees livrees', non_livrees)
 
     pdf.set_font('Helvetica', 'B', 12)
-    pdf.cell(0, 8, f'Total general : {total_general:.2f} EUR', ln=1)
+    pdf.cell(0, 8, f'Total general : {(total_livrees + total_non_livrees):.2f} EUR', ln=1)
 
     out = pdf.output(dest='S')
     return bytes(out) if not isinstance(out, (bytes, bytearray)) else bytes(out)
 
 
-def envoyer_email(recap_html, nb_commandes, semaine_str, pdf_bytes):
+def envoyer_email(html_livrees, html_non_livrees, nb_livrees, nb_non_livrees, semaine_str, pdf_bytes):
     html = f"""
     <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;">
       <div style="background:#0d2818;padding:24px;text-align:center;border-radius:12px 12px 0 0;">
@@ -133,10 +155,18 @@ def envoyer_email(recap_html, nb_commandes, semaine_str, pdf_bytes):
       </div>
       <div style="padding:24px;background:#f7f6f2;border-radius:0 0 12px 12px;">
         <p>Bonjour,</p>
-        <p>Voici le récapitulatif des <strong>{nb_commandes} commande(s) livrée(s)</strong> pour la semaine du {semaine_str} (ce récapitulatif regroupe les BL déjà envoyés, ce n'est pas un BL en soi).</p>
-        <div style="background:#fff;border-radius:10px;padding:14px 16px;margin:18px 0;">
-          {recap_html}
+        <p>Voici le récapitulatif des commandes pour la semaine du {semaine_str} (ce récapitulatif regroupe les BL déjà envoyés, ce n'est pas un BL en soi).</p>
+
+        <p style="font-weight:bold;margin:20px 0 8px;">✅ Commandes livrées ({nb_livrees})</p>
+        <div style="background:#fff;border-radius:10px;padding:14px 16px;margin:0 0 18px;">
+          {html_livrees}
         </div>
+
+        <p style="font-weight:bold;margin:20px 0 8px;">⏳ Commandes non confirmées livrées ({nb_non_livrees})</p>
+        <div style="background:#fff;border-radius:10px;padding:14px 16px;margin:0 0 18px;">
+          {html_non_livrees}
+        </div>
+
         <p style="text-align:center;margin:28px 0;">
           <a href="{LIEN_APP}" style="background:#0d2818;color:#fff;padding:14px 28px;
           border-radius:10px;text-decoration:none;font-weight:bold;display:inline-block;">Ouvrir l'application</a>
@@ -149,7 +179,7 @@ def envoyer_email(recap_html, nb_commandes, semaine_str, pdf_bytes):
     body = json.dumps({
         'sender': {'email': EXPEDITEUR_EMAIL, 'name': EXPEDITEUR_NOM},
         'to': DESTINATAIRES,
-        'subject': f'CIDIL - Récap des commandes réalisées (semaine du {semaine_str})',
+        'subject': f'CIDIL - Récap des commandes (semaine du {semaine_str})',
         'htmlContent': html,
         'attachment': [{'content': pdf_b64, 'name': f'Recap_BL_{semaine_str}.pdf'}]
     }).encode('utf-8')
@@ -165,11 +195,11 @@ def envoyer_email(recap_html, nb_commandes, semaine_str, pdf_bytes):
 semaine = lundi_de_cette_semaine().isoformat()
 print(f"Semaine ciblee : {semaine}")
 
-commandes = get_commandes_livrees(semaine)
-print(f"{len(commandes)} commande(s) livree(s) trouvee(s)")
+livrees, non_livrees = get_commandes_semaine(semaine)
+print(f"{len(livrees)} commande(s) livree(s), {len(non_livrees)} commande(s) non confirmee(s) livree(s)")
 
-total_general = sum(c.get('total') or 0 for c in commandes)
-recap_html = bloc_recap_html(commandes)
-pdf_bytes = build_pdf(commandes, semaine, total_general)
-envoyer_email(recap_html, len(commandes), semaine, pdf_bytes)
+html_livrees = bloc_recap_html(livrees, 'Aucune commande livrée cette semaine.')
+html_non_livrees = bloc_recap_html(non_livrees, 'Aucune commande en attente cette semaine.')
+pdf_bytes = build_pdf(livrees, non_livrees, semaine)
+envoyer_email(html_livrees, html_non_livrees, len(livrees), len(non_livrees), semaine, pdf_bytes)
 print("Email gestionnaire envoye")
