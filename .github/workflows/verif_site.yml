@@ -1,0 +1,20 @@
+name: Verification quotidienne du site
+
+on:
+  schedule:
+    - cron: '0 7 * * *'   # Chaque jour 9h heure française (7h UTC)
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verification du site
+        env:
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+        run: python scripts/verifier_site.py
