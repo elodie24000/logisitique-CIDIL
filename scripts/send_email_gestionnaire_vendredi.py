@@ -14,6 +14,7 @@ EXPEDITEUR_NOM = 'CIDIL Maraîchage'
 DESTINATAIRES = [
     {'email': 'comptable@cidil-asso.fr', 'name': 'Comptable CIDIL'},
     {'email': 'coordination@cidil-asso.fr', 'name': 'Coordination CIDIL'},
+    {'email': 'secretariat@cidil-asso.fr', 'name': 'Secrétariat CIDIL'},
 ]
 LIEN_APP = 'https://elodie24000.github.io/logisitique-CIDIL/'
 
