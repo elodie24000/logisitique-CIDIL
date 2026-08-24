@@ -15,7 +15,7 @@ const DESTINATAIRES = [
   { email: 'coordination@cidil-asso.fr', name: 'Coordination CIDIL' },
 ];
 const CC = [
-  { email: 'eti.maraichage1@cidil-asso.fr', name: 'CIDIL Maraîchage' },
+  { email: 'maraichage@cidil-asso.fr', name: 'CIDIL Maraîchage' },
 ];
 
 const CORS_HEADERS = {
