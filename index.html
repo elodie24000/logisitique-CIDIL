@@ -198,26 +198,6 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 .filters::-webkit-scrollbar{display:none;}
 .flt{padding:6px 14px;border-radius:20px;border:1px solid var(--bd);background:var(--white);color:var(--tm);font-size:13px;cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif;flex-shrink:0;}
 .flt.active{background:var(--g2);color:#fff;border-color:var(--g2);}
-.jour-tabs{display:flex;gap:10px;margin-bottom:18px;overflow-x:auto;padding-bottom:2px;}
-.jour-tab{flex:0 0 auto;min-width:100px;padding:14px 10px;border-radius:13px;border:1.5px solid var(--bd);background:var(--white);color:var(--tm);font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;}
-.jour-tab.active{background:var(--g1);color:#fff;border-color:var(--g1);}
-#tournee-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start;}
-.tour-card{background:var(--white);border:1px solid var(--bd);border-radius:14px;margin-bottom:0;overflow:hidden;box-shadow:var(--sh);}
-.tour-card.livre{opacity:.55;}
-.tour-emoji{font-size:22px;line-height:1;flex-shrink:0;width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:var(--g6);border-radius:9px;}
-.tour-head{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--g7);border-bottom:1px solid var(--bd);}
-.tour-chk{width:26px;height:26px;flex-shrink:0;accent-color:var(--g3);cursor:pointer;}
-.tour-nom{font-size:16px;font-weight:500;color:var(--g1);}
-.tour-adr{font-size:12px;color:var(--tm);margin-top:1px;}
-.tour-body{padding:10px 16px 12px;}
-.tour-line{display:flex;justify-content:space-between;font-size:15px;padding:5px 0;border-bottom:1px solid var(--g7);}
-.tour-line:last-child{border-bottom:none;}
-.tour-qty{font-family:'DM Mono',monospace;font-weight:500;}
-.tour-chevron{color:var(--g3);font-size:16px;transition:transform .2s;flex-shrink:0;}
-.tour-gps{display:inline-flex;align-items:center;gap:6px;margin-top:12px;padding:9px 14px;background:var(--g1);color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:500;text-decoration:none;cursor:pointer;font-family:'DM Sans',sans-serif;}
-.tour-livre-btn{display:block;width:100%;margin-top:14px;padding:14px;border:2px solid var(--g3);border-radius:11px;background:var(--white);color:var(--g1);font-size:15px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;}
-.tour-livre-btn.ok{background:var(--g3);color:#fff;border-color:var(--g3);}
-.tour-done-tag{font-size:12px;font-weight:500;color:var(--g1);background:var(--g6);padding:3px 9px;border-radius:10px;font-family:'DM Mono',monospace;white-space:nowrap;}
 
 /* ── ENCADRANT ── */
 .week-bar{
@@ -486,24 +466,13 @@ button.livr-badge{cursor:pointer;}
       </div>
       <div>
         <div class="role-name">Espace équipe</div>
-        <div class="role-desc">Boutique · Labo · Livreur · Encadrant · Gestionnaire</div>
+        <div class="role-desc">Boutique · Labo · Encadrant · Gestionnaire</div>
       </div>
       <div class="equipe-chevron">▾</div>
     </div>
 
     <div class="equipe-group" id="equipe-group">
       <div class="equipe-back" onclick="closeEquipe()">‹ Retour</div>
-
-      <div class="role-card" onclick="selectRole('livreur')">
-        <div class="role-icon" style="background:rgba(116,198,157,.15);">
-          <svg viewBox="0 0 24 24" stroke="var(--g4)"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-        </div>
-        <div>
-          <div class="role-name">Livreur</div>
-          <div class="role-desc">Tournée GPS · Suivi livraisons</div>
-        </div>
-        <div class="role-arrow">›</div>
-      </div>
 
       <div class="role-card" onclick="selectRole('encadrant')">
         <div class="role-icon" style="background:rgba(233,160,58,.15);">
@@ -594,12 +563,6 @@ button.livr-badge{cursor:pointer;}
 
   <div class="page-content">
 
-    <!-- PAGE TOURNÉE -->
-    <div class="page" id="page-tournee">
-      <div class="jour-tabs" id="jour-tabs"></div>
-      <div id="tournee-list"><div class="empty-msg">Chargement…</div></div>
-    </div>
-
     <!-- PAGE LÉGUMES (encadrant) -->
     <div class="page" id="page-legumes">
       <div class="week-bar">
@@ -611,7 +574,6 @@ button.livr-badge{cursor:pointer;}
       <!-- Liste de la semaine EN PREMIER -->
       <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
         <span>Légumes cette semaine</span>
-        <span class="live-tag"><span class="sync-dot"></span>visible livreur</span>
       </div>
       <div id="veg-list"><div class="empty-msg">Aucun légume cette semaine · Ajoutez-en ci-dessous</div></div>
 
@@ -969,9 +931,9 @@ async function sbDelete(table, id) {
 }
 
 // ══════ DATA ══════
-const PINS = { livreur:'1111', encadrant:'2222', boutique:'3333', labo:'4444', gestionnaire:'9999' };
-const ROLE_LABELS = { livreur:'Livreur', encadrant:'Encadrant technique', boutique:'Boutique', labo:'Labo de transformation', gestionnaire:'Gestionnaire' };
-const ROLE_ICONS = { livreur:'🚚', encadrant:'🌿', boutique:'🛒', labo:'⚗️', gestionnaire:'📋' };
+const PINS = { encadrant:'2222', boutique:'3333', labo:'4444', gestionnaire:'9999' };
+const ROLE_LABELS = { encadrant:'Encadrant technique', boutique:'Boutique', labo:'Labo de transformation', gestionnaire:'Gestionnaire' };
+const ROLE_ICONS = { encadrant:'🌿', boutique:'🛒', labo:'⚗️', gestionnaire:'📋' };
 const INTERNE_KEY = { 'Boutique':'boutique', 'Labo de transformation':'labo' };
 const JOURS_EXT = [['mardi','Mardi'],['jeudi','Jeudi']];
 const JOURS_INTERNE = [['lundi','Lundi'],['mardi','Mardi'],['mercredi','Mercredi'],['jeudi','Jeudi'],['vendredi','Vendredi'],['samedi','Samedi']];
@@ -999,6 +961,9 @@ function joursDisponiblesPourClient(c) {
     return true;
   });
 }
+
+const JOURS_ORDRE = ['lundi','mardi','mercredi','jeudi','vendredi','samedi'];
+const JOURS_LABELS = {lundi:'Lundi',mardi:'Mardi',mercredi:'Mercredi',jeudi:'Jeudi',vendredi:'Vendredi',samedi:'Samedi'};
 
 function renderJourOptions(containerId, radioName, jours, onchangeFn, checkedVal) {
   const el = document.getElementById(containerId);
@@ -1126,9 +1091,6 @@ let modalClientIdx = null;
 
 // Nav configs
 const NAV_CONFIG = {
-  livreur: [
-    {id:'tournee',label:'Tournée',icon:'<svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>'},
-  ],
   encadrant: [
     {id:'legumes',label:'Légumes',icon:'<svg viewBox="0 0 24 24"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0112 2a8 8 0 018 8.2c0 7.3-8 11.8-8 11.8z"/><path d="M12 2v20M4.8 9.6h14.4"/></svg>'},
     {id:'commandes',label:'Commandes',icon:'<svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>'},
@@ -1155,7 +1117,7 @@ function closeEquipe() {
   document.getElementById('equipe-toggle').style.display = '';
 }
 
-let _pinKey = null;     // clé PIN attendue (livreur, encadrant, boutique, labo, gestionnaire)
+let _pinKey = null;     // clé PIN attendue (encadrant, boutique, labo, gestionnaire)
 let _pinSuccess = null; // callback en cas de succès
 
 function askPin(key, onSuccess) {
@@ -1258,7 +1220,6 @@ function showPage(id) {
 }
 
 function initPage(id) {
-  if (id==='tournee') loadTournee();
   if (id==='legumes') { loadCatalogue(); loadVeggies(); }
   if (id==='commandes') {
     const saisie = document.getElementById('cmd-saisie-wrap');
@@ -1300,132 +1261,6 @@ function majBanniereInscriptions() {
       <button onclick="voirNouveauClient()" style="background:#8a5a00;color:#fff;border:none;border-radius:9px;padding:10px 18px;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">Voir et valider →</button>
     </div>` : '';
   document.querySelectorAll('.new-inscr-slot').forEach(el => el.innerHTML = html);
-}
-
-// ══════ TOURNÉE LIVREUR ══════
-let _tourneeRows = [];
-let _jourActif = 'mardi';
-const JOURS_ORDRE = ['lundi','mardi','mercredi','jeudi','vendredi','samedi'];
-const JOURS_LABELS = {lundi:'Lundi',mardi:'Mardi',mercredi:'Mercredi',jeudi:'Jeudi',vendredi:'Vendredi',samedi:'Samedi'};
-
-async function loadTournee() {
-  const el = document.getElementById('tournee-list');
-  el.innerHTML = '<div class="empty-msg">Chargement…</div>';
-  try {
-    _tourneeRows = await sbGet('commandes_clients', `semaine=eq.${state.semaine}&order=client_nom.asc`);
-  } catch(e) {
-    _tourneeRows = [];
-    el.innerHTML = '<div class="empty-msg">Erreur de chargement</div>';
-    return;
-  }
-  renderJourTabs();
-  renderTournee();
-}
-
-// Un onglet par jour réellement demandé cette semaine. Mardi et Jeudi toujours affichés (jours habituels).
-function renderJourTabs() {
-  const present = new Set(_tourneeRows.filter(r => getClient(r.client_idx)?.nom).map(r => r.jour_livraison).filter(Boolean));
-  present.add('mardi'); present.add('jeudi');
-  const joursTries = JOURS_ORDRE.filter(j => present.has(j));
-  if (!joursTries.includes(_jourActif)) _jourActif = joursTries[0] || 'mardi';
-  document.getElementById('jour-tabs').innerHTML = joursTries.map(j =>
-    `<button class="jour-tab${j===_jourActif?' active':''}" onclick="showJour('${j}')">${JOURS_LABELS[j]}</button>`
-  ).join('');
-}
-
-function showJour(jour) {
-  _jourActif = jour;
-  renderJourTabs();
-  renderTournee();
-}
-
-const TOUR_EMOJIS = ['👨','👩','🧑','👨‍🦱','👩‍🦱','👨‍🦳','👩‍🦳','🧔','👱','👱‍♀️','👨‍🍳','👩‍🍳','👨‍🌾','👩‍🌾','👨‍💼','👩‍💼','🧑‍🦰','👩‍🦰','🧑‍🦲','👨‍🦲'];
-function emojiClient(idx) {
-  const s = String(idx);
-  let h = 0;
-  for (let i=0;i<s.length;i++) h = (h*31 + s.charCodeAt(i)) >>> 0;
-  return TOUR_EMOJIS[h % TOUR_EMOJIS.length];
-}
-
-function renderTournee() {
-  const el = document.getElementById('tournee-list');
-  const rows = _tourneeRows.filter(r => getClient(r.client_idx)?.nom && r.jour_livraison === _jourActif);
-  if (!rows.length) {
-    el.innerHTML = `<div class="empty-msg">Aucune commande à livrer le ${JOURS_LABELS[_jourActif] || _jourActif} cette semaine</div>`;
-    return;
-  }
-  el.innerHTML = rows.map(r => {
-    const items = typeof r.items === 'string' ? JSON.parse(r.items) : (r.items||[]);
-    const c = getClient(r.client_idx);
-    const lines = items.map(it => {
-      if (it.dispo === false) return `<div class="tour-line"><span style="text-decoration:line-through;color:var(--tl);">${it.nom}</span><span style="color:#c0392b;font-weight:500;font-size:13px;">Non disponible</span></div>`;
-      const qtyEff = (it.quantite_reelle != null) ? it.quantite_reelle : it.quantite;
-      const qtyLabel = (it.quantite_reelle != null && it.quantite_reelle !== it.quantite)
-        ? `<span style="text-decoration:line-through;color:var(--tl);font-size:12px;">${it.quantite}</span> → ${qtyEff} ${pluriel(qtyEff, it.unite||'kg')}`
-        : `${qtyEff} ${pluriel(qtyEff, it.unite||'kg')}`;
-      return `<div class="tour-line"><span>${it.nom}</span><span class="tour-qty">${qtyLabel}</span></div>`;
-    }).join('');
-    const adrEsc = (c.adresse||'').replace(/'/g,"\\'");
-    const gps = c.adresse ? `<button type="button" class="tour-gps" onclick="event.stopPropagation();openItineraire('${adrEsc}')">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>Itinéraire GPS</button>` : '';
-    return `<div class="tour-card ${r.livre?'livre':''}" id="tour-${r.id}">
-      <div class="tour-head" onclick="toggleTourCard(${r.id})">
-        <div class="tour-emoji">${emojiClient(r.client_idx)}</div>
-        <div style="flex:1;">
-          <div class="tour-nom">${r.client_nom}</div>
-          <div class="tour-adr">${items.length} article(s)${c.adresse?' · '+c.adresse:''}</div>
-        </div>
-        ${r.livre?`<span class="tour-done-tag">✓ ${heureLivraison(r.livre_at)}</span>`:''}
-        <span class="tour-chevron" id="chev-${r.id}">▾</span>
-      </div>
-      <div class="tour-body" id="body-${r.id}" style="display:none;">
-        ${lines}
-        ${gps}
-        <button class="tour-livre-btn ${r.livre?'ok':''}" onclick="event.stopPropagation();markLivre(${r.id})">
-          ${r.livre?`✓ Livré à ${heureLivraison(r.livre_at)} — annuler`:'Cocher : livraison effectuée'}
-        </button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function heureLivraison(iso) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  return d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}).replace(':','h');
-}
-
-function openItineraire(adr) {
-  if (!adr) return;
-  const url = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(adr);
-  const w = window.open(url, '_blank');
-  if (!w) window.location.href = url; // repli si popup bloquée (PWA)
-}
-
-function toggleTourCard(id) {
-  const body = document.getElementById('body-'+id);
-  const chev = document.getElementById('chev-'+id);
-  const open = body.style.display === 'none';
-  body.style.display = open ? 'block' : 'none';
-  if (chev) chev.style.transform = open ? 'rotate(180deg)' : '';
-}
-
-async function markLivre(id) {
-  const row = _tourneeRows.find(r => r.id === id);
-  if (!row) return;
-  const nowLivre = !row.livre;
-  row.livre = nowLivre;
-  row.livre_at = nowLivre ? new Date().toISOString() : null;
-  renderTournee();
-  // garder la carte ouverte
-  const body = document.getElementById('body-'+id);
-  if (body) { body.style.display = 'block'; const chev = document.getElementById('chev-'+id); if (chev) chev.style.transform = 'rotate(180deg)'; }
-  try {
-    await sbPatch('commandes_clients', id, {livre: nowLivre, livre_at: row.livre_at});
-  } catch(e) {
-    showToast('Erreur enregistrement');
-    console.error(e);
-  }
 }
 
 function pluriel(qty, unite) {
@@ -1779,7 +1614,7 @@ async function addVeggie() {
     document.getElementById('nv-kg').value='';
     document.getElementById('nv-prix').value='';
     renderVeggies();
-    showToast('🌿 '+nom+' publié — visible par le livreur');
+    showToast('🌿 '+nom+' publié — visible par les clients');
   } catch(e) {
     showToast('Erreur : ' + e.message);
   }
@@ -2017,8 +1852,8 @@ function carteCommande(idx) {
     ? `<div class="co-line" style="color:var(--g1);font-weight:500;">🏠 Vient chercher sur place</div>`
     : `<div class="co-line" style="color:var(--g1);font-weight:500;">🚚 Livraison</div>`;
   const statut = od._livre
-    ? `<button class="livr-badge ok" onclick="toggleLivraison(${idx})">✓ Livré</button>`
-    : `<button class="livr-badge wait" onclick="toggleLivraison(${idx})">à livrer</button>`;
+    ? `<span class="livr-badge ok">✓ Livré</span>`
+    : `<span class="livr-badge wait">à livrer</span>`;
   const preteBtn = od._prete
     ? `<button class="co-adjust-btn" disabled style="opacity:.6;">✓ Bon de livraison envoyé</button>`
     : `<button class="co-adjust-btn" onclick="marquerCommandePrete(${idx})">📦 Commande prête</button>`;
@@ -2031,23 +1866,16 @@ function carteCommande(idx) {
   </div>`;
 }
 
-async function toggleLivraison(idx) {
-  const od=state.orders[idx]; if(!od) return;
-  od._livre=!od._livre;
-  renderOrders();
-  try {
-    await sbPatch('commandes_clients', od._sbId, {livre:od._livre, livre_at: od._livre?new Date().toISOString():null});
-    logActivity('livraison_maj', `${getClient(idx).nom} — ${od._livre?'livré':'à livrer'}`);
-  } catch(e) { showToast('Erreur enregistrement'); console.error(e); }
-}
-
 const EDGE_FUNCTION_URL = `${SUPA_URL}/functions/v1/send-order-ready-email`;
 
+// Sans interface livreur dédiée, la commande est marquée "livrée" en même temps que "prête" :
+// c'est le seul point de confirmation restant dans le parcours.
 async function marquerCommandePrete(idx) {
   const od = state.orders[idx];
   if (!od || !od._sbId) { showToast('Commande introuvable'); return; }
   try {
-    await sbPatch('commandes_clients', od._sbId, { prete: true, prete_at: new Date().toISOString() });
+    const maintenant = new Date().toISOString();
+    await sbPatch('commandes_clients', od._sbId, { prete: true, prete_at: maintenant, livre: true, livre_at: maintenant });
     const res = await fetch(EDGE_FUNCTION_URL, {
       method: 'POST',
       headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' },
@@ -2055,6 +1883,7 @@ async function marquerCommandePrete(idx) {
     });
     if (!res.ok) throw new Error(await res.text());
     od._prete = true;
+    od._livre = true;
     logActivity('commande_prete', `${getClient(idx).nom} — bon de livraison envoyé au gestionnaire`);
     showToast('✓ Bon de livraison envoyé');
   } catch(e) {
@@ -2302,7 +2131,7 @@ function renderRecap() {
 
 async function effacerToutesCommandes() {
   if (!confirm('⚠ Effacer DÉFINITIVEMENT toutes les commandes ?\n\nCette action est irréversible. À ne faire qu\'après avoir reporté les commandes dans votre logiciel de comptabilité.')) return;
-  if (!confirm('Êtes-vous vraiment sûr ? Toutes les commandes seront supprimées sur toutes les interfaces (livreur, encadrant, gestionnaire).')) return;
+  if (!confirm('Êtes-vous vraiment sûr ? Toutes les commandes seront supprimées sur toutes les interfaces (encadrant, gestionnaire).')) return;
   try {
     const res = await fetch(`${SUPA_URL}/rest/v1/commandes_clients?id=not.is.null`, {
       method: 'DELETE',
