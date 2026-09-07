@@ -1696,6 +1696,7 @@ async function loadCommandes() {
         state.orders[r.client_idx]._jour = r.jour_livraison || '';
         state.orders[r.client_idx]._livre = !!r.livre;
         state.orders[r.client_idx]._prete = !!r.prete;
+        state.orders[r.client_idx]._createdAt = r.created_at || null;
         state.orders[r.client_idx]._mode = r.mode_livraison || 'livraison';
       } else {
         if (!byWeek[r.semaine]) byWeek[r.semaine] = [];
@@ -1823,6 +1824,44 @@ function fmtSemaine(s) {
   return `Semaine du ${d.toLocaleDateString('fr-FR', opt)} au ${fin.toLocaleDateString('fr-FR', opt)}`;
 }
 
+function fmtDate(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleDateString('fr-FR', {day:'numeric', month:'short'});
+}
+
+const JOUR_OFFSET = {lundi:0, mardi:1, mercredi:2, jeudi:3, vendredi:4, samedi:5, dimanche:6};
+// Date de livraison prévue = lundi de la semaine + décalage du jour choisi. Non applicable aux
+// clients sans jour fixe (sans_delai) : pour eux la date de livraison n'est connue qu'une fois
+// la commande marquée prête (voir carteCommande / bloc historique).
+function dateLivraisonPrevue(semaineStr, jour) {
+  if (!semaineStr || !jour || !(jour in JOUR_OFFSET)) return '';
+  const d = new Date(semaineStr + 'T00:00:00');
+  d.setDate(d.getDate() + JOUR_OFFSET[jour]);
+  return fmtDate(d);
+}
+
+// Clients sans jour de livraison fixe (peuvent commander/être livrés n'importe quel jour) :
+// Intermarché Montbron (sans_delai) + les 2 clients internes (Boutique, Labo de transformation).
+function sansJourFixe(client) {
+  return !!(client && (client.sans_delai || client.cat === 'Interne'));
+}
+
+// Bloc "Commandée le / Livrée le" affiché sur chaque commande (semaine en cours, historique
+// et récap gestionnaire). Pour un client sans jour fixe, le jour de commande fait foi comme
+// jour de livraison (pas de jour mardi/jeudi imposé pour ces clients-là).
+function blocDates(client, createdAt, semaine, jour) {
+  const partsCmd = createdAt ? `Commandée le ${fmtDate(createdAt)}` : '';
+  let partsLiv = '';
+  if (sansJourFixe(client)) {
+    if (createdAt) partsLiv = `Livrée le ${fmtDate(createdAt)}`;
+  } else {
+    const dLiv = dateLivraisonPrevue(semaine, jour);
+    if (dLiv) partsLiv = `Livraison prévue le ${dLiv}`;
+  }
+  if (!partsCmd && !partsLiv) return '';
+  return `<div style="font-size:11px;color:var(--tm);margin:-2px 0 8px;">${[partsCmd,partsLiv].filter(Boolean).join(' · ')}</div>`;
+}
+
 function carteCommande(idx) {
   const c=getClient(idx); if(!c||!c.nom) return '';
   const od=state.orders[idx];
@@ -1857,9 +1896,10 @@ function carteCommande(idx) {
   const preteBtn = od._prete
     ? `<button class="co-adjust-btn" disabled style="opacity:.6;">✓ Bon de livraison envoyé</button>`
     : `<button class="co-adjust-btn" onclick="marquerCommandePrete(${idx})">📦 Commande prête</button>`;
+  const datesBloc = blocDates(c, od._createdAt, state.semaine, od._jour);
   return `<div class="co-card ${od._livre?'co-livre':''}">
     <div class="co-head"><span class="co-name">${c.nom}</span>${statut}</div>
-    <div class="co-body">${modeBadge}${lines}${totalBloc}
+    <div class="co-body">${modeBadge}${datesBloc}${lines}${totalBloc}
       <button class="co-adjust-btn" onclick="openAjusterModal(${idx})">✎ Ajuster la commande</button>
       ${preteBtn}
     </div>
@@ -2007,13 +2047,15 @@ function renderOrders() {
       pw.records.forEach(r => {
         const items = typeof r.items === 'string' ? JSON.parse(r.items) : (r.items||[]);
         const lines = items.map(it=>`<div class="co-line"><span>${it.nom}</span><span style="font-family:'DM Mono',monospace;">${it.quantite} ${pluriel(it.quantite,it.unite||'kg')}${it.prix_kg?' · '+(it.prix_kg*it.quantite).toFixed(2)+' €':''}</span></div>`).join('');
-        const frH=fraisLivraison(getClient(r.client_idx));
+        const cH = getClient(r.client_idx);
+        const frH=fraisLivraison(cH);
         const totH=r.total?(frH>0
           ? `<div class="co-total" style="font-weight:400;color:var(--tm);">Légumes : ${Number(r.total).toFixed(2)} € · Livraison : ${frH.toFixed(2)} €</div><div class="co-total">Total : ${(Number(r.total)+frH).toFixed(2)} €</div>`
           : `<div class="co-total">Total : ${Number(r.total).toFixed(2)} €</div>`):'';
+        const datesBlocH = blocDates(cH, r.created_at, r.semaine, r.jour_livraison);
         html += `<div class="co-card" style="margin-bottom:8px;">
           <div class="co-head"><span class="co-name">${r.client_nom}</span></div>
-          <div class="co-body">${lines}${totH}</div>
+          <div class="co-body">${datesBlocH}${lines}${totH}</div>
         </div>`;
       });
       html += `</div></div>`;

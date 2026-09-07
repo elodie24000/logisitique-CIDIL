@@ -5,6 +5,9 @@ import os, json, base64, urllib.request
 from datetime import date, timedelta
 from fpdf import FPDF
 
+MOIS_ABBR = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.']
+JOUR_OFFSET = {'lundi': 0, 'mardi': 1, 'mercredi': 2, 'jeudi': 3, 'vendredi': 4, 'samedi': 5, 'dimanche': 6}
+
 SUPA_URL = 'https://ulvrwtwxzhlrplvbcsrd.supabase.co'
 SUPA_KEY = os.environ['SUPABASE_KEY']
 BREVO_KEY = os.environ['BREVO_API_KEY']
@@ -40,7 +43,7 @@ def pluriel(qty, unite):
 def get_commandes_semaine(semaine_str):
     req = urllib.request.Request(
         f'{SUPA_URL}/rest/v1/commandes_clients?semaine=eq.{semaine_str}'
-        '&select=client_nom,jour_livraison,items,total,numero_bl,livre'
+        '&select=client_nom,client_idx,jour_livraison,semaine,items,total,numero_bl,livre,created_at'
         '&order=numero_bl.asc',
         headers=H_SUPA
     )
@@ -50,7 +53,51 @@ def get_commandes_semaine(semaine_str):
     return livrees, non_livrees
 
 
-def bloc_recap_html(commandes, titre_vide):
+def get_clients():
+    req = urllib.request.Request(
+        f'{SUPA_URL}/rest/v1/clients?select=id,cat,sans_delai',
+        headers=H_SUPA
+    )
+    rows = json.loads(urllib.request.urlopen(req).read())
+    return {r['id']: r for r in rows}
+
+
+# Clients sans jour de livraison fixe (Intermarché Montbron + les 2 clients internes,
+# Boutique et Labo de transformation) : le jour de commande fait foi comme jour de livraison.
+def sans_jour_fixe(client_idx, clients_map):
+    c = clients_map.get(client_idx)
+    return bool(c and (c.get('sans_delai') or c.get('cat') == 'Interne'))
+
+
+def fmt_date_fr(iso_str):
+    if not iso_str:
+        return ''
+    d = date.fromisoformat(iso_str[:10])
+    return f'{d.day} {MOIS_ABBR[d.month - 1]}'
+
+
+def date_livraison_prevue(semaine_str, jour):
+    if not semaine_str or jour not in JOUR_OFFSET:
+        return ''
+    d = date.fromisoformat(semaine_str[:10]) + timedelta(days=JOUR_OFFSET[jour])
+    return fmt_date_fr(d.isoformat())
+
+
+def dates_commande_livraison(c, clients_map):
+    date_cmd = fmt_date_fr(c.get('created_at'))
+    if sans_jour_fixe(c.get('client_idx'), clients_map):
+        date_liv, label_liv = fmt_date_fr(c.get('created_at')), 'Livrée le'
+    else:
+        date_liv, label_liv = date_livraison_prevue(c.get('semaine'), c.get('jour_livraison')), 'Livraison prévue le'
+    parts = []
+    if date_cmd:
+        parts.append(f'Commandée le {date_cmd}')
+    if date_liv:
+        parts.append(f'{label_liv} {date_liv}')
+    return ' · '.join(parts)
+
+
+def bloc_recap_html(commandes, titre_vide, clients_map):
     if not commandes:
         return f'<p>{titre_vide}</p>'
 
@@ -71,6 +118,7 @@ def bloc_recap_html(commandes, titre_vide):
         total_general += total
         numero_bl = c.get('numero_bl')
         bl_txt = f'BL n°{numero_bl}' if numero_bl else 'Sans BL'
+        dates_txt = dates_commande_livraison(c, clients_map)
         lignes += (
             f'<tr>'
             f'<td style="padding:10px 0;border-bottom:1px solid #e5e3dc;vertical-align:top;white-space:nowrap;color:#0d2818;font-weight:600;">'
@@ -78,7 +126,8 @@ def bloc_recap_html(commandes, titre_vide):
             f'</td>'
             f'<td style="padding:10px 0;border-bottom:1px solid #e5e3dc;vertical-align:top;">'
             f'<strong>{c.get("client_nom")}</strong><br>'
-            f'<span style="color:#888;font-size:12px;">{c.get("jour_livraison") or ""}</span>'
+            f'<span style="color:#888;font-size:12px;">{c.get("jour_livraison") or ""}</span><br>'
+            f'<span style="color:#aaa;font-size:11px;">{dates_txt}</span>'
             f'</td>'
             f'<td style="padding:10px 0;border-bottom:1px solid #e5e3dc;font-size:13px;">{items_txt}</td>'
             f'<td style="padding:10px 0;border-bottom:1px solid #e5e3dc;text-align:right;font-weight:500;">'
@@ -92,7 +141,7 @@ def bloc_recap_html(commandes, titre_vide):
     return f'<table style="width:100%;border-collapse:collapse;font-size:14px;">{lignes}</table>'
 
 
-def build_pdf(livrees, non_livrees, semaine_str):
+def build_pdf(livrees, non_livrees, semaine_str, clients_map):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font('Helvetica', 'B', 16)
@@ -120,6 +169,10 @@ def build_pdf(livrees, non_livrees, semaine_str):
 
             pdf.set_font('Helvetica', 'B', 11)
             pdf.cell(0, 7, f'{bl_txt} - {c.get("client_nom")}', ln=1)
+            dates_txt = dates_commande_livraison(c, clients_map)
+            if dates_txt:
+                pdf.set_font('Helvetica', '', 8)
+                pdf.cell(0, 5, f'  {dates_txt}', ln=1)
             pdf.set_font('Helvetica', '', 9)
             for it in items:
                 if it.get('dispo') is False:
@@ -197,10 +250,11 @@ semaine = lundi_de_cette_semaine().isoformat()
 print(f"Semaine ciblee : {semaine}")
 
 livrees, non_livrees = get_commandes_semaine(semaine)
+clients_map = get_clients()
 print(f"{len(livrees)} commande(s) livree(s), {len(non_livrees)} commande(s) non confirmee(s) livree(s)")
 
-html_livrees = bloc_recap_html(livrees, 'Aucune commande livrée cette semaine.')
-html_non_livrees = bloc_recap_html(non_livrees, 'Aucune commande en attente cette semaine.')
-pdf_bytes = build_pdf(livrees, non_livrees, semaine)
+html_livrees = bloc_recap_html(livrees, 'Aucune commande livrée cette semaine.', clients_map)
+html_non_livrees = bloc_recap_html(non_livrees, 'Aucune commande en attente cette semaine.', clients_map)
+pdf_bytes = build_pdf(livrees, non_livrees, semaine, clients_map)
 envoyer_email(html_livrees, html_non_livrees, len(livrees), len(non_livrees), semaine, pdf_bytes)
 print("Email gestionnaire envoye")
