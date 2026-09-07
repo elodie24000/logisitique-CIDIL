@@ -283,7 +283,6 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 .cmd-jour-h{font-size:14px;font-weight:500;color:var(--g1);background:var(--g6);border-radius:9px;padding:9px 10px;margin-bottom:10px;text-align:center;}
 .cmd-jour-h span{color:var(--g3);font-size:12px;}
 .livr-badge{font-size:11px;padding:3px 9px;border-radius:10px;font-weight:500;white-space:nowrap;border:none;font-family:'DM Sans',sans-serif;}
-button.livr-badge{cursor:pointer;}
 .livr-badge.ok{background:#e1f0e8;color:#0f6e56;}
 .livr-badge.wait{background:#fdecea;color:#c0392b;}
 .co-livre{opacity:.62;}
@@ -1830,9 +1829,8 @@ function fmtDate(iso) {
 }
 
 const JOUR_OFFSET = {lundi:0, mardi:1, mercredi:2, jeudi:3, vendredi:4, samedi:5, dimanche:6};
-// Date de livraison prévue = lundi de la semaine + décalage du jour choisi. Non applicable aux
-// clients sans jour fixe (sans_delai) : pour eux la date de livraison n'est connue qu'une fois
-// la commande marquée prête (voir carteCommande / bloc historique).
+// Date de livraison prévue = lundi de la semaine + décalage du jour choisi (clients à jour fixe
+// uniquement — voir sansJourFixe/blocDates pour les clients sans jour fixe).
 function dateLivraisonPrevue(semaineStr, jour) {
   if (!semaineStr || !jour || !(jour in JOUR_OFFSET)) return '';
   const d = new Date(semaineStr + 'T00:00:00');
