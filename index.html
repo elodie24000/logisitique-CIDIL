@@ -288,6 +288,19 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 .co-livre{opacity:.62;}
 .empty-mini{font-size:12px;color:var(--tl);text-align:center;padding:10px;background:var(--g7);border-radius:9px;}
 
+/* ── TOURNÉE (livreur) ── */
+.tour-card{background:var(--white);border:1px solid var(--bd);border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:var(--sh);}
+.tour-head{background:var(--g7);padding:11px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--bd);gap:8px;}
+.tour-name{font-size:14px;font-weight:500;}
+.tour-body{padding:12px 14px;}
+.tour-addr{font-size:12px;color:var(--tm);margin:-2px 0 8px;}
+.tour-gps{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:9px 14px;background:var(--g1);color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:500;text-decoration:none;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.tour-sign-btn{display:block;width:100%;margin-top:12px;padding:11px;border:none;border-radius:9px;background:var(--g3);color:#fff;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;}
+
+/* ── SIGNATURE ÉLECTRONIQUE (livreur) ── */
+.sig-canvas-wrap{background:var(--white);border:1.5px dashed var(--bd);border-radius:12px;overflow:hidden;touch-action:none;}
+#sig-canvas{width:100%;height:180px;display:block;touch-action:none;}
+
 /* modal commande */
 .modal{
   display:none;position:fixed;inset:0;z-index:200;
@@ -308,6 +321,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 .modal-foot{padding:12px 18px;border-top:1px solid var(--bd);display:flex;gap:8px;}
 .btn-cancel{flex:1;padding:11px;border-radius:9px;border:1px solid var(--bd);background:var(--cream);color:var(--tm);font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;}
 .btn-save{flex:2;padding:11px;border-radius:9px;border:none;background:var(--g1);color:#fff;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.btn-save:disabled{opacity:.5;cursor:not-allowed;}
 
 .order-row{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--g7);}
 .order-row:last-child{border-bottom:none;}
@@ -465,13 +479,24 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
       </div>
       <div>
         <div class="role-name">Espace équipe</div>
-        <div class="role-desc">Boutique · Labo · Encadrant · Gestionnaire</div>
+        <div class="role-desc">Boutique · Labo · Livreur · Encadrant · Gestionnaire</div>
       </div>
       <div class="equipe-chevron">▾</div>
     </div>
 
     <div class="equipe-group" id="equipe-group">
       <div class="equipe-back" onclick="closeEquipe()">‹ Retour</div>
+
+      <div class="role-card" onclick="selectRole('livreur')">
+        <div class="role-icon" style="background:rgba(116,198,157,.15);">
+          <svg viewBox="0 0 24 24" stroke="var(--g4)"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        </div>
+        <div>
+          <div class="role-name">Livreur</div>
+          <div class="role-desc">Tournée · Signature électronique</div>
+        </div>
+        <div class="role-arrow">›</div>
+      </div>
 
       <div class="role-card" onclick="selectRole('encadrant')">
         <div class="role-icon" style="background:rgba(233,160,58,.15);">
@@ -561,6 +586,15 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
   </div>
 
   <div class="page-content">
+
+    <!-- PAGE TOURNÉE (livreur) -->
+    <div class="page" id="page-tournee">
+      <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>À livrer</span>
+        <span class="badge b-rco" id="tn-count">0</span>
+      </div>
+      <div id="tournee-list"><div class="empty-msg">Chargement…</div></div>
+    </div>
 
     <!-- PAGE LÉGUMES (encadrant) -->
     <div class="page" id="page-legumes">
@@ -726,6 +760,31 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
     <div class="modal-foot">
       <button class="btn-cancel" onclick="closeAjusterModal()">Annuler</button>
       <button class="btn-save" onclick="saveAjustements()">Enregistrer ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ MODALE SIGNATURE (livreur) ══════ -->
+<div class="modal" id="modal-signature">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <div class="modal-head-name" id="sig-name">Client</div>
+      <div class="modal-head-week">Confirmer la livraison</div>
+    </div>
+    <div class="modal-body">
+      <div id="sig-recap" style="margin-bottom:16px;"></div>
+      <label class="cl-lbl" style="margin-top:0;">Nom du signataire (optionnel)</label>
+      <input class="finput cl-field" type="text" id="sig-signataire" placeholder="Nom de la personne qui réceptionne" style="margin-bottom:16px;" />
+      <label class="cl-lbl" style="margin-top:0;">Signature du client</label>
+      <div class="sig-canvas-wrap">
+        <canvas id="sig-canvas"></canvas>
+      </div>
+      <button class="btn-cancel" style="width:100%;margin-top:8px;" onclick="clearSignature()">Effacer la signature</button>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="closeSignatureModal()">Annuler</button>
+      <button class="btn-save" id="sig-validate-btn" disabled onclick="validerLivraisonSignee()">Valider la livraison ✓</button>
     </div>
   </div>
 </div>
@@ -930,9 +989,9 @@ async function sbDelete(table, id) {
 }
 
 // ══════ DATA ══════
-const PINS = { encadrant:'2222', boutique:'3333', labo:'4444', gestionnaire:'9999' };
-const ROLE_LABELS = { encadrant:'Encadrant technique', boutique:'Boutique', labo:'Labo de transformation', gestionnaire:'Gestionnaire' };
-const ROLE_ICONS = { encadrant:'🌿', boutique:'🛒', labo:'⚗️', gestionnaire:'📋' };
+const PINS = { livreur:'1111', encadrant:'2222', boutique:'3333', labo:'4444', gestionnaire:'9999' };
+const ROLE_LABELS = { livreur:'Livreur', encadrant:'Encadrant technique', boutique:'Boutique', labo:'Labo de transformation', gestionnaire:'Gestionnaire' };
+const ROLE_ICONS = { livreur:'🚚', encadrant:'🌿', boutique:'🛒', labo:'⚗️', gestionnaire:'📋' };
 const INTERNE_KEY = { 'Boutique':'boutique', 'Labo de transformation':'labo' };
 const JOURS_EXT = [['mardi','Mardi'],['jeudi','Jeudi']];
 const JOURS_INTERNE = [['lundi','Lundi'],['mardi','Mardi'],['mercredi','Mercredi'],['jeudi','Jeudi'],['vendredi','Vendredi'],['samedi','Samedi']];
@@ -1090,6 +1149,9 @@ let modalClientIdx = null;
 
 // Nav configs
 const NAV_CONFIG = {
+  livreur: [
+    {id:'tournee',label:'Tournée',icon:'<svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>'},
+  ],
   encadrant: [
     {id:'legumes',label:'Légumes',icon:'<svg viewBox="0 0 24 24"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0112 2a8 8 0 018 8.2c0 7.3-8 11.8-8 11.8z"/><path d="M12 2v20M4.8 9.6h14.4"/></svg>'},
     {id:'commandes',label:'Commandes',icon:'<svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>'},
@@ -1219,6 +1281,7 @@ function showPage(id) {
 }
 
 function initPage(id) {
+  if (id==='tournee') { loadVeggies().then(()=>loadCommandes()).then(()=>renderTournee()); }
   if (id==='legumes') { loadCatalogue(); loadVeggies(); }
   if (id==='commandes') {
     const saisie = document.getElementById('cmd-saisie-wrap');
@@ -1697,6 +1760,7 @@ async function loadCommandes() {
         state.orders[r.client_idx]._prete = !!r.prete;
         state.orders[r.client_idx]._createdAt = r.created_at || null;
         state.orders[r.client_idx]._mode = r.mode_livraison || 'livraison';
+        state.orders[r.client_idx]._signe = !!r.signature_data;
       } else {
         if (!byWeek[r.semaine]) byWeek[r.semaine] = [];
         byWeek[r.semaine].push(r);
@@ -1860,9 +1924,9 @@ function blocDates(client, createdAt, semaine, jour) {
   return `<div style="font-size:11px;color:var(--tm);margin:-2px 0 8px;">${[partsCmd,partsLiv].filter(Boolean).join(' · ')}</div>`;
 }
 
-function carteCommande(idx) {
-  const c=getClient(idx); if(!c||!c.nom) return '';
-  const od=state.orders[idx];
+// Lignes d'une commande (légumes/quantités/sous-totaux), réutilisées par la carte
+// commande (encadrant/gestionnaire) et le récapitulatif de signature (livreur).
+function lignesCommandeHtml(od) {
   let total=0,hasP=false;
   const lines=Object.entries(od).filter(([k])=>!String(k).startsWith('_')).map(([vid,qty])=>{
     const v=state.veggies.find(v=>v.id==vid);
@@ -1880,6 +1944,19 @@ function carteCommande(idx) {
       : `${qty} ${pluriel(qty,v.unite||'kg')}`;
     return `<div class="co-line"><span>${v.nom}</span><span style="font-family:'DM Mono',monospace;">${qtyLabel}${sub?' · '+(sub.toFixed(2))+' €':''}</span></div>`;
   }).filter(Boolean).join('');
+  return {lines, total, hasP};
+}
+
+// Une livraison a besoin d'un livreur (tournée + signature) sauf pour un client interne
+// (Boutique/Labo, livré sur place) ou un client qui vient chercher lui-même sa commande.
+function necessiteLivreur(client, od) {
+  return client && client.cat !== 'Interne' && od._mode !== 'retrait';
+}
+
+function carteCommande(idx) {
+  const c=getClient(idx); if(!c||!c.nom) return '';
+  const od=state.orders[idx];
+  const {lines, total, hasP} = lignesCommandeHtml(od);
   const modeRetrait = od._mode === 'retrait';
   const frais = modeRetrait ? 0 : fraisLivraison(c);
   const totalBloc = hasP ? (frais>0
@@ -1892,7 +1969,9 @@ function carteCommande(idx) {
     ? `<span class="livr-badge ok">✓ Livré</span>`
     : `<span class="livr-badge wait">à livrer</span>`;
   const preteBtn = od._prete
-    ? `<button class="co-adjust-btn" disabled style="opacity:.6;">✓ Bon de livraison envoyé</button>`
+    ? (od._livre
+        ? `<button class="co-adjust-btn" disabled style="opacity:.6;">✓ Livré${od._signe?' et signé':''}</button>`
+        : `<button class="co-adjust-btn" disabled style="opacity:.6;">📤 Prête — en attente du livreur</button>`)
     : `<button class="co-adjust-btn" onclick="marquerCommandePrete(${idx})">📦 Commande prête</button>`;
   const datesBloc = blocDates(c, od._createdAt, state.semaine, od._jour);
   return `<div class="co-card ${od._livre?'co-livre':''}">
@@ -1905,15 +1984,22 @@ function carteCommande(idx) {
 }
 
 const EDGE_FUNCTION_URL = `${SUPA_URL}/functions/v1/send-order-ready-email`;
+const DELIVERY_SIGN_FUNCTION_URL = `${SUPA_URL}/functions/v1/send-delivery-signed-email`;
 
-// Sans interface livreur dédiée, la commande est marquée "livrée" en même temps que "prête" :
-// c'est le seul point de confirmation restant dans le parcours.
+// Une commande livrée sur place (client interne ou retrait) n'a pas de livreur pour la
+// faire signer : elle est marquée livrée dès qu'elle est prête, comme avant. Une vraie
+// livraison externe, elle, reste "prête" en attente du livreur, qui la confirme via
+// signature électronique dans son propre espace (voir validerLivraisonSignee).
 async function marquerCommandePrete(idx) {
   const od = state.orders[idx];
   if (!od || !od._sbId) { showToast('Commande introuvable'); return; }
+  const c = getClient(idx);
+  const surPlace = !necessiteLivreur(c, od);
   try {
     const maintenant = new Date().toISOString();
-    await sbPatch('commandes_clients', od._sbId, { prete: true, prete_at: maintenant, livre: true, livre_at: maintenant });
+    const patch = { prete: true, prete_at: maintenant };
+    if (surPlace) { patch.livre = true; patch.livre_at = maintenant; }
+    await sbPatch('commandes_clients', od._sbId, patch);
     const res = await fetch(EDGE_FUNCTION_URL, {
       method: 'POST',
       headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' },
@@ -1921,14 +2007,166 @@ async function marquerCommandePrete(idx) {
     });
     if (!res.ok) throw new Error(await res.text());
     od._prete = true;
-    od._livre = true;
+    if (surPlace) od._livre = true;
     logActivity('commande_prete', `${getClient(idx).nom} — bon de livraison envoyé au gestionnaire`);
-    showToast('✓ Bon de livraison envoyé');
+    showToast(surPlace ? '✓ Bon de livraison envoyé' : '✓ Commande prête — en attente du livreur');
   } catch(e) {
     showToast('Commande marquée prête, mais erreur envoi email');
     console.error(e);
   }
   renderOrders();
+}
+
+// ══════ TOURNÉE (livreur) ══════
+// Commandes prêtes mais pas encore livrées, nécessitant un passage du livreur
+// (hors clients internes et hors retrait sur place, gérés directement au statut "prête").
+function commandesALivrer() {
+  return Object.keys(state.orders).filter(idx => {
+    const od = state.orders[idx];
+    const c = getClient(idx);
+    return od._prete && !od._livre && necessiteLivreur(c, od);
+  });
+}
+
+function renderTournee() {
+  const el = document.getElementById('tournee-list');
+  if (!el) return;
+  const idxs = commandesALivrer();
+  const cnt = document.getElementById('tn-count');
+  if (cnt) cnt.textContent = idxs.length;
+  if (!idxs.length) { el.innerHTML = '<div class="empty-msg">Aucune livraison en attente 🎉</div>'; return; }
+  el.innerHTML = idxs.map(idx => {
+    const c = getClient(idx);
+    const od = state.orders[idx];
+    const {lines, total, hasP} = lignesCommandeHtml(od);
+    const frais = fraisLivraison(c);
+    const totalTxt = hasP ? (total+frais).toFixed(2)+' €' : '';
+    const adrEsc = (c.adresse||'').replace(/'/g,"\\'");
+    return `<div class="tour-card">
+      <div class="tour-head">
+        <span class="tour-name">${c.nom}</span>
+        ${c.km!=null?`<span class="km-tag">${c.km}km</span>`:''}
+      </div>
+      <div class="tour-body">
+        ${c.adresse?`<div class="tour-addr">📍 ${c.adresse}</div>`:'<div class="tour-addr">Adresse à compléter</div>'}
+        ${c.tel?`<div class="tour-addr">📞 ${c.tel}</div>`:''}
+        ${c.note?`<div class="note-tag">⚠ ${c.note}</div>`:''}
+        ${lines}
+        ${totalTxt?`<div class="co-total">Total : ${totalTxt}</div>`:''}
+        ${c.adresse?`<button type="button" class="tour-gps" onclick="openItineraire('${adrEsc}')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>Itinéraire GPS</button>`:''}
+        <button class="tour-sign-btn" onclick="openSignatureModal('${idx}')">✍️ Signer la livraison</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openItineraire(adr) {
+  if (!adr) return;
+  const url = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(adr);
+  const w = window.open(url, '_blank');
+  if (!w) window.location.href = url; // repli si popup bloquée (PWA)
+}
+
+// ══════ SIGNATURE ÉLECTRONIQUE (livreur) ══════
+let sigCtx = null, sigDrawing = false, sigHasStroke = false, sigIdx = null;
+
+function openSignatureModal(idx) {
+  sigIdx = idx;
+  const c = getClient(idx);
+  const od = state.orders[idx];
+  document.getElementById('sig-name').textContent = c.nom;
+  const {lines, total, hasP} = lignesCommandeHtml(od);
+  const frais = fraisLivraison(c);
+  const totalBloc = hasP ? `<div class="co-total">Total : ${(total+frais).toFixed(2)} €</div>` : '';
+  document.getElementById('sig-recap').innerHTML = lines + totalBloc;
+  document.getElementById('sig-signataire').value = '';
+  document.getElementById('modal-signature').classList.add('open');
+  setTimeout(setupSignatureCanvas, 0);
+}
+
+function closeSignatureModal() {
+  document.getElementById('modal-signature').classList.remove('open');
+}
+
+function setupSignatureCanvas() {
+  const canvas = document.getElementById('sig-canvas');
+  const ratio = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * ratio;
+  canvas.height = rect.height * ratio;
+  sigCtx = canvas.getContext('2d');
+  sigCtx.scale(ratio, ratio);
+  sigCtx.lineWidth = 2.2;
+  sigCtx.lineCap = 'round';
+  sigCtx.strokeStyle = '#1c2b22';
+  sigHasStroke = false;
+  updateSignatureValidateState();
+
+  const posFromEvent = (e) => {
+    const r = canvas.getBoundingClientRect();
+    const t = e.touches && e.touches.length ? e.touches[0] : e;
+    return { x: t.clientX - r.left, y: t.clientY - r.top };
+  };
+  const start = (e) => { e.preventDefault(); sigDrawing = true; const p = posFromEvent(e); sigCtx.beginPath(); sigCtx.moveTo(p.x, p.y); };
+  const move = (e) => {
+    if (!sigDrawing) return;
+    e.preventDefault();
+    const p = posFromEvent(e);
+    sigCtx.lineTo(p.x, p.y);
+    sigCtx.stroke();
+    sigHasStroke = true;
+    updateSignatureValidateState();
+  };
+  const end = () => { sigDrawing = false; };
+  canvas.onmousedown = start; canvas.onmousemove = move; canvas.onmouseup = end; canvas.onmouseleave = end;
+  canvas.ontouchstart = start; canvas.ontouchmove = move; canvas.ontouchend = end;
+}
+
+function clearSignature() {
+  const canvas = document.getElementById('sig-canvas');
+  if (!sigCtx) return;
+  sigCtx.clearRect(0, 0, canvas.width, canvas.height);
+  sigHasStroke = false;
+  updateSignatureValidateState();
+}
+
+function updateSignatureValidateState() {
+  const btn = document.getElementById('sig-validate-btn');
+  if (btn) btn.disabled = !sigHasStroke;
+}
+
+async function validerLivraisonSignee() {
+  if (!sigHasStroke) return;
+  const idx = sigIdx;
+  const od = state.orders[idx];
+  if (!od || !od._sbId) { showToast('Commande introuvable'); return; }
+  const btn = document.getElementById('sig-validate-btn');
+  const btnTexte = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Envoi…';
+  try {
+    const canvas = document.getElementById('sig-canvas');
+    const signatureDataUrl = canvas.toDataURL('image/png');
+    const signataireNom = document.getElementById('sig-signataire').value.trim();
+    const res = await fetch(DELIVERY_SIGN_FUNCTION_URL, {
+      method: 'POST',
+      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ commande_id: od._sbId, signature_base64: signatureDataUrl, signataire_nom: signataireNom || null })
+    });
+    if (!res.ok) throw new Error(await res.text());
+    od._livre = true;
+    od._signe = true;
+    closeSignatureModal();
+    renderTournee();
+    logActivity('livraison_signee', `${getClient(idx).nom} — livraison signée`, 'livreur');
+    showToast('✓ Livraison confirmée et signée');
+  } catch(e) {
+    console.error(e);
+    showToast('Erreur lors de l\'envoi de la signature');
+    btn.disabled = !sigHasStroke; btn.textContent = btnTexte;
+    return;
+  }
+  btn.disabled = !sigHasStroke; btn.textContent = btnTexte;
 }
 
 // ══════ AJUSTER LA COMMANDE AU RÉEL (encadrant) ══════
@@ -2171,7 +2409,7 @@ function renderRecap() {
 
 async function effacerToutesCommandes() {
   if (!confirm('⚠ Effacer DÉFINITIVEMENT toutes les commandes ?\n\nCette action est irréversible. À ne faire qu\'après avoir reporté les commandes dans votre logiciel de comptabilité.')) return;
-  if (!confirm('Êtes-vous vraiment sûr ? Toutes les commandes seront supprimées sur toutes les interfaces (encadrant, gestionnaire).')) return;
+  if (!confirm('Êtes-vous vraiment sûr ? Toutes les commandes seront supprimées sur toutes les interfaces (livreur, encadrant, gestionnaire).')) return;
   try {
     const res = await fetch(`${SUPA_URL}/rest/v1/commandes_clients?id=not.is.null`, {
       method: 'DELETE',
