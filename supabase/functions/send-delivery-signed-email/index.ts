@@ -4,7 +4,8 @@
 // (comme pour "commande prête") ainsi qu'au client si son email est connu.
 // La clé Brevo reste secrète (stockée côté serveur), jamais exposée au navigateur.
 
-import { PDFDocument, StandardFonts } from 'npm:pdf-lib@1.17.1';
+import { PDFDocument, PDFFont, PDFPage, StandardFonts, rgb } from 'npm:pdf-lib@1.17.1';
+import { LOGO_PNG_BASE64 } from './logo.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -43,13 +44,58 @@ function sansAccents(s: string) {
   return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
 
-// Accepte soit une data URL ("data:image/png;base64,....") soit du base64 brut
 function dataUrlToBytes(dataUrl: string): Uint8Array {
   const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
-  const binary = atob(base64);
+  return base64ToBytes(base64);
+}
+
+function base64ToBytes(b64: string): Uint8Array {
+  const binary = atob(b64);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
   return bytes;
+}
+
+const PAGE_W = 420, PAGE_H = 595;
+const LEFT = 40, RIGHT = PAGE_W - 40;
+const GREEN = rgb(0x0d / 255, 0x28 / 255, 0x18 / 255);
+const GRAY = rgb(0x55 / 255, 0x55 / 255, 0x55 / 255);
+const LINE_GRAY = rgb(0xcc / 255, 0xcc / 255, 0xcc / 255);
+const BOX_BG = rgb(0xee / 255, 0xf5 / 255, 0xf0 / 255);
+const FOOTER_H = 90;
+const LOGO_RATIO = 191 / 114;
+
+function rightX(font: PDFFont, text: string, size: number, edge = RIGHT) {
+  return edge - font.widthOfTextAtSize(text, size);
+}
+
+async function drawFooter(pdfDoc: PDFDocument, page: PDFPage, font: PDFFont, fontBold: PDFFont) {
+  page.drawLine({ start: { x: LEFT, y: FOOTER_H }, end: { x: RIGHT, y: FOOTER_H }, thickness: 0.6, color: LINE_GRAY });
+
+  const FOOT_SIZE = 8, LEADING = 10;
+  const footLines: [string, boolean][] = [
+    ['CIDIL — Jardins du Bandiat', true],
+    ['19 Square du 08 mai, 16220 Montbron', false],
+    ['Tel : 05 45 70 29 89', false],
+    ['contact@cidil-asso.fr', false],
+    ['www.cidil-asso.fr', false],
+    ['N.A.F. 8899B  ·  SIRET 399 864 263 00047', false],
+  ];
+  const blockH = (footLines.length - 1) * LEADING + FOOT_SIZE * 0.9;
+  const centerY = FOOTER_H / 2;
+  const textTop = centerY + blockH / 2;
+  const textBottom = centerY - blockH / 2;
+  const ty = textTop - FOOT_SIZE * 0.75;
+
+  const logoImg = await pdfDoc.embedPng(base64ToBytes(LOGO_PNG_BASE64));
+  const logoH = blockH;
+  const logoW = logoH * LOGO_RATIO;
+  page.drawImage(logoImg, { x: LEFT, y: textBottom, width: logoW, height: logoH });
+
+  footLines.forEach(([line, isName], i) => {
+    const f = isName ? fontBold : font;
+    page.drawText(line, { x: rightX(f, line, FOOT_SIZE), y: ty - i * LEADING, size: FOOT_SIZE, font: f, color: isName ? GREEN : GRAY });
+  });
 }
 
 async function buildPdfBase64(
@@ -61,45 +107,61 @@ async function buildPdfBase64(
   signataireNom: string | null,
 ) {
   const pdfDoc = await PDFDocument.create();
-  const page = pdfDoc.addPage([420, 595]);
+  const page = pdfDoc.addPage([PAGE_W, PAGE_H]);
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-  let y = 550;
-  const left = 40;
 
-  page.drawText('BON DE LIVRAISON', { x: left, y, size: 18, font: fontBold });
-  y -= 22;
-  page.drawText(`N ${numeroBL}`, { x: left, y, size: 12, font });
+  let y = 550;
+  page.drawText('BON DE LIVRAISON', { x: LEFT, y, size: 18, font: fontBold });
+  const numTxt = `N°${numeroBL}`;
+  page.drawText(numTxt, { x: rightX(fontBold, numTxt, 13), y: y + 1.5, size: 13, font: fontBold });
+
   y -= 18;
-  page.drawText(`Date : ${sansAccents(dateStr)}`, { x: left, y, size: 10, font });
-  y -= 24;
-  page.drawText(sansAccents(cmd.client_nom), { x: left, y, size: 13, font: fontBold });
+  page.drawLine({ start: { x: LEFT, y }, end: { x: RIGHT, y }, thickness: 0.6, color: LINE_GRAY });
+
+  y -= 22;
+  page.drawText(`Date : ${sansAccents(dateStr)}`, { x: LEFT, y, size: 10, font });
+  y -= 34;
+  page.drawText(sansAccents(cmd.client_nom), { x: LEFT, y, size: 13, font: fontBold });
   y -= 16;
-  page.drawText(`Livraison : ${sansAccents(cmd.jour_livraison || '')}`, { x: left, y, size: 10, font });
+  page.drawText(`Livraison : ${sansAccents(cmd.jour_livraison || '')}`, { x: LEFT, y, size: 10, font });
   y -= 26;
 
+  const QTY_X = 250;
   for (const it of items) {
-    if (y < 150) break;
+    if (y < FOOTER_H + 150) break;
     if (it.dispo === false) {
-      page.drawText(sansAccents(it.nom), { x: left, y, size: 10, font });
-      page.drawText('Non disponible', { x: 300, y, size: 10, font });
+      page.drawText(sansAccents(it.nom), { x: LEFT, y, size: 10, font });
+      const t = 'Non disponible';
+      page.drawText(t, { x: rightX(font, t, 10), y, size: 10, font });
       y -= 16;
       continue;
     }
     const qty = it.quantite_reelle != null ? it.quantite_reelle : it.quantite;
     const unite = pluriel(qty, it.unite);
-    page.drawText(sansAccents(it.nom), { x: left, y, size: 10, font });
-    page.drawText(`${qty} ${sansAccents(unite)}`, { x: 300, y, size: 10, font });
+    page.drawText(sansAccents(it.nom), { x: LEFT, y, size: 10, font });
+    const qtyTxt = `${qty} ${sansAccents(unite)}`;
+    page.drawText(qtyTxt, { x: rightX(font, qtyTxt, 10, QTY_X), y, size: 10, font });
+    if (it.prix_kg != null) {
+      const priceTxt = `${it.prix_kg.toFixed(2)} €/${sansAccents(it.unite || 'kg')} — ${(it.prix_kg * qty).toFixed(2)} €`;
+      page.drawText(priceTxt, { x: rightX(font, priceTxt, 9.5), y, size: 9.5, font });
+    }
     y -= 16;
   }
 
-  y -= 10;
-  page.drawText(`Total : ${(cmd.total || 0).toFixed(2)} EUR`, { x: left, y, size: 12, font: fontBold });
+  y -= 16;
+  const boxW = 150, boxH = 26;
+  const boxX = RIGHT - boxW;
+  const boxBottom = y - boxH;
+  page.drawRectangle({ x: boxX, y: boxBottom, width: boxW, height: boxH, color: BOX_BG, borderColor: GREEN, borderWidth: 1 });
+  const totalTxt = `Total : ${(cmd.total || 0).toFixed(2)} €`;
+  page.drawText(totalTxt, { x: rightX(fontBold, totalTxt, 13, RIGHT - 10), y: boxBottom + 8, size: 13, font: fontBold, color: GREEN });
+  y = boxBottom;
 
   y -= 30;
-  page.drawText('LIVRAISON CONFIRMEE', { x: left, y, size: 11, font: fontBold });
+  page.drawText('LIVRAISON CONFIRMÉE', { x: LEFT, y, size: 11, font: fontBold, color: GREEN });
   y -= 16;
-  page.drawText(`Livre le : ${sansAccents(dateStr)}`, { x: left, y, size: 10, font });
+  page.drawText(`Livré le : ${sansAccents(dateStr)}`, { x: LEFT, y, size: 10, font });
   y -= 10;
 
   if (signaturePngBytes) {
@@ -109,15 +171,17 @@ async function buildPdfBase64(
       const scale = Math.min(maxW / pngImage.width, maxH / pngImage.height, 1);
       const w = pngImage.width * scale, h = pngImage.height * scale;
       y -= h;
-      page.drawImage(pngImage, { x: left, y, width: w, height: h });
+      page.drawImage(pngImage, { x: LEFT, y, width: w, height: h });
       y -= 4;
-      page.drawLine({ start: { x: left, y }, end: { x: left + Math.max(w, 140), y }, thickness: 0.5 });
+      page.drawLine({ start: { x: LEFT, y }, end: { x: LEFT + Math.max(w, 140), y }, thickness: 0.5, color: rgb(0.6, 0.6, 0.6) });
       y -= 14;
     } catch (_e) {
       // signature illisible : on continue sans bloquer l'envoi du BL
     }
   }
-  page.drawText(`Signe par : ${sansAccents(signataireNom || cmd.client_nom)}`, { x: left, y, size: 9, font });
+  page.drawText(`Signé par : ${sansAccents(signataireNom || cmd.client_nom)}`, { x: LEFT, y, size: 9, font });
+
+  await drawFooter(pdfDoc, page, font, fontBold);
 
   const bytes = await pdfDoc.save();
   return toBase64(bytes);
@@ -142,7 +206,6 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Commande introuvable' }), { status: 404, headers: CORS_HEADERS });
     }
 
-    // Attribue un numéro de BL séquentiel (1, 2, 3...) si aucun n'a encore été assigné
     let numeroBL = cmd.numero_bl;
     if (!numeroBL) {
       const countRes = await fetch(
@@ -166,7 +229,6 @@ Deno.serve(async (req) => {
       }),
     });
 
-    // Email du client (si connu), pour lui envoyer sa preuve de livraison
     let clientEmail: string | null = null;
     if (cmd.client_idx != null) {
       try {
@@ -198,7 +260,6 @@ Deno.serve(async (req) => {
     const nomFichier = sansAccents(cmd.client_nom).replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_+|_+$/g, '');
     const attachment = pdfBase64 ? [{ content: pdfBase64, name: `BL_n${numeroBL}_${nomFichier}_signe.pdf` }] : undefined;
 
-    // Email interne (compta / coordination) — comme pour "commande prête"
     const htmlInterne = `
     <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;">
       <div style="background:#0d2818;padding:24px;text-align:center;border-radius:12px 12px 0 0;">
@@ -232,7 +293,6 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Echec envoi Brevo (interne)', detail: errTxt }), { status: 502, headers: CORS_HEADERS });
     }
 
-    // Email au client, si son adresse est connue
     let clientEmailEnvoye = false;
     if (clientEmail && attachment) {
       const htmlClient = `
