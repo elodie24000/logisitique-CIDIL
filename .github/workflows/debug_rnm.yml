@@ -1,4 +1,4 @@
-name: [DEBUG] Diagnostic connexion RNM
+name: "Diagnostic connexion RNM (DEBUG)"
 
 on:
   workflow_dispatch:
