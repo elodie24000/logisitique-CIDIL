@@ -2934,7 +2934,10 @@ async function submitClientOrder() {
 (()=>{
   const d=semaineCommandeActive();
   state.semaine=[d.getFullYear(), String(d.getMonth()+1).padStart(2,'0'), String(d.getDate()).padStart(2,'0')].join('-');
-  if (window.location.search.includes('commande')) initCommandeClient();
+  if (window.location.search.includes('commande')) {
+    document.getElementById('screen-login').style.display = 'none';
+    initCommandeClient();
+  }
 })();
 </script>
 </body>
