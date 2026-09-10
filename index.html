@@ -604,6 +604,11 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
         <input type="date" id="sem-input" onchange="updateSemaine()" />
       </div>
 
+      <div id="push-banner-encadrant" style="display:none;background:var(--g7);border:1px solid var(--g6);border-radius:11px;padding:12px 14px;margin-bottom:16px;">
+        <div style="font-size:13px;color:var(--g1);margin-bottom:8px;">🔔 Reçois une alerte le jeudi si la liste de légumes de la semaine suivante n'est pas encore saisie.</div>
+        <button onclick="subscribePush('encadrant')" style="background:var(--g1);color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">Activer les notifications</button>
+      </div>
+
       <!-- Liste de la semaine EN PREMIER -->
       <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
         <span>Légumes cette semaine</span>
@@ -1282,7 +1287,7 @@ function showPage(id) {
 
 function initPage(id) {
   if (id==='tournee') { loadVeggies().then(()=>loadCommandes()).then(()=>renderTournee()); }
-  if (id==='legumes') { loadCatalogue(); loadVeggies(); }
+  if (id==='legumes') { loadCatalogue(); loadVeggies(); majBannierePushEncadrant(); }
   if (id==='commandes') {
     const saisie = document.getElementById('cmd-saisie-wrap');
     if (saisie) saisie.style.display = currentRole === 'gestionnaire' ? 'none' : '';
@@ -2602,7 +2607,16 @@ function majBannierePush() {
   b.style.display = (pushSupporte() && Notification.permission !== 'granted') ? 'block' : 'none';
 }
 
-async function subscribePush() {
+// Même bandeau, côté encadrant (page Légumes), pour l'alerte du jeudi
+function majBannierePushEncadrant() {
+  const b = document.getElementById('push-banner-encadrant');
+  if (!b) return;
+  b.style.display = (pushSupporte() && Notification.permission !== 'granted') ? 'block' : 'none';
+}
+
+// role: null pour un client (par défaut), 'encadrant' pour la banniere de la page Légumes —
+// permet de cibler l'alerte du jeudi sur les seuls abonnés encadrant sans notifier les clients.
+async function subscribePush(role) {
   if (!pushSupporte()) return showToast("Notifications non supportées sur cet appareil");
   try {
     const perm = await Notification.requestPermission();
@@ -2612,9 +2626,10 @@ async function subscribePush() {
     if (!sub) {
       sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8(VAPID_PUBLIC) });
     }
-    await sbPost('push_subscriptions', { subscription: JSON.stringify(sub), client_id: (_cmdClientIdx ?? null) });
+    await sbPost('push_subscriptions', { subscription: JSON.stringify(sub), client_id: (_cmdClientIdx ?? null), role: role || null });
     showToast('🔔 Notifications activées !');
     majBannierePush();
+    majBannierePushEncadrant();
   } catch(e) {
     console.error('subscribePush', e);
     showToast("Erreur activation notifications");
