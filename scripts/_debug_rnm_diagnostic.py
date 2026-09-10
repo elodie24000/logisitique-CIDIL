@@ -145,4 +145,26 @@ else:
     except Exception as e:
         print(f"Erreur telechargement/parsing : {e}")
 
+# --- 5) Verification cibles : "COTATIONS JOURNALIERES FRUITS ET LEGUMES" (probable dataset actuel) ---
+section("5) Dataset cible : COTATIONS JOURNALIERES FRUITS ET LEGUMES (id 536991d7a3a729239d203d80)")
+try:
+    detail = get_json('https://www.data.gouv.fr/api/1/datasets/536991d7a3a729239d203d80/')
+    print(f"Titre : {detail.get('title')}")
+    print(f"Description (200 premiers caracteres) : {(detail.get('description') or '')[:200]!r}")
+    for r in detail.get('resources', []):
+        print(f"  format={r.get('format')!r} title={r.get('title')!r} url={r.get('url')}")
+    resources = detail.get('resources', [])
+    if resources:
+        url = resources[0].get('url')
+        print(f"\nTest telechargement de : {url}")
+        try:
+            req = urllib.request.Request(url, headers=UA)
+            with urllib.request.urlopen(req, timeout=20) as r:
+                raw = r.read(2000)
+            print(f"OK - premiers octets : {raw[:300]}")
+        except Exception as e:
+            print(f"Erreur telechargement : {e}")
+except Exception as e:
+    print(f"Erreur : {e}")
+
 section("FIN DU DIAGNOSTIC")
