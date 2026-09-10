@@ -1,0 +1,29 @@
+name: Veille concurrentielle (email)
+
+on:
+  workflow_dispatch:
+    inputs:
+      sujet:
+        description: "Sujet de l'email"
+        required: true
+        type: string
+      contenu_html:
+        description: "Contenu HTML du recapitulatif (redige par la routine mensuelle)"
+        required: true
+        type: string
+
+jobs:
+  email:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Envoi de l'email de veille concurrentielle
+        env:
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          SUJET: ${{ inputs.sujet }}
+          CONTENU_HTML: ${{ inputs.contenu_html }}
+        run: python scripts/send_email_veille_concurrentielle.py
