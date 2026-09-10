@@ -51,23 +51,50 @@ except urllib.error.HTTPError as e:
 except Exception as e:
     print(f"Erreur : {e}")
 
-# --- 2) Recherche sur data.gouv.fr ---
-section("2) Recherche de datasets FranceAgriMer 'cotations fruits legumes'")
-search_url = 'https://www.data.gouv.fr/api/1/datasets/?' + urllib.parse.urlencode({
-    'q': 'cotations fruits legumes marche produit',
-    'page_size': 10,
-})
-print(f"URL appelee : {search_url}")
+# --- 2) Recherche sur data.gouv.fr (plusieurs requetes, de large a precise) ---
+section("2) Recherche de datasets (plusieurs requetes)")
+queries = ['cotations', 'FranceAgriMer', 'RNM', 'cotations legumes', 'marche interet national']
 found_datasets = []
+seen_ids = set()
+for q in queries:
+    search_url = 'https://www.data.gouv.fr/api/1/datasets/?' + urllib.parse.urlencode({'q': q, 'page_size': 15})
+    print(f"\nRequete : {q!r}")
+    print(f"URL appelee : {search_url}")
+    try:
+        results = get_json(search_url)
+        total = results.get('total', '?')
+        print(f"Total resultats : {total}")
+        for d in results.get('data', []):
+            print(f"  - id={d.get('id')} slug={d.get('slug')} title={d.get('title')!r} organization={(d.get('organization') or {}).get('name')}")
+            if d.get('id') not in seen_ids:
+                seen_ids.add(d.get('id'))
+                found_datasets.append(d)
+    except Exception as e:
+        print(f"Erreur recherche : {e}")
+
+# --- 2bis) Organisation FranceAgriMer : lister ses datasets directement ---
+section("2bis) Datasets de l'organisation FranceAgriMer")
 try:
-    results = get_json(search_url)
-    total = results.get('total', '?')
-    print(f"Total resultats : {total}")
-    for d in results.get('data', []):
-        print(f"  - id={d.get('id')} slug={d.get('slug')} title={d.get('title')!r} organization={d.get('organization', {}).get('name') if d.get('organization') else None}")
-        found_datasets.append(d)
+    org_search = get_json('https://www.data.gouv.fr/api/1/organizations/?' + urllib.parse.urlencode({'q': 'FranceAgriMer'}))
+    for org in org_search.get('data', []):
+        print(f"Organisation trouvee : id={org.get('id')} name={org.get('name')!r} slug={org.get('slug')}")
+        org_id = org.get('id')
+        if org_id:
+            org_datasets = get_json(f'https://www.data.gouv.fr/api/1/organizations/{org_id}/datasets/?page_size=50')
+            ds_list = org_datasets.get('data', org_datasets) if isinstance(org_datasets, dict) else org_datasets
+            if isinstance(ds_list, dict):
+                ds_list = ds_list.get('data', [])
+            print(f"  Nombre de datasets de cette organisation : {len(ds_list) if isinstance(ds_list, list) else '?'}")
+            if isinstance(ds_list, list):
+                for d in ds_list:
+                    title = d.get('title', '')
+                    if any(k in title.lower() for k in ['cotation', 'prix', 'marche']):
+                        print(f"    * id={d.get('id')} title={title!r}")
+                        if d.get('id') not in seen_ids:
+                            seen_ids.add(d.get('id'))
+                            found_datasets.append(d)
 except Exception as e:
-    print(f"Erreur recherche : {e}")
+    print(f"Erreur organisation : {e}")
 
 # --- 3) Detail des ressources pour chaque dataset trouve ---
 section("3) Detail des ressources des datasets trouves")
