@@ -631,6 +631,28 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Publier les légumes cochés
           </button>
+
+          <div style="margin-top:18px;border-top:1px solid var(--g6);padding-top:14px;">
+            <div id="nv-toggle" onclick="toggleNouveauLegume()" style="cursor:pointer;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--g1);user-select:none;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--g1)" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Nouveau légume (catégorie non listée)
+            </div>
+            <div id="nv-form" style="display:none;margin-top:10px;">
+              <input class="finput" id="nv-nom" placeholder="Nom du légume" style="margin-bottom:8px;width:100%;">
+              <input class="finput" id="nv-famille" list="nv-famille-list" placeholder="Famille / catégorie (ex : Racines)" style="margin-bottom:8px;width:100%;">
+              <datalist id="nv-famille-list"></datalist>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+                <select class="finput" id="nv-unite">
+                  <option value="kg">kg</option>
+                  <option value="pièce">pièce</option>
+                  <option value="botte">botte</option>
+                  <option value="barquette">barquette</option>
+                </select>
+                <input class="finput" type="number" id="nv-prix-defaut" placeholder="Prix/unité (optionnel)" min="0" step="0.1">
+              </div>
+              <button class="btn-primary" style="width:100%;" onclick="creerNouveauLegume()">Ajouter au catalogue</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1594,6 +1616,41 @@ function renderCatalogue() {
           </div>
         </div>`).join('')}
     </div>`).join('');
+}
+
+function toggleNouveauLegume() {
+  const form = document.getElementById('nv-form');
+  const open = form.style.display === 'none';
+  form.style.display = open ? 'block' : 'none';
+  if (open) {
+    const familles = [...new Set(catalogue.map(c => c.famille).filter(Boolean))].sort();
+    document.getElementById('nv-famille-list').innerHTML = familles.map(f => `<option value="${f}">`).join('');
+    document.getElementById('nv-nom').focus();
+  }
+}
+
+async function creerNouveauLegume() {
+  const nom = document.getElementById('nv-nom').value.trim();
+  const famille = document.getElementById('nv-famille').value.trim();
+  const unite = document.getElementById('nv-unite').value;
+  const prix = parseFloat(document.getElementById('nv-prix-defaut').value);
+  if (!nom) return showToast('Indiquez un nom de légume');
+  if (!famille) return showToast('Indiquez une famille / catégorie');
+  if (catalogue.some(c => (c.nom||'').toLowerCase() === nom.toLowerCase())) {
+    return showToast('Ce légume existe déjà dans le catalogue');
+  }
+  try {
+    const rows = await sbPost('catalogue', {nom, famille, unites: unite, prix_defaut: isNaN(prix) ? null : prix});
+    catalogue.push(rows[0]);
+    renderCatalogue();
+    document.getElementById('nv-nom').value = '';
+    document.getElementById('nv-famille').value = '';
+    document.getElementById('nv-prix-defaut').value = '';
+    document.getElementById('nv-form').style.display = 'none';
+    showToast('✓ ' + nom + ' ajouté au catalogue — cochez-le ci-dessus pour le publier');
+  } catch(e) {
+    showToast('Erreur : ' + e.message);
+  }
 }
 
 function toggleItem(uid) {
