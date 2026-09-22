@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 """Envoie chaque vendredi a 10h un email au gestionnaire recapitulant
 toutes les commandes livrees de la semaine en cours (lundi -> vendredi)."""
-import os, json, base64, urllib.request
+import os, json, base64, html, urllib.request
 from datetime import date, timedelta
 from fpdf import FPDF
 
 MOIS_ABBR = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.']
 JOUR_OFFSET = {'lundi': 0, 'mardi': 1, 'mercredi': 2, 'jeudi': 3, 'vendredi': 4, 'samedi': 5, 'dimanche': 6}
+JOURS_LABELS_FR = {'lundi': 'Lundi', 'mardi': 'Mardi', 'mercredi': 'Mercredi', 'jeudi': 'Jeudi', 'vendredi': 'Vendredi', 'samedi': 'Samedi'}
+REPONSE_LABELS_FR = {'interesse': '✅ intéressé(e)', 'pas_interesse': '❌ non merci'}
+CIBLE_LABELS_FR = {'tous': 'Boutique + Labo', 'boutique': 'Boutique', 'labo': 'Labo'}
+REPONDANT_LABELS_FR = {'boutique': 'Boutique', 'labo': 'Labo'}
 
 SUPA_URL = 'https://ulvrwtwxzhlrplvbcsrd.supabase.co'
 SUPA_KEY = os.environ['SUPABASE_KEY']
@@ -18,6 +22,7 @@ DESTINATAIRES = [
     {'email': 'comptable@cidil-asso.fr', 'name': 'Comptable CIDIL'},
     {'email': 'coordination@cidil-asso.fr', 'name': 'Coordination CIDIL'},
     {'email': 'secretariat@cidil-asso.fr', 'name': 'Secrétariat CIDIL'},
+    {'email': 'plassin.elodie24@gmail.com', 'name': 'Elodie (gestionnaire)'},
 ]
 LIEN_APP = 'https://elodie24000.github.io/logisitique-CIDIL/'
 
@@ -60,6 +65,59 @@ def get_clients():
     )
     rows = json.loads(urllib.request.urlopen(req).read())
     return {r['id']: r for r in rows}
+
+
+def get_annonces_semaine(semaine_str):
+    req = urllib.request.Request(
+        f'{SUPA_URL}/rest/v1/annonces_stock?semaine=eq.{semaine_str}&order=created_at.asc',
+        headers=H_SUPA
+    )
+    return json.loads(urllib.request.urlopen(req).read())
+
+
+def get_reponses(annonce_ids):
+    if not annonce_ids:
+        return []
+    ids = ','.join(str(i) for i in annonce_ids)
+    req = urllib.request.Request(
+        f'{SUPA_URL}/rest/v1/annonces_stock_reponses?annonce_id=in.({ids})',
+        headers=H_SUPA
+    )
+    return json.loads(urllib.request.urlopen(req).read())
+
+
+def bloc_annonces_html(annonces):
+    if not annonces:
+        return '<p>Aucun échange interne cette semaine.</p>'
+
+    reponses = get_reponses([a['id'] for a in annonces])
+    reponses_par_annonce = {}
+    for r in reponses:
+        reponses_par_annonce.setdefault(r['annonce_id'], {})[r['repondant']] = r
+
+    lignes = ''
+    for a in annonces:
+        cible = a.get('cible')
+        destinataires = ['boutique', 'labo'] if cible == 'tous' else [cible]
+        statuts = []
+        for d in destinataires:
+            rep = reponses_par_annonce.get(a['id'], {}).get(d)
+            if rep:
+                label = REPONSE_LABELS_FR.get(rep['reponse'], rep['reponse'])
+                jour = rep.get('jour_souhaite')
+                if jour:
+                    label += f" — {JOURS_LABELS_FR.get(jour, jour)}"
+            else:
+                label = '⏳ en attente'
+            statuts.append(f"{REPONDANT_LABELS_FR.get(d, d)} : {label}")
+        lignes += (
+            f'<div style="padding:10px 0;border-bottom:1px solid #e5e3dc;">'
+            f'<div style="font-size:11px;color:#aaa;text-transform:uppercase;">{CIBLE_LABELS_FR.get(cible, cible)}</div>'
+            f'<div style="font-weight:600;color:#0d2818;">{html.escape(a.get("message") or "")}</div>'
+            f'<div style="font-size:12px;color:#888;margin-top:2px;">{" · ".join(statuts)}</div>'
+            f'</div>'
+        )
+    return f'<div>{lignes}</div>'
 
 
 # Clients sans jour de livraison fixe (Intermarché Montbron + les 2 clients internes,
@@ -201,8 +259,8 @@ def build_pdf(livrees, non_livrees, semaine_str, clients_map):
     return bytes(out) if not isinstance(out, (bytes, bytearray)) else bytes(out)
 
 
-def envoyer_email(html_livrees, html_non_livrees, nb_livrees, nb_non_livrees, semaine_str, pdf_bytes):
-    html = f"""
+def envoyer_email(html_livrees, html_non_livrees, nb_livrees, nb_non_livrees, semaine_str, pdf_bytes, html_annonces):
+    corps_html = f"""
     <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;">
       <div style="background:#0d2818;padding:24px;text-align:center;border-radius:12px 12px 0 0;">
         <h1 style="color:#fff;font-size:20px;margin:0;">CIDIL Maraîchage</h1>
@@ -221,6 +279,11 @@ def envoyer_email(html_livrees, html_non_livrees, nb_livrees, nb_non_livrees, se
           {html_non_livrees}
         </div>
 
+        <p style="font-weight:bold;margin:20px 0 8px;">🔄 Échanges internes (Encadrant ↔ Boutique/Labo)</p>
+        <div style="background:#fff;border-radius:10px;padding:14px 16px;margin:0 0 18px;">
+          {html_annonces}
+        </div>
+
         <p style="text-align:center;margin:28px 0;">
           <a href="{LIEN_APP}" style="background:#0d2818;color:#fff;padding:14px 28px;
           border-radius:10px;text-decoration:none;font-weight:bold;display:inline-block;">Ouvrir l'application</a>
@@ -234,7 +297,7 @@ def envoyer_email(html_livrees, html_non_livrees, nb_livrees, nb_non_livrees, se
         'sender': {'email': EXPEDITEUR_EMAIL, 'name': EXPEDITEUR_NOM},
         'to': DESTINATAIRES,
         'subject': f'CIDIL - Récap des commandes (semaine du {semaine_str})',
-        'htmlContent': html,
+        'htmlContent': corps_html,
         'attachment': [{'content': pdf_b64, 'name': f'Recap_BL_{semaine_str}.pdf'}]
     }).encode('utf-8')
     req = urllib.request.Request(
@@ -256,5 +319,10 @@ print(f"{len(livrees)} commande(s) livree(s), {len(non_livrees)} commande(s) non
 html_livrees = bloc_recap_html(livrees, 'Aucune commande livrée cette semaine.', clients_map)
 html_non_livrees = bloc_recap_html(non_livrees, 'Aucune commande en attente cette semaine.', clients_map)
 pdf_bytes = build_pdf(livrees, non_livrees, semaine, clients_map)
-envoyer_email(html_livrees, html_non_livrees, len(livrees), len(non_livrees), semaine, pdf_bytes)
+
+annonces = get_annonces_semaine(semaine)
+print(f"{len(annonces)} annonce(s) interne(s) cette semaine")
+html_annonces = bloc_annonces_html(annonces)
+
+envoyer_email(html_livrees, html_non_livrees, len(livrees), len(non_livrees), semaine, pdf_bytes, html_annonces)
 print("Email gestionnaire envoye")
