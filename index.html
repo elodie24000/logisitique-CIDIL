@@ -2768,7 +2768,7 @@ async function envoyerAnnonce() {
   const cible = document.getElementById('annonce-cible').value;
   if (!message) return showToast('Écrivez un message');
   try {
-    await sbPost('annonces_stock', {message, cible});
+    await sbPost('annonces_stock', {message, cible, semaine: state.semaine || null});
     document.getElementById('annonce-message').value = '';
     showToast('✓ Annonce envoyée');
     chargerHistoriqueAnnonces();
@@ -2785,22 +2785,26 @@ async function chargerHistoriqueAnnonces() {
   if (!el) return;
   const CIBLE_LABEL = {tous:'Boutique + Labo', boutique:'Boutique', labo:'Labo'};
   try {
-    const rows = await sbGet('annonces_stock', 'order=created_at.desc&limit=5');
-    if (!rows.length) { el.innerHTML = '<div class="empty-msg">Aucune annonce envoyée</div>'; return; }
+    const filtreSemaine = state.semaine ? `semaine=eq.${state.semaine}&` : '';
+    const rows = await sbGet('annonces_stock', `${filtreSemaine}order=created_at.desc&limit=50`);
+    if (!rows.length) { el.innerHTML = '<div class="empty-msg">Aucune annonce cette semaine</div>'; return; }
     const ids = rows.map(r => r.id).join(',');
     let reponses = [];
     try { reponses = await sbGet('annonces_stock_reponses', `annonce_id=in.(${ids})`); } catch(e) { /* pas bloquant */ }
     const reponsesParAnnonce = {};
     reponses.forEach(r => {
       if (!reponsesParAnnonce[r.annonce_id]) reponsesParAnnonce[r.annonce_id] = {};
-      reponsesParAnnonce[r.annonce_id][r.repondant] = r.reponse;
+      reponsesParAnnonce[r.annonce_id][r.repondant] = r;
     });
     el.innerHTML = rows.map(r => {
       const reps = reponsesParAnnonce[r.id] || {};
       const destinataires = r.cible === 'tous' ? ['boutique','labo'] : [r.cible];
-      const statut = destinataires.map(d =>
-        `${REPONSE_ROLE_LABEL[d]} : ${reps[d] ? REPONSE_ETAT_LABEL[reps[d]] : '⏳ en attente'}`
-      ).join(' · ');
+      const statut = destinataires.map(d => {
+        const rep = reps[d];
+        if (!rep) return `${REPONSE_ROLE_LABEL[d]} : ⏳ en attente`;
+        const jourTxt = rep.jour_souhaite ? ' (' + (JOURS_LABELS[rep.jour_souhaite] || rep.jour_souhaite) + ')' : '';
+        return `${REPONSE_ROLE_LABEL[d]} : ${REPONSE_ETAT_LABEL[rep.reponse]}${jourTxt}`;
+      }).join(' · ');
       return `
       <div style="font-size:12px;color:var(--tl);border-top:1px solid var(--g6);padding-top:6px;margin-top:6px;">
         <span style="font-weight:500;color:var(--g1);">${CIBLE_LABEL[r.cible]||r.cible}</span> — ${escapeHtml(r.message)}
@@ -2961,40 +2965,60 @@ async function chargerAnnoncesPourClient(nomClient) {
   const el = document.getElementById('annonces-banner');
   if (!cible || !el) return;
   try {
-    const depuis = new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString();
-    const rows = await sbGet('annonces_stock', `or=(cible.eq.${cible},cible.eq.tous)&created_at=gte.${depuis}&order=created_at.desc&limit=5`);
+    const filtreSemaine = state.semaine ? `semaine=eq.${state.semaine}&` : '';
+    const rows = await sbGet('annonces_stock', `${filtreSemaine}or=(cible.eq.${cible},cible.eq.tous)&order=created_at.desc&limit=20`);
     if (!rows.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
     const ids = rows.map(r => r.id).join(',');
     let reponses = [];
     try { reponses = await sbGet('annonces_stock_reponses', `annonce_id=in.(${ids})&repondant=eq.${cible}`); } catch(e) { /* pas bloquant */ }
     const reponseParAnnonce = {};
-    reponses.forEach(r => { reponseParAnnonce[r.annonce_id] = r.reponse; });
+    reponses.forEach(r => { reponseParAnnonce[r.annonce_id] = r; });
     el.style.display = 'block';
     el.innerHTML = `<div style="font-size:13px;font-weight:500;color:#8a5a00;margin-bottom:8px;">📢 Info de l'encadrant technique</div>` +
-      rows.map(r => {
-        const rep = reponseParAnnonce[r.id];
-        const zoneReponse = rep
-          ? `<div style="font-size:12px;font-weight:500;color:${rep==='interesse'?'#1a7a3d':'#8a5a00'};margin-top:4px;">
-              ${REPONSE_ETAT_LABEL[rep]} — <button onclick="repondreAnnonce(${r.id},'${cible}','${rep==='interesse'?'pas_interesse':'interesse'}')" style="background:none;border:none;color:#8a5a00;text-decoration:underline;cursor:pointer;font-size:11px;padding:0;font-family:'DM Sans',sans-serif;">changer ma réponse</button>
-            </div>`
-          : `<div style="display:flex;gap:8px;margin-top:6px;">
-              <button onclick="repondreAnnonce(${r.id},'${cible}','interesse')" style="flex:1;background:#1a7a3d;color:#fff;border:none;border-radius:8px;padding:7px;font-size:12px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">✅ J'en veux</button>
-              <button onclick="repondreAnnonce(${r.id},'${cible}','pas_interesse')" style="flex:1;background:#fff;color:#8a5a00;border:1px solid #f0c36d;border-radius:8px;padding:7px;font-size:12px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">❌ Non merci</button>
-            </div>`;
-        return `<div style="font-size:13px;color:#8a5a00;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #f0dca0;">• ${escapeHtml(r.message)}${zoneReponse}</div>`;
-      }).join('');
+      rows.map(r => `<div style="font-size:13px;color:#8a5a00;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #f0dca0;">
+        • ${escapeHtml(r.message)}
+        <div id="annonce-actions-${r.id}">${zoneReponseAnnonceHtml(r.id, cible, reponseParAnnonce[r.id])}</div>
+      </div>`).join('');
   } catch(e) {
     console.error('chargerAnnoncesPourClient', e);
   }
 }
 
-async function repondreAnnonce(annonceId, repondant, reponse) {
+function zoneReponseAnnonceHtml(annonceId, cible, rep) {
+  if (rep) {
+    const jourTxt = rep.reponse === 'interesse' && rep.jour_souhaite ? ' — ' + (JOURS_LABELS[rep.jour_souhaite] || rep.jour_souhaite) : '';
+    return `<div style="font-size:12px;font-weight:500;color:${rep.reponse==='interesse'?'#1a7a3d':'#8a5a00'};margin-top:4px;">
+        ${REPONSE_ETAT_LABEL[rep.reponse]}${jourTxt} — <button onclick="reinitialiserZoneReponse(${annonceId},'${cible}')" style="background:none;border:none;color:#8a5a00;text-decoration:underline;cursor:pointer;font-size:11px;padding:0;font-family:'DM Sans',sans-serif;">changer ma réponse</button>
+      </div>`;
+  }
+  return `<div style="display:flex;gap:8px;margin-top:6px;">
+      <button onclick="afficherChoixJourAnnonce(${annonceId},'${cible}')" style="flex:1;background:#1a7a3d;color:#fff;border:none;border-radius:8px;padding:7px;font-size:12px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">✅ J'en veux</button>
+      <button onclick="repondreAnnonce(${annonceId},'${cible}','pas_interesse',null)" style="flex:1;background:#fff;color:#8a5a00;border:1px solid #f0c36d;border-radius:8px;padding:7px;font-size:12px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">❌ Non merci</button>
+    </div>`;
+}
+
+function afficherChoixJourAnnonce(annonceId, cible) {
+  const el = document.getElementById('annonce-actions-' + annonceId);
+  if (!el) return;
+  el.innerHTML = `<div style="font-size:11px;color:#8a5a00;margin:6px 0 4px;">Quel jour ?</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      ${JOURS_INTERNE.map(([val,label]) => `<button onclick="repondreAnnonce(${annonceId},'${cible}','interesse','${val}')" style="background:#fff;border:1px solid #1a7a3d;color:#1a7a3d;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;">${label}</button>`).join('')}
+    </div>`;
+}
+
+function reinitialiserZoneReponse(annonceId, cible) {
+  const el = document.getElementById('annonce-actions-' + annonceId);
+  if (el) el.innerHTML = zoneReponseAnnonceHtml(annonceId, cible, null);
+}
+
+async function repondreAnnonce(annonceId, repondant, reponse, jour) {
   try {
     const existants = await sbGet('annonces_stock_reponses', `annonce_id=eq.${annonceId}&repondant=eq.${repondant}`);
+    const payload = {reponse, jour_souhaite: reponse === 'interesse' ? (jour || null) : null};
     if (existants.length) {
-      await sbPatch('annonces_stock_reponses', existants[0].id, {reponse});
+      await sbPatch('annonces_stock_reponses', existants[0].id, payload);
     } else {
-      await sbPost('annonces_stock_reponses', {annonce_id: annonceId, repondant, reponse});
+      await sbPost('annonces_stock_reponses', {annonce_id: annonceId, repondant, ...payload});
     }
     showToast(reponse === 'interesse' ? '✓ Réponse envoyée : intéressé(e)' : '✓ Réponse envoyée : non merci');
     chargerAnnoncesPourClient(repondant === 'boutique' ? 'Boutique' : 'Labo de transformation');
