@@ -741,6 +741,28 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
         Sauvegarder tous les prix
       </button>
+
+      <div style="margin-top:20px;border-top:1px solid var(--g6);padding-top:14px;">
+        <div id="nvt-toggle" onclick="toggleNouveauLegumeTarifs()" style="cursor:pointer;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--g1);user-select:none;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--g1)" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nouveau légume (catégorie non listée)
+        </div>
+        <div id="nvt-form" style="display:none;margin-top:10px;">
+          <input class="finput" id="nvt-nom" placeholder="Nom du légume" style="margin-bottom:8px;width:100%;">
+          <input class="finput" id="nvt-famille" list="nvt-famille-list" placeholder="Famille / catégorie (ex : Racines)" style="margin-bottom:8px;width:100%;">
+          <datalist id="nvt-famille-list"></datalist>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+            <select class="finput" id="nvt-unite">
+              <option value="kg">kg</option>
+              <option value="pièce">pièce</option>
+              <option value="botte">botte</option>
+              <option value="barquette">barquette</option>
+            </select>
+            <input class="finput" type="number" id="nvt-prix-defaut" placeholder="Prix/unité (optionnel)" min="0" step="0.1">
+          </div>
+          <button class="btn-primary" style="width:100%;" onclick="creerNouveauLegumeTarifs()">Ajouter au catalogue</button>
+        </div>
+      </div>
     </div>
 
   </div><!-- /page-content -->
@@ -1533,6 +1555,41 @@ async function deleteTarif(id, nom) {
   } catch(e) {
     showToast('Erreur suppression');
     console.error(e);
+  }
+}
+
+function toggleNouveauLegumeTarifs() {
+  const form = document.getElementById('nvt-form');
+  const open = form.style.display === 'none';
+  form.style.display = open ? 'block' : 'none';
+  if (open) {
+    const familles = [...new Set(tarifsData.map(c => c.famille).filter(Boolean))].sort();
+    document.getElementById('nvt-famille-list').innerHTML = familles.map(f => `<option value="${f}">`).join('');
+    document.getElementById('nvt-nom').focus();
+  }
+}
+
+async function creerNouveauLegumeTarifs() {
+  const nom = document.getElementById('nvt-nom').value.trim();
+  const famille = document.getElementById('nvt-famille').value.trim();
+  const unite = document.getElementById('nvt-unite').value;
+  const prix = parseFloat(document.getElementById('nvt-prix-defaut').value);
+  if (!nom) return showToast('Indiquez un nom de légume');
+  if (!famille) return showToast('Indiquez une famille / catégorie');
+  if (tarifsData.some(c => (c.nom||'').toLowerCase() === nom.toLowerCase())) {
+    return showToast('Ce légume existe déjà dans le catalogue');
+  }
+  try {
+    const rows = await sbPost('catalogue', {nom, famille, unites: unite, prix_defaut: isNaN(prix) ? null : prix});
+    tarifsData.push(rows[0]);
+    renderTarifs();
+    document.getElementById('nvt-nom').value = '';
+    document.getElementById('nvt-famille').value = '';
+    document.getElementById('nvt-prix-defaut').value = '';
+    document.getElementById('nvt-form').style.display = 'none';
+    showToast('✓ ' + nom + ' ajouté au catalogue');
+  } catch(e) {
+    showToast('Erreur : ' + e.message);
   }
 }
 
