@@ -1840,18 +1840,21 @@ async function removeVeggie(id) {
 
 function emojiLegume(nom) {
   const n = (nom||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+  // Uniquement des emojis "classiques" (2010 et avant) : garantis affichés sur tous les
+  // appareils, contrairement aux emojis récents (2018+) qui restent invisibles sur
+  // certains téléphones/navigateurs plus anciens.
   const m = [
     ['tomate','🍅'],['carotte','🥕'],['panais','🥕'],['courgette','🥒'],['concombre','🥒'],
-    ['courge','🎃'],['potiron','🎃'],['butternut','🎃'],['potimarron','🎃'],['aubergine','🍆'],['piment','🌶️'],['poivron','🫑'],
-    ['brocoli','🥦'],['chou','🟢'],['salade','🥬'],['laitue','🥬'],['batavia','🥬'],['feuille','🥬'],
-    ['mesclun','🥬'],['roquette','🥬'],['mache','🥬'],['epinard','🥬'],['blette','🥬'],['bok','🥬'],['pak','🥬'],
-    ['oignon','🧅'],['echalote','🧅'],['ciboule','🧅'],['ail','🧄'],['pomme de terre','🥔'],['patate','🥔'],
-    ['mais','🌽'],['radis','🔴'],['betterave','🟣'],['navet','⚪'],['fenouil','🌿'],['celeri','🌿'],
-    ['haricot','🫛'],['pois','🫛'],['feve','🫛'],['fraise','🍓'],['melon','🍈'],['pasteque','🍉'],
+    ['courge','🎃'],['potiron','🎃'],['butternut','🎃'],['potimarron','🎃'],['aubergine','🍆'],['piment','🌶️'],['poivron','🍎'],
+    ['brocoli','🌳'],['chou','🍏'],['salade','🍀'],['laitue','🍀'],['batavia','🍀'],['feuille','🍀'],
+    ['mesclun','🍀'],['roquette','🍀'],['mache','🍀'],['epinard','🍀'],['blette','🍀'],['bok','🍀'],['pak','🍀'],
+    ['oignon','🔶'],['echalote','🔶'],['ciboule','🔶'],['ail','💠'],['pomme de terre','🥔'],['patate','🥔'],
+    ['mais','🌽'],['radis','🔴'],['betterave','🍇'],['navet','⚪'],['fenouil','🌿'],['celeri','🌿'],
+    ['haricot','🌱'],['pois','🌱'],['feve','🌱'],['fraise','🍓'],['melon','🍈'],['pasteque','🍉'],
     ['basilic','🌿'],['persil','🌿'],['coriandre','🌿'],['aromatique','🌿'],['bouquet','🌿'],['poireau','🎍']
   ];
   for (const [k,e] of m) if (n.includes(k)) return e;
-  return '🥬';
+  return '🍀';
 }
 
 function renderVeggies() {
