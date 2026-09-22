@@ -2777,16 +2777,36 @@ async function envoyerAnnonce() {
   }
 }
 
+const REPONSE_ROLE_LABEL = {boutique:'Boutique', labo:'Labo'};
+const REPONSE_ETAT_LABEL = {interesse:'✅ intéressé(e)', pas_interesse:'❌ non merci'};
+
 async function chargerHistoriqueAnnonces() {
   const el = document.getElementById('annonces-historique');
   if (!el) return;
   const CIBLE_LABEL = {tous:'Boutique + Labo', boutique:'Boutique', labo:'Labo'};
   try {
     const rows = await sbGet('annonces_stock', 'order=created_at.desc&limit=5');
-    el.innerHTML = rows.length ? rows.map(r => `
+    if (!rows.length) { el.innerHTML = '<div class="empty-msg">Aucune annonce envoyée</div>'; return; }
+    const ids = rows.map(r => r.id).join(',');
+    let reponses = [];
+    try { reponses = await sbGet('annonces_stock_reponses', `annonce_id=in.(${ids})`); } catch(e) { /* pas bloquant */ }
+    const reponsesParAnnonce = {};
+    reponses.forEach(r => {
+      if (!reponsesParAnnonce[r.annonce_id]) reponsesParAnnonce[r.annonce_id] = {};
+      reponsesParAnnonce[r.annonce_id][r.repondant] = r.reponse;
+    });
+    el.innerHTML = rows.map(r => {
+      const reps = reponsesParAnnonce[r.id] || {};
+      const destinataires = r.cible === 'tous' ? ['boutique','labo'] : [r.cible];
+      const statut = destinataires.map(d =>
+        `${REPONSE_ROLE_LABEL[d]} : ${reps[d] ? REPONSE_ETAT_LABEL[reps[d]] : '⏳ en attente'}`
+      ).join(' · ');
+      return `
       <div style="font-size:12px;color:var(--tl);border-top:1px solid var(--g6);padding-top:6px;margin-top:6px;">
         <span style="font-weight:500;color:var(--g1);">${CIBLE_LABEL[r.cible]||r.cible}</span> — ${escapeHtml(r.message)}
-      </div>`).join('') : '<div class="empty-msg">Aucune annonce envoyée</div>';
+        <div style="margin-top:3px;font-size:11px;">${statut}</div>
+      </div>`;
+    }).join('');
   } catch(e) {
     el.innerHTML = '<div class="empty-msg">Erreur chargement</div>';
   }
@@ -2944,11 +2964,42 @@ async function chargerAnnoncesPourClient(nomClient) {
     const depuis = new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString();
     const rows = await sbGet('annonces_stock', `or=(cible.eq.${cible},cible.eq.tous)&created_at=gte.${depuis}&order=created_at.desc&limit=5`);
     if (!rows.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
+    const ids = rows.map(r => r.id).join(',');
+    let reponses = [];
+    try { reponses = await sbGet('annonces_stock_reponses', `annonce_id=in.(${ids})&repondant=eq.${cible}`); } catch(e) { /* pas bloquant */ }
+    const reponseParAnnonce = {};
+    reponses.forEach(r => { reponseParAnnonce[r.annonce_id] = r.reponse; });
     el.style.display = 'block';
-    el.innerHTML = `<div style="font-size:13px;font-weight:500;color:#8a5a00;margin-bottom:6px;">📢 Info de l'encadrant technique</div>` +
-      rows.map(r => `<div style="font-size:13px;color:#8a5a00;margin-bottom:4px;">• ${escapeHtml(r.message)}</div>`).join('');
+    el.innerHTML = `<div style="font-size:13px;font-weight:500;color:#8a5a00;margin-bottom:8px;">📢 Info de l'encadrant technique</div>` +
+      rows.map(r => {
+        const rep = reponseParAnnonce[r.id];
+        const zoneReponse = rep
+          ? `<div style="font-size:12px;font-weight:500;color:${rep==='interesse'?'#1a7a3d':'#8a5a00'};margin-top:4px;">
+              ${REPONSE_ETAT_LABEL[rep]} — <button onclick="repondreAnnonce(${r.id},'${cible}','${rep==='interesse'?'pas_interesse':'interesse'}')" style="background:none;border:none;color:#8a5a00;text-decoration:underline;cursor:pointer;font-size:11px;padding:0;font-family:'DM Sans',sans-serif;">changer ma réponse</button>
+            </div>`
+          : `<div style="display:flex;gap:8px;margin-top:6px;">
+              <button onclick="repondreAnnonce(${r.id},'${cible}','interesse')" style="flex:1;background:#1a7a3d;color:#fff;border:none;border-radius:8px;padding:7px;font-size:12px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">✅ J'en veux</button>
+              <button onclick="repondreAnnonce(${r.id},'${cible}','pas_interesse')" style="flex:1;background:#fff;color:#8a5a00;border:1px solid #f0c36d;border-radius:8px;padding:7px;font-size:12px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">❌ Non merci</button>
+            </div>`;
+        return `<div style="font-size:13px;color:#8a5a00;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #f0dca0;">• ${escapeHtml(r.message)}${zoneReponse}</div>`;
+      }).join('');
   } catch(e) {
     console.error('chargerAnnoncesPourClient', e);
+  }
+}
+
+async function repondreAnnonce(annonceId, repondant, reponse) {
+  try {
+    const existants = await sbGet('annonces_stock_reponses', `annonce_id=eq.${annonceId}&repondant=eq.${repondant}`);
+    if (existants.length) {
+      await sbPatch('annonces_stock_reponses', existants[0].id, {reponse});
+    } else {
+      await sbPost('annonces_stock_reponses', {annonce_id: annonceId, repondant, reponse});
+    }
+    showToast(reponse === 'interesse' ? '✓ Réponse envoyée : intéressé(e)' : '✓ Réponse envoyée : non merci');
+    chargerAnnoncesPourClient(repondant === 'boutique' ? 'Boutique' : 'Labo de transformation');
+  } catch(e) {
+    showToast('Erreur : ' + e.message);
   }
 }
 
