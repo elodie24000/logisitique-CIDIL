@@ -609,6 +609,24 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
         <button onclick="subscribePush('encadrant')" style="background:var(--g1);color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">Activer les notifications</button>
       </div>
 
+      <div class="add-form" style="margin-bottom:20px;">
+        <div id="annonce-toggle" onclick="toggleAnnonceForm()" class="add-form-title" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none;">
+          <span style="display:flex;align-items:center;gap:8px;">📢 Prévenir Boutique / Labo</span>
+          <svg id="annonce-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--g2)" stroke-width="2" style="transition:transform .2s"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div id="annonce-form" style="display:none;margin-top:12px;">
+          <div style="font-size:11px;color:var(--tl);margin-bottom:8px;">Ex : « 5kg de carottes dispo en petite quantité, pas de demi-gros » — visible par Boutique et/ou Labo dès leur prochaine commande.</div>
+          <textarea class="finput" id="annonce-message" placeholder="Votre message..." style="width:100%;min-height:60px;margin-bottom:8px;resize:vertical;font-family:'DM Sans',sans-serif;"></textarea>
+          <select class="finput" id="annonce-cible" style="width:100%;margin-bottom:8px;">
+            <option value="tous">Boutique + Labo</option>
+            <option value="boutique">Boutique uniquement</option>
+            <option value="labo">Labo uniquement</option>
+          </select>
+          <button class="btn-primary" style="width:100%;" onclick="envoyerAnnonce()">Envoyer</button>
+          <div id="annonces-historique" style="margin-top:12px;"></div>
+        </div>
+      </div>
+
       <!-- Liste de la semaine EN PREMIER -->
       <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
         <span>Légumes cette semaine</span>
@@ -908,6 +926,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
     <div class="cmd-week-tag" id="cmd-week-tag"></div>
   </div>
   <div class="cmd-body">
+    <div id="annonces-banner" style="display:none;background:#fff7e6;border:1px solid #f0c36d;border-radius:11px;padding:12px 14px;margin-bottom:16px;"></div>
     <div id="push-banner" style="display:none;background:var(--g7);border:1px solid var(--g6);border-radius:11px;padding:12px 14px;margin-bottom:16px;">
       <div style="font-size:13px;color:var(--g1);margin-bottom:8px;">🔔 Recevez une alerte chaque vendredi à 10h quand la liste de légumes est validée et les commandes ouvrent.</div>
       <button onclick="subscribePush()" style="background:var(--g1);color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">Activer les notifications</button>
@@ -2728,6 +2747,51 @@ function majBannierePushEncadrant() {
   b.style.display = (pushSupporte() && Notification.permission !== 'granted') ? 'block' : 'none';
 }
 
+// ══════ ANNONCES STOCK (encadrant → Boutique / Labo) ══════
+function escapeHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
+}
+
+function toggleAnnonceForm() {
+  const form = document.getElementById('annonce-form');
+  const chevron = document.getElementById('annonce-chevron');
+  const open = form.style.display === 'none';
+  form.style.display = open ? 'block' : 'none';
+  chevron.style.transform = open ? 'rotate(180deg)' : '';
+  if (open) chargerHistoriqueAnnonces();
+}
+
+async function envoyerAnnonce() {
+  const message = document.getElementById('annonce-message').value.trim();
+  const cible = document.getElementById('annonce-cible').value;
+  if (!message) return showToast('Écrivez un message');
+  try {
+    await sbPost('annonces_stock', {message, cible});
+    document.getElementById('annonce-message').value = '';
+    showToast('✓ Annonce envoyée');
+    chargerHistoriqueAnnonces();
+  } catch(e) {
+    showToast('Erreur : ' + e.message);
+  }
+}
+
+async function chargerHistoriqueAnnonces() {
+  const el = document.getElementById('annonces-historique');
+  if (!el) return;
+  const CIBLE_LABEL = {tous:'Boutique + Labo', boutique:'Boutique', labo:'Labo'};
+  try {
+    const rows = await sbGet('annonces_stock', 'order=created_at.desc&limit=5');
+    el.innerHTML = rows.length ? rows.map(r => `
+      <div style="font-size:12px;color:var(--tl);border-top:1px solid var(--g6);padding-top:6px;margin-top:6px;">
+        <span style="font-weight:500;color:var(--g1);">${CIBLE_LABEL[r.cible]||r.cible}</span> — ${escapeHtml(r.message)}
+      </div>`).join('') : '<div class="empty-msg">Aucune annonce envoyée</div>';
+  } catch(e) {
+    el.innerHTML = '<div class="empty-msg">Erreur chargement</div>';
+  }
+}
+
 // role: null pour un client (par défaut), 'encadrant' pour la banniere de la page Légumes —
 // permet de cibler l'alerte du jeudi sur les seuls abonnés encadrant sans notifier les clients.
 async function subscribePush(role) {
@@ -2867,6 +2931,24 @@ async function openInterne(nom) {
     // Masquer la zone de recherche : identité déjà connue
     const sw = document.querySelector('.cmd-select-wrap');
     if (sw) sw.style.display = 'none';
+  }
+  chargerAnnoncesPourClient(nom);
+}
+
+// Affiche à Boutique/Labo les annonces de stock récentes (< 3 jours) de l'encadrant qui les concernent
+async function chargerAnnoncesPourClient(nomClient) {
+  const cible = nomClient === 'Boutique' ? 'boutique' : nomClient === 'Labo de transformation' ? 'labo' : null;
+  const el = document.getElementById('annonces-banner');
+  if (!cible || !el) return;
+  try {
+    const depuis = new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString();
+    const rows = await sbGet('annonces_stock', `or=(cible.eq.${cible},cible.eq.tous)&created_at=gte.${depuis}&order=created_at.desc&limit=5`);
+    if (!rows.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
+    el.style.display = 'block';
+    el.innerHTML = `<div style="font-size:13px;font-weight:500;color:#8a5a00;margin-bottom:6px;">📢 Info de l'encadrant technique</div>` +
+      rows.map(r => `<div style="font-size:13px;color:#8a5a00;margin-bottom:4px;">• ${escapeHtml(r.message)}</div>`).join('');
+  } catch(e) {
+    console.error('chargerAnnoncesPourClient', e);
   }
 }
 
