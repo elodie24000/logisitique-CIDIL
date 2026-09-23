@@ -2114,13 +2114,12 @@ function lignesCommandeHtml(od) {
   return {lines, total, hasP};
 }
 
-// Une livraison a besoin d'un livreur (tournée + signature) sauf pour un client interne
-// (Boutique/Labo, livré sur place) ou un client qui vient chercher lui-même sa commande —
-// sauf si force_livreur est activé (transfert interne issu d'une annonce de stock, qui lui
-// nécessite un vrai passage du livreur entre le maraîchage et la Boutique/le Labo).
-function necessiteLivreur(client, od) {
-  if (od && od._forceLivreur) return true;
-  return client && client.cat !== 'Interne' && od._mode !== 'retrait';
+// Toute commande prête nécessite un passage du livreur (tournée + signature) : le site de
+// production est à 3 km de la Boutique/du point de retrait/livraison (centre de Montbron),
+// donc même un transfert interne (Boutique/Labo) ou un retrait client suppose un vrai
+// trajet entre le maraîchage et la ville.
+function necessiteLivreur() {
+  return true;
 }
 
 function carteCommande(idx) {
@@ -2156,20 +2155,16 @@ function carteCommande(idx) {
 const EDGE_FUNCTION_URL = `${SUPA_URL}/functions/v1/send-order-ready-email`;
 const DELIVERY_SIGN_FUNCTION_URL = `${SUPA_URL}/functions/v1/send-delivery-signed-email`;
 
-// Une commande livrée sur place (client interne ou retrait) n'a pas de livreur pour la
-// faire signer : elle est marquée livrée dès qu'elle est prête, comme avant. Une vraie
-// livraison externe, elle, reste "prête" en attente du livreur, qui la confirme via
-// signature électronique dans son propre espace (voir validerLivraisonSignee).
+// Une commande prête reste toujours en attente du livreur, qui la confirme via signature
+// électronique dans son propre espace (voir validerLivraisonSignee) — y compris pour un
+// transfert interne (Boutique/Labo) ou un retrait client, le point de retrait/livraison
+// étant à 3 km du site de production.
 async function marquerCommandePrete(idx) {
   const od = state.orders[idx];
   if (!od || !od._sbId) { showToast('Commande introuvable'); return; }
-  const c = getClient(idx);
-  const surPlace = !necessiteLivreur(c, od);
   try {
     const maintenant = new Date().toISOString();
-    const patch = { prete: true, prete_at: maintenant };
-    if (surPlace) { patch.livre = true; patch.livre_at = maintenant; }
-    await sbPatch('commandes_clients', od._sbId, patch);
+    await sbPatch('commandes_clients', od._sbId, { prete: true, prete_at: maintenant });
     const res = await fetch(EDGE_FUNCTION_URL, {
       method: 'POST',
       headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' },
@@ -2177,9 +2172,8 @@ async function marquerCommandePrete(idx) {
     });
     if (!res.ok) throw new Error(await res.text());
     od._prete = true;
-    if (surPlace) od._livre = true;
     logActivity('commande_prete', `${getClient(idx).nom} — bon de livraison envoyé au gestionnaire`);
-    showToast(surPlace ? '✓ Bon de livraison envoyé' : '✓ Commande prête — en attente du livreur');
+    showToast('✓ Commande prête — en attente du livreur');
   } catch(e) {
     showToast('Commande marquée prête, mais erreur envoi email');
     console.error(e);
@@ -2188,8 +2182,8 @@ async function marquerCommandePrete(idx) {
 }
 
 // ══════ TOURNÉE (livreur) ══════
-// Commandes prêtes mais pas encore livrées, nécessitant un passage du livreur
-// (hors clients internes et hors retrait sur place, gérés directement au statut "prête").
+// Commandes prêtes mais pas encore livrées : toutes nécessitent un passage du livreur
+// (production à 3 km de la Boutique/du point de retrait/livraison).
 function commandesALivrer() {
   return Object.keys(state.orders).filter(idx => {
     const od = state.orders[idx];
