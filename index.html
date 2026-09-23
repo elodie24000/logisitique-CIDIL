@@ -1214,6 +1214,7 @@ let currentPage = null;
 let pinBuffer = '';
 let pendingRole = null;
 let modalClientIdx = null;
+let _annonceCloture = null; // {reponseId} pendant que la fiche commande sert à clôturer une annonce de stock
 
 // Nav configs
 const NAV_CONFIG = {
@@ -1899,6 +1900,7 @@ async function loadCommandes() {
         state.orders[r.client_idx]._createdAt = r.created_at || null;
         state.orders[r.client_idx]._mode = r.mode_livraison || 'livraison';
         state.orders[r.client_idx]._signe = !!r.signature_data;
+        state.orders[r.client_idx]._forceLivreur = !!r.force_livreur;
       } else {
         if (!byWeek[r.semaine]) byWeek[r.semaine] = [];
         byWeek[r.semaine].push(r);
@@ -1921,8 +1923,8 @@ function populateClientSel() {
     clients.map(c=>`<option value="${c.id}">${c.nom}</option>`).join('');
 }
 
-function openOrderModal() {
-  const idx = parseInt(document.getElementById('client-sel').value);
+function openOrderModal(idxOverride) {
+  const idx = idxOverride != null ? idxOverride : parseInt(document.getElementById('client-sel').value);
   if (isNaN(idx)) return showToast('Sélectionnez un client');
   if (!state.veggies.length) return showToast('Ajoutez des légumes d\'abord');
   modalClientIdx = idx;
@@ -1971,7 +1973,7 @@ function chkChange(vid) {
   if(!chk.checked) qty.value='';
 }
 
-function closeModal() { document.getElementById('modal-order').classList.remove('open'); }
+function closeModal() { document.getElementById('modal-order').classList.remove('open'); _annonceCloture = null; }
 
 async function saveOrder() {
   const jour = document.querySelector('input[name="mo-livraison"]:checked')?.value;
@@ -1982,13 +1984,15 @@ async function saveOrder() {
     const q=parseFloat(document.getElementById('oq-'+v.id)?.value);
     if(!isNaN(q)&&q>0) od[v.id]=q;
   });
+  const cloture = _annonceCloture; _annonceCloture = null;
+  if (cloture && !Object.keys(od).length) { showToast('Ajoutez au moins un légume avant de clôturer'); _annonceCloture = cloture; return; }
   const sbId = state.orders[modalClientIdx]?._sbId;
   if(Object.keys(od).length) { state.orders[modalClientIdx]=od; od._jour=jour; if(sbId) od._sbId=sbId; }
   else delete state.orders[modalClientIdx];
   closeModal();
   renderOrders();
   renderClients();
-  showToast('✓ Commande enregistrée');
+  showToast(cloture ? '✓ Commande créée — en attente du livreur' : '✓ Commande enregistrée');
   // Ajuste le stock disponible selon la variation de quantités commandées
   await appliquerDeltaStock(ancienOd, od);
   renderVeggies();
@@ -2003,16 +2007,41 @@ async function saveOrder() {
       client_nom: c.nom, client_idx: modalClientIdx,
       semaine: state.semaine, jour_livraison: jour, items: JSON.stringify(items), total
     };
+    let newId = sbId;
     if (sbId) {
       await sbPatch('commandes_clients', sbId, payload);
       logActivity('commande_modifiee', `${c.nom} — ${items.length} article(s) — ${jour}`);
     } else if (items.length) {
       const [row] = await sbPost('commandes_clients', payload);
+      newId = row.id;
       if (state.orders[modalClientIdx]) state.orders[modalClientIdx]._sbId = row.id;
       logActivity('commande_creee', `${c.nom} — ${items.length} article(s) — ${jour}`);
     } else if (sbId) {
       await sbDelete('commandes_clients', sbId);
       logActivity('commande_annulee', c.nom);
+    }
+    // Clôture d'une annonce de stock interne : marque directement la commande prête
+    // et forcée en livraison (comme "Commande prête", bon de livraison envoyé à la
+    // comptabilité inclus), puis relie la réponse à la commande créée.
+    if (cloture && newId) {
+      const maintenant = new Date().toISOString();
+      await sbPatch('commandes_clients', newId, { prete: true, prete_at: maintenant, force_livreur: true });
+      try {
+        await fetch(EDGE_FUNCTION_URL, {
+          method: 'POST',
+          headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ commande_id: newId })
+        });
+      } catch(e) { console.error('Envoi BL clôture annonce:', e); }
+      await sbPatch('annonces_stock_reponses', cloture.reponseId, { commande_id: newId });
+      if (state.orders[modalClientIdx]) {
+        state.orders[modalClientIdx]._prete = true;
+        state.orders[modalClientIdx]._forceLivreur = true;
+      }
+      logActivity('annonce_cloturee', `${c.nom} — commande créée pour livraison (${jour})`);
+      chargerHistoriqueAnnonces();
+      renderTournee();
+      renderOrders();
     }
   } catch(e) { console.error('Erreur sauvegarde commande:', e); showToast('Attention : erreur sauvegarde réseau'); }
 }
@@ -2086,8 +2115,11 @@ function lignesCommandeHtml(od) {
 }
 
 // Une livraison a besoin d'un livreur (tournée + signature) sauf pour un client interne
-// (Boutique/Labo, livré sur place) ou un client qui vient chercher lui-même sa commande.
+// (Boutique/Labo, livré sur place) ou un client qui vient chercher lui-même sa commande —
+// sauf si force_livreur est activé (transfert interne issu d'une annonce de stock, qui lui
+// nécessite un vrai passage du livreur entre le maraîchage et la Boutique/le Labo).
 function necessiteLivreur(client, od) {
+  if (od && od._forceLivreur) return true;
   return client && client.cat !== 'Interne' && od._mode !== 'retrait';
 }
 
@@ -2780,6 +2812,8 @@ async function envoyerAnnonce() {
 const REPONSE_ROLE_LABEL = {boutique:'Boutique', labo:'Labo'};
 const REPONSE_ETAT_LABEL = {interesse:'✅ intéressé(e)', pas_interesse:'❌ non merci'};
 
+let _annoncesMsgCache = {}; // annonce_id -> message, pour préremplir le rappel dans la fiche commande de clôture
+
 async function chargerHistoriqueAnnonces() {
   const el = document.getElementById('annonces-historique');
   if (!el) return;
@@ -2788,6 +2822,7 @@ async function chargerHistoriqueAnnonces() {
     const filtreSemaine = state.semaine ? `semaine=eq.${state.semaine}&` : '';
     const rows = await sbGet('annonces_stock', `${filtreSemaine}order=created_at.desc&limit=50`);
     if (!rows.length) { el.innerHTML = '<div class="empty-msg">Aucune annonce cette semaine</div>'; return; }
+    rows.forEach(r => { _annoncesMsgCache[r.id] = r.message; });
     const ids = rows.map(r => r.id).join(',');
     let reponses = [];
     try { reponses = await sbGet('annonces_stock_reponses', `annonce_id=in.(${ids})`); } catch(e) { /* pas bloquant */ }
@@ -2803,6 +2838,14 @@ async function chargerHistoriqueAnnonces() {
         const rep = reps[d];
         if (!rep) return `${REPONSE_ROLE_LABEL[d]} : ⏳ en attente`;
         const jourTxt = rep.jour_souhaite ? ' (' + (JOURS_LABELS[rep.jour_souhaite] || rep.jour_souhaite) + ')' : '';
+        if (rep.reponse === 'interesse' && rep.commande_id) {
+          return `${REPONSE_ROLE_LABEL[d]} : ✓ commande créée${jourTxt}`;
+        }
+        if (rep.reponse === 'interesse' && rep.jour_souhaite) {
+          return `${REPONSE_ROLE_LABEL[d]} : ${REPONSE_ETAT_LABEL[rep.reponse]}${jourTxt} `
+            + `<button onclick="cloturerAnnonceCommeLivraison(${rep.id},'${d}','${rep.jour_souhaite}',${r.id})" `
+            + `style="margin-left:2px;background:#1a7a3d;color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;">📦 Commande à livrer</button>`;
+        }
         return `${REPONSE_ROLE_LABEL[d]} : ${REPONSE_ETAT_LABEL[rep.reponse]}${jourTxt}`;
       }).join(' · ');
       return `
@@ -2814,6 +2857,23 @@ async function chargerHistoriqueAnnonces() {
   } catch(e) {
     el.innerHTML = '<div class="empty-msg">Erreur chargement</div>';
   }
+}
+
+// L'encadrant clôture une réponse "intéressé" de Boutique/Labo : ouvre la fiche commande de ce
+// client interne, jour pré-sélectionné, pour saisir le légume/la quantité convenue. À l'enregistrement,
+// la commande est automatiquement marquée prête + forcée en livraison (voir saveOrder).
+function cloturerAnnonceCommeLivraison(reponseId, repondant, jourSouhaite, annonceId) {
+  const nomClient = repondant === 'boutique' ? 'Boutique' : 'Labo de transformation';
+  const cli = clients.find(c => c.cat === 'Interne' && c.nom === nomClient);
+  if (!cli) return showToast('Client interne introuvable');
+  _annonceCloture = { reponseId };
+  openOrderModal(cli.id);
+  const msg = _annoncesMsgCache[annonceId];
+  if (msg) document.getElementById('mo-week').textContent = semaineLabel() + ' · Annonce : ' + msg;
+  setTimeout(() => {
+    const radio = document.querySelector(`input[name="mo-livraison"][value="${jourSouhaite}"]`);
+    if (radio && !radio.checked) { radio.checked = true; moJourChange(); }
+  }, 0);
 }
 
 // role: null pour un client (par défaut), 'encadrant' pour la banniere de la page Légumes —
