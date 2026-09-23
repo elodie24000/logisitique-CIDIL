@@ -9,14 +9,14 @@
 // Appelée aussi par l'application avec { test: true, endpoint } pour le bouton
 // « Tester la notification » (n'envoie qu'au téléphone qui a demandé le test).
 //
-// Secret requis (Supabase → Edge Functions → Secrets) : VAPID_PRIVATE_KEY, la clé privée
-// associée à VAPID_PUBLIC (index.html) — la même que le secret GitHub du même nom.
+// Clé privée VAPID (associée à VAPID_PUBLIC de index.html) : secret VAPID_PRIVATE_KEY des
+// Edge Functions s'il existe, sinon lue dans le Vault (secret « vapid_private_key ») via la
+// fonction SQL public.vapid_private_key(), réservée au rôle service.
 
 import webpush from 'npm:web-push@3.6.7';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY');
 const VAPID_PUBLIC_KEY = 'BCYNvEKKGUTnY12GwTJl1ChT-353ZZo7RFM6V_Xcbn2eQp_2upUP2Qo39GmdNI8FgWG11qoOHIoi_TO7w9p22Qw';
 const VAPID_SUBJECT = 'mailto:plassin.elodie24@gmail.com';
 const URL_APP = 'https://elodie24000.github.io/logisitique-CIDIL/';
@@ -33,6 +33,16 @@ async function sbGet(path: string) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: H });
   if (!res.ok) throw new Error(`${path} : ${res.status} ${await res.text()}`);
   return res.json();
+}
+
+async function clePriveeVapid(): Promise<string | null> {
+  const env = Deno.env.get('VAPID_PRIVATE_KEY');
+  if (env) return env;
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/vapid_private_key`, {
+    method: 'POST', headers: { ...H, 'Content-Type': 'application/json' }, body: '{}',
+  });
+  if (!res.ok) return null;
+  return await res.json();
 }
 
 async function sbDelete(path: string) {
@@ -101,8 +111,9 @@ Deno.serve(async (req) => {
   const repondre = (data: unknown, status = 200) =>
     new Response(JSON.stringify(data), { status, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
   try {
-    if (!VAPID_PRIVATE_KEY) return repondre({ error: 'Secret VAPID_PRIVATE_KEY manquant' }, 500);
-    webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+    const clePrivee = await clePriveeVapid();
+    if (!clePrivee) return repondre({ error: 'Clé privée VAPID introuvable' }, 500);
+    webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, clePrivee);
     const body = await req.json();
 
     if (body.test) {
