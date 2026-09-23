@@ -887,6 +887,12 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
       <input class="finput cl-field" type="number" id="cl-km" placeholder="ex : 12" step="0.1">
       <label class="cl-lbl">Forfait livraison (€)</label>
       <input class="finput cl-field" type="number" id="cl-forfait" placeholder="ex : 5" step="0.5">
+      <label class="cl-lbl">Jours de livraison possibles</label>
+      <select class="finput cl-field" id="cl-jours-livraison">
+        <option value="">Jours habituels</option>
+        <option value="mardi">Mardi uniquement</option>
+        <option value="jeudi">Jeudi uniquement</option>
+      </select>
       <label class="cl-lbl">Note</label>
       <input class="finput cl-field" id="cl-note" placeholder="Remarque éventuelle">
       <button id="cl-delete" class="btn-effacer" style="margin-top:18px;display:none;" onclick="deleteClient()">
@@ -983,7 +989,8 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
        </div>
       </div>
     </div>
-    <div style="background:var(--white);border:1px solid var(--bd);border-radius:12px;padding:14px 16px;margin-bottom:16px;box-shadow:var(--sh);">
+    <div id="cmd-jour-impose" style="display:none;background:#fff3cd;border:2px solid #e0a800;border-radius:12px;padding:16px;margin-bottom:16px;text-align:center;box-shadow:var(--sh);"></div>
+    <div id="cmd-precisions" style="background:var(--white);border:1px solid var(--bd);border-radius:12px;padding:14px 16px;margin-bottom:16px;box-shadow:var(--sh);">
       <div style="font-weight:500;margin-bottom:8px;">📅 Précisions pour commander</div>
       <div style="font-size:14px;margin-bottom:4px;">Livraison le <strong>mardi</strong> → commandez avant <strong>lundi 12h</strong></div>
       <div style="font-size:14px;">Livraison le <strong>jeudi</strong> → commandez avant <strong>mercredi 12h</strong></div>
@@ -1066,9 +1073,17 @@ const JOURS_INTERNE = [['lundi','Lundi'],['mardi','Mardi'],['mercredi','Mercredi
 const JOURS_FLEXIBLE = [['lundi','Lundi'],['mardi','Mardi'],['mercredi','Mercredi'],['jeudi','Jeudi'],['vendredi','Vendredi']];
 
 function joursPourClient(c) {
-  if (c && c.cat === 'Interne') return JOURS_INTERNE;
-  if (c && c.sans_delai) return JOURS_FLEXIBLE;
-  return JOURS_EXT;
+  let jours = JOURS_EXT;
+  if (c && c.cat === 'Interne') jours = JOURS_INTERNE;
+  else if (c && c.sans_delai) jours = JOURS_FLEXIBLE;
+  const imposes = joursImposes(c);
+  return imposes.length ? jours.filter(([v]) => imposes.includes(v)) : jours;
+}
+
+// Jours de livraison imposés à un client (colonne clients.jours_livraison, ex : "mardi" pour le Patio,
+// trop éloigné pour être livré le jeudi). Liste vide = jours habituels.
+function joursImposes(c) {
+  return String((c && c.jours_livraison) || '').split(',').map(j => j.trim().toLowerCase()).filter(Boolean);
 }
 
 // Retire les jours dont la commande est fermée : mardi ferme le lundi 12h, jeudi ferme le mercredi 12h
@@ -2676,6 +2691,7 @@ function openClientModal(id) {
   document.getElementById('cl-adresse').value = c.adresse || '';
   document.getElementById('cl-km').value = c.km != null ? c.km : '';
   document.getElementById('cl-forfait').value = c.forfait_livraison != null ? c.forfait_livraison : '';
+  document.getElementById('cl-jours-livraison').value = c.jours_livraison || '';
   document.getElementById('cl-note').value = c.note || '';
   document.getElementById('cl-delete').style.display = id != null ? 'inline-flex' : 'none';
   document.getElementById('modal-client').classList.add('open');
@@ -2698,6 +2714,7 @@ async function saveClient() {
     adresse: document.getElementById('cl-adresse').value.trim() || null,
     km: num(document.getElementById('cl-km').value),
     forfait_livraison: num(document.getElementById('cl-forfait').value),
+    jours_livraison: document.getElementById('cl-jours-livraison').value || null,
     note: document.getElementById('cl-note').value.trim() || null,
   };
   const id = document.getElementById('cl-id').value;
@@ -2939,6 +2956,7 @@ function cmdSelectClient(idx) {
   document.getElementById('cmd-footer').style.display = 'block';
   document.getElementById('cmd-jour-titre').textContent = cli.cat === 'Interne' ? 'Jour de réassort souhaité' : 'Jour de livraison souhaité';
   const joursDispo = joursDisponiblesPourClient(cli);
+  afficherJourImpose(cli);
   renderJourOptions('cmd-jour-options', 'livraison', joursDispo, 'cmdJourChange', null);
   if (!joursDispo.length) {
     document.getElementById('cmd-jour-options').innerHTML = '<div class="empty-msg" style="margin:0;">Commandes fermées pour cette semaine — revenez la semaine prochaine</div>';
@@ -2946,8 +2964,30 @@ function cmdSelectClient(idx) {
   updateCmdTotal();
 }
 
+// Bandeau bien visible pour un client qui ne peut être livré que certains jours (ex : Le Patio → mardi)
+const CUTOFF_LABELS = { mardi: 'lundi 12h', jeudi: 'mercredi 12h' };
+function afficherJourImpose(cli) {
+  const bandeau = document.getElementById('cmd-jour-impose');
+  const precisions = document.getElementById('cmd-precisions');
+  const imposes = joursImposes(cli);
+  if (!imposes.length) {
+    bandeau.style.display = 'none';
+    precisions.style.display = '';
+    return;
+  }
+  const jours = imposes.map(j => (JOURS_LABELS[j] || j).toUpperCase()).join(' ou ');
+  const cutoffs = imposes.filter(j => CUTOFF_LABELS[j]).map(j => CUTOFF_LABELS[j]);
+  bandeau.innerHTML = `<div style="font-size:20px;font-weight:700;color:#7a5200;margin-bottom:6px;">🚚 Livraison le ${jours} uniquement</div>`
+    + `<div style="font-size:15px;color:#5c3d00;">Pour votre établissement, nous ne pouvons livrer que le ${jours.toLowerCase()}.</div>`
+    + (cutoffs.length && !(cli.cat === 'Interne' || cli.sans_delai)
+      ? `<div style="font-size:15px;color:#5c3d00;margin-top:4px;">Pensez à commander avant le <strong>${cutoffs.join(' / ')}</strong>.</div>` : '');
+  bandeau.style.display = 'block';
+  precisions.style.display = 'none';
+}
+
 function cmdResetClient() {
   _cmdClientIdx = null;
+  afficherJourImpose(null);
   document.getElementById('cmd-client-choisi').style.display = 'none';
   document.getElementById('cmd-client-search').value = '';
   document.getElementById('cmd-legumes-wrap').style.display = 'none';
