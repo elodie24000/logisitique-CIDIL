@@ -2793,7 +2793,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ══════ NOTIFICATIONS PUSH ══════
-const VAPID_PUBLIC = 'BFrLSIVX8dwJX2OuNl5Ib6PQfZlkUTDySD9-Hs-aDvdUVOw7iO6G92tBUgKXM_k3mRZNjax14EZgmLcJ3aKhoZE';
+const VAPID_PUBLIC = 'BCYNvEKKGUTnY12GwTJl1ChT-353ZZo7RFM6V_Xcbn2eQp_2upUP2Qo39GmdNI8FgWG11qoOHIoi_TO7w9p22Qw';
 
 function urlB64ToUint8(base64) {
   const pad = '='.repeat((4 - base64.length % 4) % 4);
@@ -2950,6 +2950,12 @@ async function subscribePush(role) {
     if (perm !== 'granted') { showToast('Notifications refusées'); return; }
     const reg = await navigator.serviceWorker.ready;
     let sub = await reg.pushManager.getSubscription();
+    // Abonnement créé avec une ancienne clé VAPID (changée en septembre 2026) : on le renouvelle
+    if (sub && sub.options && sub.options.applicationServerKey) {
+      const cleSub = btoa(String.fromCharCode(...new Uint8Array(sub.options.applicationServerKey)));
+      const cleApp = btoa(String.fromCharCode(...urlB64ToUint8(VAPID_PUBLIC)));
+      if (cleSub !== cleApp) { await sub.unsubscribe(); sub = null; }
+    }
     if (!sub) {
       sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8(VAPID_PUBLIC) });
     }

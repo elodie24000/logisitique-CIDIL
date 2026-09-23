@@ -17,7 +17,7 @@ import webpush from 'npm:web-push@3.6.7';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY');
-const VAPID_PUBLIC_KEY = 'BFrLSIVX8dwJX2OuNl5Ib6PQfZlkUTDySD9-Hs-aDvdUVOw7iO6G92tBUgKXM_k3mRZNjax14EZgmLcJ3aKhoZE';
+const VAPID_PUBLIC_KEY = 'BCYNvEKKGUTnY12GwTJl1ChT-353ZZo7RFM6V_Xcbn2eQp_2upUP2Qo39GmdNI8FgWG11qoOHIoi_TO7w9p22Qw';
 const VAPID_SUBJECT = 'mailto:plassin.elodie24@gmail.com';
 const URL_APP = 'https://elodie24000.github.io/logisitique-CIDIL/';
 const ROLES_EQUIPE = ['encadrant'];
