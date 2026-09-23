@@ -605,7 +605,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
       </div>
 
       <div id="push-banner-encadrant" style="display:none;background:var(--g7);border:1px solid var(--g6);border-radius:11px;padding:12px 14px;margin-bottom:16px;">
-        <div style="font-size:13px;color:var(--g1);margin-bottom:8px;">🔔 Reçois une alerte le jeudi si la liste de légumes de la semaine suivante n'est pas encore saisie.</div>
+        <div style="font-size:13px;color:var(--g1);margin-bottom:8px;">🔔 Reçois une alerte à chaque nouvelle commande ou nouveau client, et le jeudi si la liste de légumes de la semaine suivante n'est pas encore saisie.</div>
         <button onclick="subscribePush('encadrant')" style="background:var(--g1);color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">Activer les notifications</button>
       </div>
 
@@ -678,6 +678,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
     <!-- PAGE COMMANDES (encadrant + gestionnaire) -->
     <div class="page" id="page-commandes">
       <div class="new-inscr-slot"></div>
+      <div id="alertes-equipe" style="display:none;background:#fff3cd;border:2px solid #e0a800;border-radius:12px;padding:14px 16px;margin-bottom:16px;"></div>
       <div id="cmd-saisie-wrap">
         <div style="margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
           <div class="section-title" style="margin:0;">Saisir une commande</div>
@@ -1371,6 +1372,7 @@ function initPage(id) {
   if (id==='commandes') {
     const saisie = document.getElementById('cmd-saisie-wrap');
     if (saisie) saisie.style.display = currentRole === 'gestionnaire' ? 'none' : '';
+    majAlertesEquipe();
     loadClients().then(majBanniereInscriptions);
     loadVeggies().then(()=>loadCommandes());
   }
@@ -2815,7 +2817,59 @@ function majBannierePush() {
 function majBannierePushEncadrant() {
   const b = document.getElementById('push-banner-encadrant');
   if (!b) return;
-  b.style.display = (pushSupporte() && Notification.permission !== 'granted') ? 'block' : 'none';
+  b.style.display = (pushSupporte() && !alertesEquipeActives()) ? 'block' : 'none';
+}
+
+// ── Alertes équipe : bandeau sur le téléphone à chaque nouvelle commande / nouveau client ──
+// L'envoi est fait côté serveur (fonction notifier-equipe, déclenchée par la base) vers les
+// téléphones inscrits avec le rôle 'encadrant'. Ce téléphone s'en souvient via localStorage.
+const CLE_ALERTES_EQUIPE = 'cidil_alertes_equipe';
+function alertesEquipeActives() {
+  try { return Notification.permission === 'granted' && localStorage.getItem(CLE_ALERTES_EQUIPE) === '1'; }
+  catch(e) { return false; }
+}
+function estIphoneHorsRaccourci() {
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  const raccourci = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  return ios && !raccourci;
+}
+function majAlertesEquipe() {
+  const el = document.getElementById('alertes-equipe');
+  if (!el) return;
+  const bouton = (txt, fn) => `<button onclick="${fn}" style="background:var(--g1);color:#fff;border:none;border-radius:9px;padding:11px 16px;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:10px;">${txt}</button>`;
+  if (estIphoneHorsRaccourci()) {
+    el.innerHTML = `<div style="font-size:15px;font-weight:600;color:#7a5200;">🔔 Alertes nouvelles commandes</div>
+      <div style="font-size:14px;color:#5c3d00;margin-top:4px;">Sur iPhone, ouvrez l'application depuis son <strong>icône sur l'écran d'accueil</strong> pour pouvoir activer les alertes.</div>`;
+  } else if (!pushSupporte()) {
+    el.innerHTML = `<div style="font-size:14px;color:#5c3d00;">🔔 Ce navigateur ne permet pas les alertes. Ouvrez l'application depuis son icône sur l'écran d'accueil.</div>`;
+  } else if (!alertesEquipeActives()) {
+    el.innerHTML = `<div style="font-size:15px;font-weight:600;color:#7a5200;">🔔 Être prévenu(e) sur ce téléphone</div>
+      <div style="font-size:14px;color:#5c3d00;margin-top:4px;">Recevez un bandeau à chaque <strong>nouvelle commande</strong> et chaque <strong>nouveau client</strong>, même application fermée.</div>
+      ${bouton('Activer les alertes', "subscribePush('encadrant')")}`;
+  } else {
+    el.style.background = 'var(--g7)'; el.style.borderColor = 'var(--g6)';
+    el.innerHTML = `<div style="font-size:14px;color:var(--g1);">🔔 Alertes activées sur ce téléphone.</div>
+      ${bouton('Envoyer une notification de test', 'testerAlerteEquipe()')}`;
+  }
+  el.style.display = 'block';
+}
+async function testerAlerteEquipe() {
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (!sub) { try { localStorage.removeItem(CLE_ALERTES_EQUIPE); } catch(e) {} majAlertesEquipe(); return showToast('Alertes à réactiver sur ce téléphone'); }
+    const res = await fetch(`${SUPA_URL}/functions/v1/notifier-equipe`, {
+      method: 'POST',
+      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ test: true, endpoint: sub.endpoint })
+    });
+    if (res.status === 404) { try { localStorage.removeItem(CLE_ALERTES_EQUIPE); } catch(e) {} majAlertesEquipe(); return showToast('Alertes à réactiver sur ce téléphone'); }
+    if (!res.ok) throw new Error(await res.text());
+    showToast('✓ Test envoyé — le bandeau doit apparaître');
+  } catch(e) {
+    console.error('testerAlerteEquipe', e);
+    showToast('Erreur envoi du test');
+  }
 }
 
 // ══════ ANNONCES STOCK (encadrant → Boutique / Labo) ══════
@@ -2900,9 +2954,11 @@ async function subscribePush(role) {
       sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8(VAPID_PUBLIC) });
     }
     await sbPost('push_subscriptions', { subscription: JSON.stringify(sub), client_id: (_cmdClientIdx ?? null), role: role || null });
+    if (role === 'encadrant') { try { localStorage.setItem(CLE_ALERTES_EQUIPE, '1'); } catch(e) {} }
     showToast('🔔 Notifications activées !');
     majBannierePush();
     majBannierePushEncadrant();
+    majAlertesEquipe();
   } catch(e) {
     console.error('subscribePush', e);
     showToast("Erreur activation notifications");
