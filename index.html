@@ -605,7 +605,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
       </div>
 
       <div id="push-banner-encadrant" style="display:none;background:var(--g7);border:1px solid var(--g6);border-radius:11px;padding:12px 14px;margin-bottom:16px;">
-        <div style="font-size:13px;color:var(--g1);margin-bottom:8px;">🔔 Reçois une alerte le jeudi si la liste de légumes de la semaine suivante n'est pas encore saisie.</div>
+        <div style="font-size:13px;color:var(--g1);margin-bottom:8px;">🔔 Reçois une alerte à chaque nouvelle commande ou nouveau client, et le jeudi si la liste de légumes de la semaine suivante n'est pas encore saisie.</div>
         <button onclick="subscribePush('encadrant')" style="background:var(--g1);color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">Activer les notifications</button>
       </div>
 
@@ -678,6 +678,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
     <!-- PAGE COMMANDES (encadrant + gestionnaire) -->
     <div class="page" id="page-commandes">
       <div class="new-inscr-slot"></div>
+      <div id="alertes-equipe" style="display:none;background:#fff3cd;border:2px solid #e0a800;border-radius:12px;padding:14px 16px;margin-bottom:16px;"></div>
       <div id="cmd-saisie-wrap">
         <div style="margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
           <div class="section-title" style="margin:0;">Saisir une commande</div>
@@ -691,7 +692,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
         </button>
       </div>
 
-      <div class="section-title">Commandes validées</div>
+      <div class="section-title">Commandes de la semaine <span id="orders-semaine" style="font-weight:400;"></span></div>
       <div id="orders-list"><div class="empty-msg">Aucune commande cette semaine</div></div>
     </div>
 
@@ -1216,6 +1217,8 @@ let state = {
   veggies: [],
   orders: {},
   pastOrders: [],  // [{semaine, records:[{id,client_nom,client_idx,items,total}]}]
+  nextOrders: {},  // commandes déjà passées pour la semaine suivante (avant la bascule du vendredi 14h)
+  semaineEquipe: '', // lundi de la semaine des « Commandes de la semaine » (voir semaineCommandesEquipe)
   delivered: {},
   semaine: '',
 };
@@ -1370,6 +1373,7 @@ function initPage(id) {
   if (id==='commandes') {
     const saisie = document.getElementById('cmd-saisie-wrap');
     if (saisie) saisie.style.display = currentRole === 'gestionnaire' ? 'none' : '';
+    majAlertesEquipe();
     loadClients().then(majBanniereInscriptions);
     loadVeggies().then(()=>loadCommandes());
   }
@@ -1841,10 +1845,6 @@ async function removeVeggie(id) {
   try {
     await sbDelete('legumes', id);
     state.veggies = state.veggies.filter(v=>v.id!==id);
-    Object.keys(state.orders).forEach(k=>{
-      if(state.orders[k][id]){delete state.orders[k][id];}
-      if(!Object.keys(state.orders[k]).length) delete state.orders[k];
-    });
     renderVeggies();
     renderOrders();
     showToast('Légume retiré');
@@ -1887,36 +1887,74 @@ function renderVeggies() {
 }
 
 // ══════ COMMANDES ══════
-async function loadCommandes() {
-  // Fenêtre glissante de 10 jours
+// Semaine des « Commandes de la semaine » côté équipe (encadrant, gestionnaire, livreur).
+// Elle ne bascule sur la semaine suivante que le vendredi à 14h, en même temps que l'email
+// récap du vendredi : les commandes de la semaine passent alors dans l'historique.
+// (L'écran de commande client, lui, passe à la semaine suivante dès le mercredi 12h.)
+function semaineCommandesEquipe() {
   const now = new Date();
-  const d10 = new Date(now); d10.setDate(d10.getDate() - 10);
-  const since = [d10.getFullYear(), String(d10.getMonth()+1).padStart(2,'0'), String(d10.getDate()).padStart(2,'0')].join('-');
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const lundi = new Date(d); lundi.setDate(d.getDate() - ((d.getDay()+6)%7));
+  const bascule = new Date(lundi); bascule.setDate(lundi.getDate()+4); bascule.setHours(14,0,0,0);
+  if (now >= bascule) lundi.setDate(lundi.getDate()+7);
+  return fmtIsoDate(lundi);
+}
+function fmtIsoDate(d) {
+  return [d.getFullYear(), String(d.getMonth()+1).padStart(2,'0'), String(d.getDate()).padStart(2,'0')].join('-');
+}
+
+// Transforme une ligne commandes_clients en objet commande {legume_id: quantité, _sbId, _jour, ...}.
+// _items garde nom/unité/prix de chaque légume tels qu'enregistrés dans la commande, pour
+// l'afficher même si le légume n'est plus dans la liste de la semaine (retiré, autre semaine).
+function commandeDepuisLigne(r) {
+  const items = typeof r.items === 'string' ? JSON.parse(r.items) : (r.items||[]);
+  const od = { _items: {} };
+  items.forEach(it => {
+    od[it.legume_id] = it.quantite;
+    od._items[it.legume_id] = { id: it.legume_id, nom: it.nom, unite: it.unite || 'kg', prix: it.prix_kg };
+    if (it.dispo === false) od['_nd_'+it.legume_id] = true;
+    else if (it.quantite_reelle != null && it.quantite_reelle !== it.quantite) od['_reel_'+it.legume_id] = it.quantite_reelle;
+  });
+  // stocker l'id Supabase pour pouvoir faire un PATCH
+  od._sbId = r.id;
+  od._semaine = r.semaine;
+  od._jour = r.jour_livraison || '';
+  od._livre = !!r.livre;
+  od._prete = !!r.prete;
+  od._createdAt = r.created_at || null;
+  od._mode = r.mode_livraison || 'livraison';
+  od._signe = !!r.signature_data;
+  od._forceLivreur = !!r.force_livreur;
+  return od;
+}
+
+// Légume d'une commande : celui de la liste de la semaine s'il y est encore, sinon celui
+// enregistré dans la commande elle-même.
+function legumeDeCommande(od, vid) {
+  return state.veggies.find(v => v.id == vid) || (od && od._items && od._items[vid]) || null;
+}
+
+// Commandes de la semaine choisie pour la saisie par l'équipe (fiche commande) :
+// semaine en cours, ou semaine suivante une fois les commandes client basculées (mercredi 12h).
+function commandesSemaineSaisie() {
+  return state.semaine === state.semaineEquipe ? state.orders : state.nextOrders;
+}
+
+async function loadCommandes() {
+  state.semaineEquipe = semaineCommandesEquipe();
+  // Historique : les 2 semaines précédant la semaine en cours
+  const debut = new Date(state.semaineEquipe + 'T00:00:00'); debut.setDate(debut.getDate() - 14);
+  const since = fmtIsoDate(debut);
   try {
     const rows = await sbGet('commandes_clients', `semaine=gte.${since}&order=semaine.desc,client_nom.asc`);
-    // Semaine courante → state.orders
+    // Semaine en cours → state.orders ; semaine suivante déjà commandée → state.nextOrders
     state.orders = {};
+    state.nextOrders = {};
     const byWeek = {};
     rows.forEach(r => {
-      if (r.semaine === state.semaine) {
-        const items = typeof r.items === 'string' ? JSON.parse(r.items) : (r.items||[]);
-        const od = {};
-        items.forEach(it => {
-          od[it.legume_id] = it.quantite;
-          if (it.dispo === false) od['_nd_'+it.legume_id] = true;
-          else if (it.quantite_reelle != null && it.quantite_reelle !== it.quantite) od['_reel_'+it.legume_id] = it.quantite_reelle;
-        });
-        state.orders[r.client_idx] = od;
-        // stocker l'id Supabase pour pouvoir faire un PATCH
-        state.orders[r.client_idx]._sbId = r.id;
-        state.orders[r.client_idx]._jour = r.jour_livraison || '';
-        state.orders[r.client_idx]._livre = !!r.livre;
-        state.orders[r.client_idx]._prete = !!r.prete;
-        state.orders[r.client_idx]._createdAt = r.created_at || null;
-        state.orders[r.client_idx]._mode = r.mode_livraison || 'livraison';
-        state.orders[r.client_idx]._signe = !!r.signature_data;
-        state.orders[r.client_idx]._forceLivreur = !!r.force_livreur;
-      } else {
+      if (r.semaine === state.semaineEquipe) state.orders[r.client_idx] = commandeDepuisLigne(r);
+      else if (r.semaine > state.semaineEquipe) state.nextOrders[r.client_idx] = commandeDepuisLigne(r);
+      else {
         if (!byWeek[r.semaine]) byWeek[r.semaine] = [];
         byWeek[r.semaine].push(r);
       }
@@ -1945,7 +1983,7 @@ function openOrderModal(idxOverride) {
   modalClientIdx = idx;
   document.getElementById('mo-name').textContent = getClient(idx).nom;
   document.getElementById('mo-week').textContent = semaineLabel();
-  const ex = state.orders[idx]||{};
+  const ex = commandesSemaineSaisie()[idx]||{};
   document.getElementById('mo-rows').innerHTML = state.veggies.map(v=>{
     const q=ex[v.id]||'';
     return `<div class="order-row">
@@ -1959,7 +1997,7 @@ function openOrderModal(idxOverride) {
   }).join('');
   // Jour de livraison : options selon le type de client (interne = tous les jours) et selon le délai encore ouvert
   const cli = getClient(idx);
-  const jour = (state.orders[idx]||{})._jour || '';
+  const jour = (commandesSemaineSaisie()[idx]||{})._jour || '';
   document.getElementById('mo-jour-titre').textContent = cli.cat === 'Interne' ? 'Jour de réassort souhaité' : 'Jour de livraison';
   let joursDispo = joursDisponiblesPourClient(cli);
   // Garde le jour déjà choisi visible même si son délai vient de fermer (pour ne pas perdre l'info existante)
@@ -1993,7 +2031,8 @@ function closeModal() { document.getElementById('modal-order').classList.remove(
 async function saveOrder() {
   const jour = document.querySelector('input[name="mo-livraison"]:checked')?.value;
   if (!jour) return showToast('Choisissez un jour de livraison');
-  const ancienOd = {...(state.orders[modalClientIdx]||{})};
+  const cmds = commandesSemaineSaisie();
+  const ancienOd = {...(cmds[modalClientIdx]||{})};
   const od={};
   state.veggies.forEach(v=>{
     const q=parseFloat(document.getElementById('oq-'+v.id)?.value);
@@ -2001,9 +2040,9 @@ async function saveOrder() {
   });
   const cloture = _annonceCloture; _annonceCloture = null;
   if (cloture && !Object.keys(od).length) { showToast('Ajoutez au moins un légume avant de clôturer'); _annonceCloture = cloture; return; }
-  const sbId = state.orders[modalClientIdx]?._sbId;
-  if(Object.keys(od).length) { state.orders[modalClientIdx]=od; od._jour=jour; if(sbId) od._sbId=sbId; }
-  else delete state.orders[modalClientIdx];
+  const sbId = cmds[modalClientIdx]?._sbId;
+  if(Object.keys(od).length) { cmds[modalClientIdx]=od; od._jour=jour; od._semaine=state.semaine; if(sbId) od._sbId=sbId; }
+  else delete cmds[modalClientIdx];
   closeModal();
   renderOrders();
   renderClients();
@@ -2029,7 +2068,7 @@ async function saveOrder() {
     } else if (items.length) {
       const [row] = await sbPost('commandes_clients', payload);
       newId = row.id;
-      if (state.orders[modalClientIdx]) state.orders[modalClientIdx]._sbId = row.id;
+      if (cmds[modalClientIdx]) cmds[modalClientIdx]._sbId = row.id;
       logActivity('commande_creee', `${c.nom} — ${items.length} article(s) — ${jour}`);
     } else if (sbId) {
       await sbDelete('commandes_clients', sbId);
@@ -2049,9 +2088,9 @@ async function saveOrder() {
         });
       } catch(e) { console.error('Envoi BL clôture annonce:', e); }
       await sbPatch('annonces_stock_reponses', cloture.reponseId, { commande_id: newId });
-      if (state.orders[modalClientIdx]) {
-        state.orders[modalClientIdx]._prete = true;
-        state.orders[modalClientIdx]._forceLivreur = true;
+      if (cmds[modalClientIdx]) {
+        cmds[modalClientIdx]._prete = true;
+        cmds[modalClientIdx]._forceLivreur = true;
       }
       logActivity('annonce_cloturee', `${c.nom} — commande créée pour livraison (${jour})`);
       chargerHistoriqueAnnonces();
@@ -2111,7 +2150,7 @@ function blocDates(client, createdAt, semaine, jour) {
 function lignesCommandeHtml(od) {
   let total=0,hasP=false;
   const lines=Object.entries(od).filter(([k])=>!String(k).startsWith('_')).map(([vid,qty])=>{
-    const v=state.veggies.find(v=>v.id==vid);
+    const v=legumeDeCommande(od, vid);
     if(!v) return '';
     const nonDispo = !!od['_nd_'+vid];
     const reel = od['_reel_'+vid];
@@ -2158,7 +2197,7 @@ function carteCommande(idx) {
         ? `<button class="co-adjust-btn" disabled style="opacity:.6;">✓ Livré${od._signe?' et signé':''}</button>`
         : `<button class="co-adjust-btn" disabled style="opacity:.6;">📤 Prête — en attente du livreur</button>`)
     : `<button class="co-adjust-btn" onclick="marquerCommandePrete(${idx})">📦 Commande prête</button>`;
-  const datesBloc = blocDates(c, od._createdAt, state.semaine, od._jour);
+  const datesBloc = blocDates(c, od._createdAt, od._semaine || state.semaineEquipe, od._jour);
   return `<div class="co-card ${od._livre?'co-livre':''}">
     <div class="co-head"><span class="co-name">${c.nom}</span>${statut}</div>
     <div class="co-body">${modeBadge}${datesBloc}${lines}${totalBloc}
@@ -2364,7 +2403,7 @@ function openAjusterModal(idx) {
   document.getElementById('aj-name').textContent = c.nom;
   const items = Object.entries(od).filter(([k]) => !String(k).startsWith('_'));
   document.getElementById('aj-rows').innerHTML = items.map(([vid, qty]) => {
-    const v = state.veggies.find(v => v.id == vid);
+    const v = legumeDeCommande(od, vid);
     if (!v) return '';
     const nonDispo = !!od['_nd_'+vid];
     const reel = od['_reel_'+vid];
@@ -2403,7 +2442,7 @@ async function saveAjustements() {
   let total = 0;
   const itemsFull = [];
   for (const [vid, qty] of items) {
-    const v = state.veggies.find(v => v.id == vid);
+    const v = legumeDeCommande(od, vid);
     if (!v) continue;
     const btn = document.getElementById('ajnd-'+vid);
     const nonDispo = btn?.classList.contains('active');
@@ -2431,6 +2470,8 @@ async function saveAjustements() {
 function renderOrders() {
   const el = document.getElementById('orders-list');
   if (!el) return;
+  const semEl = document.getElementById('orders-semaine');
+  if (semEl && state.semaineEquipe) semEl.textContent = '(' + fmtSemaine(state.semaineEquipe).replace('Semaine du ', 'du ') + ')';
   const keys = Object.keys(state.orders);
 
   // Un groupe par jour réellement demandé. Mardi et Jeudi toujours affichés (jours habituels).
@@ -2455,9 +2496,24 @@ function renderOrders() {
       </div>`).join('') + `</div>`;
   }
 
+  // Commandes déjà passées pour la semaine suivante (entre mercredi 12h et la bascule du vendredi 14h)
+  const nextKeys = Object.keys(state.nextOrders||{}).filter(idx => getClient(idx).nom);
+  if (nextKeys.length) {
+    html += `<div class="section-title" style="margin-top:20px;">Déjà commandé pour la semaine prochaine <span style="font-weight:400;">(${nextKeys.length})</span></div>`;
+    html += `<div style="font-size:12px;color:var(--tm);margin:-4px 0 10px;">Ces commandes passeront dans « Commandes de la semaine » vendredi à 14h.</div>`;
+    nextKeys.forEach(idx => {
+      const od = state.nextOrders[idx];
+      const {lines} = lignesCommandeHtml(od);
+      html += `<div class="co-card" style="margin-bottom:8px;">
+        <div class="co-head"><span class="co-name">${getClient(idx).nom}</span></div>
+        <div class="co-body">${blocDates(getClient(idx), od._createdAt, od._semaine, od._jour)}${lines}</div>
+      </div>`;
+    });
+  }
+
   // Semaines passées (accordéon)
   if (state.pastOrders.length) {
-    html += '<div class="section-title" style="margin-top:20px;">Historique (10 jours)</div>';
+    html += '<div class="section-title" style="margin-top:20px;">Historique (2 dernières semaines)</div>';
     state.pastOrders.forEach((pw, pi) => {
       html += `<div class="co-week-acc">
         <div class="co-week-head" onclick="togglePastWeek(this)">
@@ -2553,7 +2609,7 @@ function renderRecap() {
     let clientACommande=false;
     const od=state.orders[idx];
     Object.entries(od).filter(([k])=>!String(k).startsWith('_')).forEach(([vid,qty])=>{
-      const v=state.veggies.find(v=>v.id==vid); if(!v) return;
+      const v=legumeDeCommande(od, vid); if(!v) return;
       if (od['_nd_'+vid]) return; // marqué non disponible : exclu du recap
       const qtyEff = (od['_reel_'+vid] != null) ? od['_reel_'+vid] : qty;
       clientACommande=true;
@@ -2580,7 +2636,7 @@ function renderRecap() {
   rcl.innerHTML=keys.length?keys.map(idx=>{
     const c=getClient(idx),od=state.orders[idx];
     const pills=Object.entries(od).filter(([k])=>!String(k).startsWith('_')).map(([vid,qty])=>{
-      const v=state.veggies.find(v=>v.id==vid);
+      const v=legumeDeCommande(od, vid);
       if (!v || od['_nd_'+vid]) return '';
       const qtyEff = (od['_reel_'+vid] != null) ? od['_reel_'+vid] : qty;
       return `<span style="font-size:12px;background:var(--g6);color:var(--g1);padding:3px 9px;border-radius:10px;font-family:'DM Mono',monospace;">${v.nom} ${qtyEff}kg</span>`;
@@ -2769,7 +2825,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ══════ NOTIFICATIONS PUSH ══════
-const VAPID_PUBLIC = 'BFrLSIVX8dwJX2OuNl5Ib6PQfZlkUTDySD9-Hs-aDvdUVOw7iO6G92tBUgKXM_k3mRZNjax14EZgmLcJ3aKhoZE';
+const VAPID_PUBLIC = 'BCYNvEKKGUTnY12GwTJl1ChT-353ZZo7RFM6V_Xcbn2eQp_2upUP2Qo39GmdNI8FgWG11qoOHIoi_TO7w9p22Qw';
 
 function urlB64ToUint8(base64) {
   const pad = '='.repeat((4 - base64.length % 4) % 4);
@@ -2793,7 +2849,59 @@ function majBannierePush() {
 function majBannierePushEncadrant() {
   const b = document.getElementById('push-banner-encadrant');
   if (!b) return;
-  b.style.display = (pushSupporte() && Notification.permission !== 'granted') ? 'block' : 'none';
+  b.style.display = (pushSupporte() && !alertesEquipeActives()) ? 'block' : 'none';
+}
+
+// ── Alertes équipe : bandeau sur le téléphone à chaque nouvelle commande / nouveau client ──
+// L'envoi est fait côté serveur (fonction notifier-equipe, déclenchée par la base) vers les
+// téléphones inscrits avec le rôle 'encadrant'. Ce téléphone s'en souvient via localStorage.
+const CLE_ALERTES_EQUIPE = 'cidil_alertes_equipe';
+function alertesEquipeActives() {
+  try { return Notification.permission === 'granted' && localStorage.getItem(CLE_ALERTES_EQUIPE) === '1'; }
+  catch(e) { return false; }
+}
+function estIphoneHorsRaccourci() {
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  const raccourci = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  return ios && !raccourci;
+}
+function majAlertesEquipe() {
+  const el = document.getElementById('alertes-equipe');
+  if (!el) return;
+  const bouton = (txt, fn) => `<button onclick="${fn}" style="background:var(--g1);color:#fff;border:none;border-radius:9px;padding:11px 16px;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:10px;">${txt}</button>`;
+  if (estIphoneHorsRaccourci()) {
+    el.innerHTML = `<div style="font-size:15px;font-weight:600;color:#7a5200;">🔔 Alertes nouvelles commandes</div>
+      <div style="font-size:14px;color:#5c3d00;margin-top:4px;">Sur iPhone, ouvrez l'application depuis son <strong>icône sur l'écran d'accueil</strong> pour pouvoir activer les alertes.</div>`;
+  } else if (!pushSupporte()) {
+    el.innerHTML = `<div style="font-size:14px;color:#5c3d00;">🔔 Ce navigateur ne permet pas les alertes. Ouvrez l'application depuis son icône sur l'écran d'accueil.</div>`;
+  } else if (!alertesEquipeActives()) {
+    el.innerHTML = `<div style="font-size:15px;font-weight:600;color:#7a5200;">🔔 Être prévenu(e) sur ce téléphone</div>
+      <div style="font-size:14px;color:#5c3d00;margin-top:4px;">Recevez un bandeau à chaque <strong>nouvelle commande</strong> et chaque <strong>nouveau client</strong>, même application fermée.</div>
+      ${bouton('Activer les alertes', "subscribePush('encadrant')")}`;
+  } else {
+    el.style.background = 'var(--g7)'; el.style.borderColor = 'var(--g6)';
+    el.innerHTML = `<div style="font-size:14px;color:var(--g1);">🔔 Alertes activées sur ce téléphone.</div>
+      ${bouton('Envoyer une notification de test', 'testerAlerteEquipe()')}`;
+  }
+  el.style.display = 'block';
+}
+async function testerAlerteEquipe() {
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (!sub) { try { localStorage.removeItem(CLE_ALERTES_EQUIPE); } catch(e) {} majAlertesEquipe(); return showToast('Alertes à réactiver sur ce téléphone'); }
+    const res = await fetch(`${SUPA_URL}/functions/v1/notifier-equipe`, {
+      method: 'POST',
+      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ test: true, endpoint: sub.endpoint })
+    });
+    if (res.status === 404) { try { localStorage.removeItem(CLE_ALERTES_EQUIPE); } catch(e) {} majAlertesEquipe(); return showToast('Alertes à réactiver sur ce téléphone'); }
+    if (!res.ok) throw new Error(await res.text());
+    showToast('✓ Test envoyé — le bandeau doit apparaître');
+  } catch(e) {
+    console.error('testerAlerteEquipe', e);
+    showToast('Erreur envoi du test');
+  }
 }
 
 // ══════ ANNONCES STOCK (encadrant → Boutique / Labo) ══════
@@ -2902,13 +3010,21 @@ async function subscribePush(role) {
     if (perm !== 'granted') { showToast('Notifications refusées'); return; }
     const reg = await navigator.serviceWorker.ready;
     let sub = await reg.pushManager.getSubscription();
+    // Abonnement créé avec une ancienne clé VAPID (changée en septembre 2026) : on le renouvelle
+    if (sub && sub.options && sub.options.applicationServerKey) {
+      const cleSub = btoa(String.fromCharCode(...new Uint8Array(sub.options.applicationServerKey)));
+      const cleApp = btoa(String.fromCharCode(...urlB64ToUint8(VAPID_PUBLIC)));
+      if (cleSub !== cleApp) { await sub.unsubscribe(); sub = null; }
+    }
     if (!sub) {
       sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8(VAPID_PUBLIC) });
     }
     await sbPost('push_subscriptions', { subscription: JSON.stringify(sub), client_id: (_cmdClientIdx ?? null), role: role || null });
+    if (role === 'encadrant') { try { localStorage.setItem(CLE_ALERTES_EQUIPE, '1'); } catch(e) {} }
     showToast('🔔 Notifications activées !');
     majBannierePush();
     majBannierePushEncadrant();
+    majAlertesEquipe();
   } catch(e) {
     console.error('subscribePush', e);
     showToast("Erreur activation notifications");
