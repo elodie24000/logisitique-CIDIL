@@ -1,0 +1,39 @@
+name: Recap commandes vendredi 14h (email gestionnaire)
+
+on:
+  schedule:
+    # 14h heure française : 12h UTC en été, 13h UTC en hiver.
+    # Les deux horaires sont planifiés, le job ne part que celui qui tombe à 14h à Paris.
+    - cron: '0 12 * * 5'
+    - cron: '0 13 * * 5'
+  workflow_dispatch:        # Permet aussi un declenchement manuel pour tester
+
+jobs:
+  email-gestionnaire:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verifier qu'il est 14h a Paris
+        id: heure
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "$(TZ=Europe/Paris date +%H)" = "14" ]; then
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Pas 14h a Paris ($(TZ=Europe/Paris date +%H:%M)), on attend l'autre horaire."
+            echo "go=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.heure.outputs.go == 'true'
+      - name: Setup Python
+        if: steps.heure.outputs.go == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install deps
+        if: steps.heure.outputs.go == 'true'
+        run: pip install fpdf2
+      - name: Envoi du recap au gestionnaire
+        if: steps.heure.outputs.go == 'true'
+        env:
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+        run: python scripts/send_email_gestionnaire_vendredi.py

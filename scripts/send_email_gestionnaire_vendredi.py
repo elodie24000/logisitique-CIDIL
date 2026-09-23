@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
-"""Envoie chaque vendredi a 10h un email au gestionnaire recapitulant
-toutes les commandes livrees de la semaine en cours (lundi -> vendredi)."""
+"""Envoie chaque vendredi a 14h un email au gestionnaire recapitulant
+toutes les commandes de la semaine en cours (lundi -> vendredi).
+A la meme heure, l'application fait passer ces commandes dans l'historique
+(voir semaineCommandesEquipe dans index.html)."""
 import os, json, base64, html, urllib.request
 from datetime import date, timedelta
 from fpdf import FPDF
