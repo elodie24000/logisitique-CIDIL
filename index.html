@@ -1369,11 +1369,12 @@ function showPage(id) {
 
 function initPage(id) {
   if (id==='tournee') { loadVeggies().then(()=>loadCommandes()).then(()=>renderTournee()); }
-  if (id==='legumes') { loadCatalogue(); loadVeggies(); majBannierePushEncadrant(); }
+  if (id==='legumes') { loadCatalogue(); loadVeggies(); majBannierePushEncadrant(); verifierAbonnementEquipe().then(majBannierePushEncadrant); }
   if (id==='commandes') {
     const saisie = document.getElementById('cmd-saisie-wrap');
     if (saisie) saisie.style.display = currentRole === 'gestionnaire' ? 'none' : '';
     majAlertesEquipe();
+    verifierAbonnementEquipe().then(majAlertesEquipe);
     loadClients().then(majBanniereInscriptions);
     loadVeggies().then(()=>loadCommandes());
   }
@@ -2856,7 +2857,27 @@ function majBannierePushEncadrant() {
 // L'envoi est fait côté serveur (fonction notifier-equipe, déclenchée par la base) vers les
 // téléphones inscrits avec le rôle 'encadrant'. Ce téléphone s'en souvient via localStorage.
 const CLE_ALERTES_EQUIPE = 'cidil_alertes_equipe';
+// Vrai abonnement push de ce téléphone (avec la clé actuelle), vérifié à l'ouverture des pages :
+// sur certains Android (Xiaomi…), localStorage peut être vidé ou la permission lue comme
+// « default » alors que les bandeaux arrivent bien — on ne redemande pas dans ce cas.
+let _abonnementEquipeOk = false;
+async function verifierAbonnementEquipe() {
+  try {
+    if (!pushSupporte() || Notification.permission === 'denied') { _abonnementEquipeOk = false; return; }
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    let ok = !!sub;
+    if (sub && sub.options && sub.options.applicationServerKey) {
+      const cleSub = btoa(String.fromCharCode(...new Uint8Array(sub.options.applicationServerKey)));
+      const cleApp = btoa(String.fromCharCode(...urlB64ToUint8(VAPID_PUBLIC)));
+      ok = cleSub === cleApp;
+    }
+    _abonnementEquipeOk = ok && localStorage.getItem(CLE_ALERTES_EQUIPE) !== 'non';
+    if (_abonnementEquipeOk) localStorage.setItem(CLE_ALERTES_EQUIPE, '1');
+  } catch(e) { console.error('verifierAbonnementEquipe', e); }
+}
 function alertesEquipeActives() {
+  if (_abonnementEquipeOk) return true;
   try { return Notification.permission === 'granted' && localStorage.getItem(CLE_ALERTES_EQUIPE) === '1'; }
   catch(e) { return false; }
 }
@@ -2868,6 +2889,7 @@ function estIphoneHorsRaccourci() {
 function majAlertesEquipe() {
   const el = document.getElementById('alertes-equipe');
   if (!el) return;
+  el.style.background = '#fff3cd'; el.style.borderColor = '#e0a800';
   const bouton = (txt, fn) => `<button onclick="${fn}" style="background:var(--g1);color:#fff;border:none;border-radius:9px;padding:11px 16px;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:10px;">${txt}</button>`;
   if (estIphoneHorsRaccourci()) {
     el.innerHTML = `<div style="font-size:15px;font-weight:600;color:#7a5200;">🔔 Alertes nouvelles commandes</div>
@@ -2895,7 +2917,7 @@ async function testerAlerteEquipe() {
       headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({ test: true, endpoint: sub.endpoint })
     });
-    if (res.status === 404) { try { localStorage.removeItem(CLE_ALERTES_EQUIPE); } catch(e) {} majAlertesEquipe(); return showToast('Alertes à réactiver sur ce téléphone'); }
+    if (res.status === 404) { _abonnementEquipeOk = false; try { localStorage.setItem(CLE_ALERTES_EQUIPE, 'non'); } catch(e) {} majAlertesEquipe(); return showToast('Alertes à réactiver sur ce téléphone'); }
     if (!res.ok) throw new Error(await res.text());
     showToast('✓ Test envoyé — le bandeau doit apparaître');
   } catch(e) {
