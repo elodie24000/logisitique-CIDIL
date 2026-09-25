@@ -8,6 +8,8 @@
 // envoyer un message arbitraire.
 // Appelée aussi par l'application avec { test: true, endpoint } pour le bouton
 // « Tester la notification » (n'envoie qu'au téléphone qui a demandé le test).
+// Et avec { programmee: id } pour un message de la table notifications_programmees
+// (envoyé une seule fois, et pas avant son heure prévue).
 //
 // Clé privée VAPID (associée à VAPID_PUBLIC de index.html) : secret VAPID_PRIVATE_KEY des
 // Edge Functions s'il existe, sinon lue dans le Vault (secret « vapid_private_key ») via la
@@ -125,6 +127,19 @@ Deno.serve(async (req) => {
         body: 'Vous recevrez un bandeau comme celui-ci à chaque nouvelle commande ou nouveau client.',
         tag: 'cidil-test',
       });
+      return repondre(r);
+    }
+
+    if (body.programmee) {
+      const [n] = await sbGet(`notifications_programmees?id=eq.${Number(body.programmee)}&select=id,titre,corps,envoyer_a,envoye_at`);
+      if (!n || n.envoye_at || new Date(n.envoyer_a).getTime() > Date.now() + 60 * 1000) return repondre({ skipped: true });
+      const subs = await sbGet(`push_subscriptions?select=id,subscription&role=in.(${ROLES_EQUIPE.join(',')})`);
+      const r = await envoyer(subs, { title: n.titre, body: n.corps, tag: `cidil-programmee-${n.id}` });
+      await fetch(`${SUPABASE_URL}/rest/v1/notifications_programmees?id=eq.${n.id}`, {
+        method: 'PATCH', headers: { ...H, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ envoye_at: new Date().toISOString() }),
+      });
+      console.log(`message programmé ${n.id} : ${r.ok} envoi(s), ${r.echecs} échec(s)`);
       return repondre(r);
     }
 
