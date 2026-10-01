@@ -110,14 +110,14 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
   display:flex;align-items:center;justify-content:space-between;
   position:sticky;top:0;z-index:50;
 }
-.app-topbar-title{color:#fff;font-size:15px;font-weight:500;}
+.app-topbar-title{color:#fff;font-size:18px;font-weight:500;}
 .app-topbar-role{
-  font-size:11px;color:rgba(255,255,255,.45);
+  font-size:13px;color:rgba(255,255,255,.75);
   font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.05em;
 }
 .btn-logout{
-  background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.6);
-  border-radius:7px;padding:5px 10px;font-size:12px;cursor:pointer;
+  background:rgba(255,255,255,.15);border:none;color:#fff;
+  border-radius:9px;padding:8px 12px;font-size:15px;cursor:pointer;
   font-family:'DM Sans',sans-serif;
 }
 
@@ -130,11 +130,11 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 .bn-item{
   flex:1;display:flex;flex-direction:column;align-items:center;
   padding:9px 4px 7px;cursor:pointer;border:none;background:none;
-  color:var(--tl);font-size:10px;font-family:'DM Sans',sans-serif;
+  color:var(--tm);font-size:14px;font-family:'DM Sans',sans-serif;
   transition:color .12s;gap:3px;
 }
 .bn-item svg{width:22px;height:22px;stroke:currentColor;stroke-width:1.7;fill:none;}
-.bn-item.active{color:var(--g2);}
+.bn-item.active{color:var(--g2);font-weight:500;}
 .bn-item.active svg{stroke:var(--g2);}
 
 /* page content */
@@ -242,9 +242,9 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 .veg-card{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;background:var(--white);border:1px solid var(--bd);border-radius:12px;padding:14px 12px 10px;box-shadow:var(--sh);}
 .veg-emoji{font-size:30px;flex-shrink:0;line-height:1;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:var(--g7);border-radius:11px;}
 .veg-card-info{min-width:0;display:flex;flex-direction:column;align-items:center;gap:5px;}
-.veg-card .veg-name{font-size:14px;font-weight:500;margin-bottom:2px;text-align:center;}
-.veg-card .veg-dispo-line{font-size:12px;font-weight:500;color:var(--text);text-align:center;}
-.veg-card .veg-prix-badge{background:var(--g6);color:var(--g1);border-radius:8px;padding:5px 8px;text-align:center;font-size:12px;font-weight:500;font-family:'DM Mono',monospace;white-space:nowrap;}
+.veg-card .veg-name{font-size:18px;font-weight:500;margin-bottom:2px;text-align:center;}
+.veg-card .veg-dispo-line{font-size:16px;font-weight:500;color:var(--text);text-align:center;}
+.veg-card .veg-prix-badge{background:var(--g6);color:var(--g1);border-radius:8px;padding:6px 8px;text-align:center;font-size:16px;font-weight:500;font-family:'DM Mono',monospace;white-space:nowrap;}
 .veg-card .btn-rm{position:absolute;top:8px;right:8px;flex-shrink:0;}
 .btn-rm{
   width:28px;height:28px;border-radius:7px;border:1px solid var(--bd);
@@ -289,13 +289,13 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 .empty-mini{font-size:12px;color:var(--tl);text-align:center;padding:10px;background:var(--g7);border-radius:9px;}
 
 /* ── TOURNÉE (livreur) ── */
-.tour-card{background:var(--white);border:1px solid var(--bd);border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:var(--sh);}
-.tour-head{background:var(--g7);padding:11px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--bd);gap:8px;}
-.tour-name{font-size:14px;font-weight:500;}
-.tour-body{padding:12px 14px;}
-.tour-addr{font-size:12px;color:var(--tm);margin:-2px 0 8px;}
-.tour-gps{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:9px 14px;background:var(--g1);color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:500;text-decoration:none;cursor:pointer;font-family:'DM Sans',sans-serif;}
-.tour-sign-btn{display:block;width:100%;margin-top:12px;padding:11px;border:none;border-radius:9px;background:var(--g3);color:#fff;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.tour-card{background:var(--white);border:1px solid var(--bd);border-radius:14px;margin-bottom:10px;overflow:hidden;box-shadow:var(--sh);}
+.tour-head{background:var(--g7);padding:14px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--bd);gap:8px;}
+.tour-name{font-size:20px;font-weight:500;color:var(--g1);}
+.tour-body{padding:14px 16px;}
+.tour-addr{font-size:16px;color:var(--text);margin:-2px 0 10px;}
+.tour-gps{display:flex;width:100%;justify-content:center;align-items:center;gap:8px;margin-top:8px;padding:13px 14px;background:var(--g1);color:#fff;border:none;border-radius:11px;font-size:17px;font-weight:500;text-decoration:none;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.tour-sign-btn{display:block;width:100%;margin-top:10px;padding:17px;border:none;border-radius:12px;background:var(--g3);color:#fff;font-size:18px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;}
 
 /* ── SIGNATURE ÉLECTRONIQUE (livreur) ── */
 .sig-canvas-wrap{background:var(--white);border:1.5px dashed var(--bd);border-radius:12px;overflow:hidden;touch-action:none;}
