@@ -2896,6 +2896,15 @@ function majAlertesEquipe() {
       <div style="font-size:14px;color:#5c3d00;margin-top:4px;">Sur iPhone, ouvrez l'application depuis son <strong>icône sur l'écran d'accueil</strong> pour pouvoir activer les alertes.</div>`;
   } else if (!pushSupporte()) {
     el.innerHTML = `<div style="font-size:14px;color:#5c3d00;">🔔 Ce navigateur ne permet pas les alertes. Ouvrez l'application depuis son icône sur l'écran d'accueil.</div>`;
+  } else if (Notification.permission === 'denied') {
+    // Notifications bloquées (refus dans la fenêtre du téléphone) : le bouton ne peut plus rien faire,
+    // il faut les réautoriser dans les réglages du téléphone.
+    el.innerHTML = `<div style="font-size:15px;font-weight:600;color:#a12a1a;">🔕 Les notifications sont bloquées sur ce téléphone</div>
+      <div style="font-size:14px;color:#5c3d00;margin-top:6px;">Pour les réautoriser :<br>
+      1. Appuyez longuement sur l'<strong>icône CIDIL</strong> de l'écran d'accueil → <strong>Infos sur l'appli</strong> (ou ⓘ)<br>
+      2. <strong>Notifications</strong> → activez <strong>Afficher les notifications</strong><br>
+      3. Revenez ici et fermez / rouvrez l'application.</div>
+      <div style="font-size:13px;color:#5c3d00;margin-top:6px;">Si vous utilisez Chrome sans l'icône : Chrome → ⋮ → Paramètres → Paramètres des sites → Notifications → autorisez <strong>elodie24000.github.io</strong>.</div>`;
   } else if (!alertesEquipeActives()) {
     el.innerHTML = `<div style="font-size:15px;font-weight:600;color:#7a5200;">🔔 Être prévenu(e) sur ce téléphone</div>
       <div style="font-size:14px;color:#5c3d00;margin-top:4px;">Recevez un bandeau à chaque <strong>nouvelle commande</strong> et chaque <strong>nouveau client</strong>, même application fermée.</div>
@@ -3029,7 +3038,7 @@ async function subscribePush(role) {
   if (!pushSupporte()) return showToast("Notifications non supportées sur cet appareil");
   try {
     const perm = await Notification.requestPermission();
-    if (perm !== 'granted') { showToast('Notifications refusées'); return; }
+    if (perm !== 'granted') { showToast('Notifications bloquées sur ce téléphone'); majAlertesEquipe(); return; }
     const reg = await navigator.serviceWorker.ready;
     let sub = await reg.pushManager.getSubscription();
     // Abonnement créé avec une ancienne clé VAPID (changée en septembre 2026) : on le renouvelle
