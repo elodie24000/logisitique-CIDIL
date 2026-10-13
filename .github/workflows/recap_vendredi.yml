@@ -2,23 +2,35 @@ name: Recap commandes vendredi 14h (email gestionnaire)
 
 on:
   schedule:
-    # 14h heure française : 12h UTC en été, 13h UTC en hiver.
-    # Les deux horaires sont planifiés, le job ne part que celui qui tombe à 14h à Paris.
+    # Vendredi 14h heure de Paris = 12h UTC (été) / 13h UTC (hiver). GitHub lance souvent ces
+    # tâches avec plusieurs heures de retard : on planifie plusieurs créneaux, le premier qui
+    # tombe après 14h (Paris) envoie le récap, les suivants voient qu'il est déjà parti
+    # (repère « recap_vendredi_envoye » dans activity_log) et ne font rien.
     - cron: '0 12 * * 5'
     - cron: '0 13 * * 5'
-  workflow_dispatch:        # Permet aussi un declenchement manuel pour tester
+    - cron: '0 14 * * 5'
+    - cron: '0 16 * * 5'
+    - cron: '0 8 * * 6'     # filet de sécurité samedi matin
+  workflow_dispatch:        # Déclenchement manuel (test ou rattrapage d'une semaine)
+    inputs:
+      semaine:
+        description: "Lundi de la semaine à envoyer (AAAA-MM-JJ), vide = semaine en cours"
+        required: false
+        default: ''
 
 jobs:
   email-gestionnaire:
     runs-on: ubuntu-latest
     steps:
-      - name: Verifier qu'il est 14h a Paris
+      - name: Verifier qu'on est vendredi apres 14h (Paris) ou samedi
         id: heure
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "$(TZ=Europe/Paris date +%H)" = "14" ]; then
+          JOUR=$(TZ=Europe/Paris date +%u)
+          HEURE=$(TZ=Europe/Paris date +%H)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || { [ "$JOUR" = "5" ] && [ "$HEURE" -ge 14 ]; } || [ "$JOUR" = "6" ]; then
             echo "go=true" >> "$GITHUB_OUTPUT"
           else
-            echo "Pas 14h a Paris ($(TZ=Europe/Paris date +%H:%M)), on attend l'autre horaire."
+            echo "Trop tot ($(TZ=Europe/Paris date '+%A %H:%M')), le recap partira au creneau suivant."
             echo "go=false" >> "$GITHUB_OUTPUT"
           fi
       - uses: actions/checkout@v4
@@ -36,4 +48,6 @@ jobs:
         env:
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
           BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          SEMAINE: ${{ github.event.inputs.semaine }}
+          FORCER: ${{ github.event_name == 'workflow_dispatch' && '1' || '' }}
         run: python scripts/send_email_gestionnaire_vendredi.py

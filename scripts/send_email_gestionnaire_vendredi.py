@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Envoie chaque vendredi a 14h un email au gestionnaire recapitulant
+"""Envoie chaque vendredi a partir de 14h un email au gestionnaire recapitulant
 toutes les commandes de la semaine en cours (lundi -> vendredi).
 A la meme heure, l'application fait passer ces commandes dans l'historique
 (voir semaineCommandesEquipe dans index.html)."""
@@ -311,8 +311,33 @@ def envoyer_email(html_livrees, html_non_livrees, nb_livrees, nb_non_livrees, se
     urllib.request.urlopen(req)
 
 
-semaine = lundi_de_cette_semaine().isoformat()
+def recap_deja_envoye(semaine_str):
+    req = urllib.request.Request(
+        f'{SUPA_URL}/rest/v1/activity_log?type=eq.recap_vendredi_envoye&details=eq.{semaine_str}&select=id&limit=1',
+        headers=H_SUPA
+    )
+    return bool(json.loads(urllib.request.urlopen(req).read()))
+
+
+def noter_recap_envoye(semaine_str):
+    req = urllib.request.Request(
+        f'{SUPA_URL}/rest/v1/activity_log',
+        data=json.dumps({'type': 'recap_vendredi_envoye', 'details': semaine_str, 'role': 'systeme'}).encode('utf-8'),
+        headers={**H_SUPA, 'Content-Type': 'application/json', 'Prefer': 'return=minimal'},
+        method='POST'
+    )
+    urllib.request.urlopen(req)
+
+
+# SEMAINE (AAAA-MM-JJ, un lundi) permet de rattraper une semaine passee ; sinon semaine en cours.
+semaine = (os.environ.get('SEMAINE') or '').strip() or lundi_de_cette_semaine().isoformat()
 print(f"Semaine ciblee : {semaine}")
+
+# Plusieurs creneaux sont planifies le vendredi (retards de GitHub) : un seul envoi par semaine,
+# sauf declenchement manuel (FORCER).
+if not os.environ.get('FORCER') and recap_deja_envoye(semaine):
+    print("Recap deja envoye pour cette semaine, rien a faire.")
+    raise SystemExit(0)
 
 livrees, non_livrees = get_commandes_semaine(semaine)
 clients_map = get_clients()
@@ -328,3 +353,7 @@ html_annonces = bloc_annonces_html(annonces)
 
 envoyer_email(html_livrees, html_non_livrees, len(livrees), len(non_livrees), semaine, pdf_bytes, html_annonces)
 print("Email gestionnaire envoye")
+try:
+    noter_recap_envoye(semaine)
+except Exception as e:
+    print(f"Attention : repere d'envoi non enregistre ({e})")
