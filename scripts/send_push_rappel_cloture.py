@@ -23,7 +23,7 @@ def delete_sub(sid):
 
 payload = json.dumps({
     'title': 'CIDIL Maraîchage 🥕',
-    'body': f"Dernière chance pour commander pour la livraison de {JOUR_LIVRAISON} ! Clôture aujourd'hui à 12h.",
+    'body': f"Dernière chance pour commander pour la livraison de {JOUR_LIVRAISON} ! Clôture aujourd'hui à 9h.",
     'url': 'https://elodie24000.github.io/logisitique-CIDIL/?commande'
 })
 

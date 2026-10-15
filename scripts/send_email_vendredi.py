@@ -102,8 +102,8 @@ def envoyer_email(destinataire_email, destinataire_nom, legumes_html):
         </div>
         <div style="background:#fff;border-radius:10px;padding:14px 16px;margin:18px 0;">
           <p style="margin:0 0 8px;font-weight:bold;">📅 Quand commander ?</p>
-          <p style="margin:0 0 4px;">Livraison le <strong>mardi</strong> → commandez avant <strong>lundi 12h</strong></p>
-          <p style="margin:0;">Livraison le <strong>jeudi</strong> → commandez avant <strong>mercredi 12h</strong></p>
+          <p style="margin:0 0 4px;">Livraison le <strong>mardi</strong> → commandez avant <strong>lundi 9h</strong></p>
+          <p style="margin:0;">Livraison le <strong>jeudi</strong> → commandez avant <strong>mercredi 9h</strong></p>
         </div>
         <p style="text-align:center;margin:28px 0;">
           <a href="{LIEN_COMMANDE}" style="background:#0d2818;color:#fff;padding:14px 28px;

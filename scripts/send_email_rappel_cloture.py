@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Envoie un email de rappel a tous les clients ayant un email, le matin ou
-les commandes vont fermer (lundi 8h pour la livraison de mardi, mercredi 8h
-pour la livraison de jeudi)."""
+les commandes vont fermer (lundi 7h pour la livraison de mardi, mercredi 7h
+pour la livraison de jeudi ; cloture a 9h)."""
 import os, json, urllib.request
 
 SUPA_URL = 'https://ulvrwtwxzhlrplvbcsrd.supabase.co'
@@ -34,7 +34,7 @@ def envoyer_email(destinataire_email, destinataire_nom):
         <p>Bonjour {destinataire_nom},</p>
         <p><strong>Dernière chance</strong> pour passer votre commande en vue de la livraison de <strong>{JOUR_LIVRAISON}</strong> !</p>
         <div style="background:#fff;border-radius:10px;padding:14px 16px;margin:18px 0;">
-          <p style="margin:0;font-weight:bold;">⏰ Les commandes ferment aujourd'hui à 12h.</p>
+          <p style="margin:0;font-weight:bold;">⏰ Les commandes ferment aujourd'hui à 9h.</p>
         </div>
         <p style="text-align:center;margin:28px 0;">
           <a href="{LIEN_COMMANDE}" style="background:#0d2818;color:#fff;padding:14px 28px;

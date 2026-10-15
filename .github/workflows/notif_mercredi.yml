@@ -1,12 +1,31 @@
-name: Rappel mercredi 8h (push + email) - cloture jeudi 12h
+name: Rappel mercredi 7h (push + email) - cloture mercredi 9h (livraison jeudi)
 
 on:
   schedule:
-    - cron: '0 6 * * 3'   # Chaque mercredi 8h heure française (6h UTC)
+    # 7h heure française toute l'année : 5h UTC en heure d'été, 6h UTC en heure d'hiver.
+    # Les deux créneaux sont programmés ; le job « heure » ne garde que le bon.
+    - cron: '0 5 * * 3'
+    - cron: '0 6 * * 3'
   workflow_dispatch:        # Permet aussi un declenchement manuel pour tester
 
 jobs:
+  heure:
+    runs-on: ubuntu-latest
+    outputs:
+      go: ${{ steps.check.outputs.go }}
+    steps:
+      - id: check
+        env:
+          CRON: ${{ github.event.schedule }}
+        run: |
+          # Décalage de Paris ce jour-là : +0200 (été) -> créneau 5h UTC, +0100 (hiver) -> 6h UTC
+          if [ -z "$CRON" ]; then echo "go=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          if [ "$(TZ=Europe/Paris date +%z)" = "+0200" ]; then attendu=5; else attendu=6; fi
+          if [ "$(echo "$CRON" | cut -d' ' -f2)" = "$attendu" ]; then echo "go=true" >> "$GITHUB_OUTPUT"; else echo "go=false" >> "$GITHUB_OUTPUT"; fi
+
   push:
+    needs: heure
+    if: needs.heure.outputs.go == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,6 +43,8 @@ jobs:
         run: python scripts/send_push_rappel_cloture.py
 
   email:
+    needs: heure
+    if: needs.heure.outputs.go == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
