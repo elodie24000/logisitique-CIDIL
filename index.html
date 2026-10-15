@@ -1503,7 +1503,7 @@ async function enterApp(role) {
   document.getElementById('app-title').textContent = 'CIDIL · ' + ROLE_LABELS[role];
   document.getElementById('app-role-badge').textContent = ROLE_ICONS[role] + ' ' + ROLE_LABELS[role];
   buildNav(role);
-  await loadClients();
+  await Promise.all([loadClients(), chargerFamillesLegumes()]);
   populateClientSel();
   if (role === 'encadrant' || role === 'gestionnaire') {
     setTimeout(showInscriptionModal, 500);
@@ -1845,6 +1845,7 @@ async function loadCatalogue() {
   try {
     const rows = await sbGet('catalogue', 'order=famille.asc,nom.asc');
     catalogue = rows;
+    memoriserFamilles(rows);
     renderCatalogue();
   } catch(e) {
     document.getElementById('catalogue-list').innerHTML = '<div class="empty-msg">Erreur chargement catalogue</div>';
@@ -1881,7 +1882,7 @@ function renderCatalogue() {
         <div class="cat-item" id="item-${v._uid}">
           <div class="cat-item-top">
             <input type="checkbox" class="cat-chk" id="cat-${v._uid}" value="${v.nom}" data-unite="${v._unite}" data-id="${v.id}" onchange="toggleItem('${v._uid}')">
-            <div class="cat-emoji">${emojiLegume(v.nom)}</div>
+            <div class="cat-emoji">${emojiLegume(v.nom, v.famille)}</div>
             <label class="cat-nom" for="cat-${v._uid}">${v.nom} <span style="font-size:11px;color:var(--tl);font-weight:400;">(${v._unite})</span></label>
           </div>
           <div class="cat-inputs">
@@ -2049,6 +2050,16 @@ function svgRadis(peau, chair, long, trait) {
     <ellipse cx="${long ? 10.2 : 9.6}" cy="${long ? 13 : 13.6}" rx="1.3" ry="2" fill="${chair}" opacity=".55"/>
   </svg>`;
 }
+function svgArtichaut() {
+  return `<svg class="leg-svg" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M12 20.5v3" stroke="#5e8f4e" stroke-width="1.8" stroke-linecap="round"/>
+    <path d="M12 21.2c-4.8 0-8.2-3.4-8.2-7.6 0-4.6 3.6-8.6 8.2-11.4 4.6 2.8 8.2 6.8 8.2 11.4 0 4.2-3.4 7.6-8.2 7.6z" fill="#6f9e5e"/>
+    <path d="M12 21.2c-3.6-.6-6.4-3.4-6.4-6.6 1.8.2 4.4 1.4 6.4 3.6 2-2.2 4.6-3.4 6.4-3.6 0 3.2-2.8 6-6.4 6.6z" fill="#8cbb78"/>
+    <path d="M12 16.6c-2.2-1.6-3.6-3.6-3.8-6 1.6.4 2.8 1.2 3.8 2.6 1-1.4 2.2-2.2 3.8-2.6-.2 2.4-1.6 4.4-3.8 6z" fill="#a3cc8c"/>
+    <path d="M12 11.4c-1.2-1-1.8-2.4-1.8-4 .8.2 1.4.7 1.8 1.4.4-.7 1-1.2 1.8-1.4 0 1.6-.6 3-1.8 4z" fill="#bcdba6"/>
+    <path d="M8.2 6.6c-.6.6-1.6 1-2.6 1M15.8 6.6c.6.6 1.6 1 2.6 1" stroke="#9a6fb0" stroke-width="1.1" stroke-linecap="round"/>
+  </svg>`;
+}
 function svgCosse() {
   return `<svg class="leg-svg" viewBox="0 0 24 24" aria-hidden="true">
     <path d="M4 19C7 10 13 5 20.5 4.5 20 12 15 18 6 20.5z" fill="#5cb878"/>
@@ -2058,11 +2069,13 @@ function svgCosse() {
   </svg>`;
 }
 
-function emojiLegume(nom) {
+function emojiLegume(nom, famille) {
   const n = (nom||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
   if (n.includes('radis')) {
     if (n.includes('noir')) return svgRadis('#3b3232', '#ffffff', true);
     if (n.includes('daikon') || n.includes('blanc') || n.includes('glace')) return svgRadis('#fbfaf4', '#ffffff', true, '#b9b29c');
+    if (n.includes('blue') || n.includes('violet') || n.includes('blaeur')) return svgRadis('#7b4fa0', '#ffffff', true);
+    if (n.includes('green') || n.includes('vert')) return svgRadis('#8cc66b', '#f4fbe9', true);
     if (n.includes('hiver') || n.includes('long')) return svgRadis('#d9475b', '#ffffff', true);
     return svgRadis('#e2475f', '#ffffff', false);
   }
@@ -2071,13 +2084,32 @@ function emojiLegume(nom) {
     ['courge','🎃'],['potiron','🎃'],['butternut','🎃'],['potimarron','🎃'],['aubergine','🍆'],['piment','🌶️'],['poivron','🫑'],
     ['brocoli','🥦'],['chou','🥬'],['salade','🥬'],['laitue','🥬'],['batavia','🥬'],['feuille','🥬'],
     ['mesclun','🥬'],['roquette','🥬'],['mache','🥬'],['epinard','🥬'],['blette','🥬'],['bok','🥬'],['pak','🥬'],
-    ['oignon','🧅'],['echalote','🧅'],['ciboule','🧅'],['ail','🧄'],['pomme de terre','🥔'],['patate','🥔'],
+    ['ciboulette','🌿'],['oignon','🧅'],['echalote','🧅'],['ciboule','🧅'],['ail','🧄'],['pomme de terre','🥔'],['patate','🥔'],
     ['mais','🌽'],['betterave','🍠'],['navet','⚪'],['fenouil','🌿'],['celeri','🌿'],
     ['haricot',svgCosse()],['pois',svgCosse()],['feve',svgCosse()],['fraise','🍓'],['melon','🍈'],['pasteque','🍉'],
-    ['basilic','🌿'],['persil','🌿'],['coriandre','🌿'],['aromatique','🌿'],['bouquet','🌿'],['poireau','🎍']
+    ['artichaut',svgArtichaut()],['basilic','🌿'],['persil','🌿'],['coriandre','🌿'],['aromatique','🌿'],['bouquet','🌿'],['poireau','🎍']
   ];
   for (const [k,e] of m) if (n.includes(k)) return e;
-  return '🥬';
+  return emojiFamille(famille || FAMILLE_PAR_NOM[cleNom(nom)]);
+}
+
+// Repli quand le nom ne contient aucun mot connu : icône de la famille du légume
+// (famille donnée, sinon celle du catalogue pour ce nom). Salade si aucune famille.
+let FAMILLE_PAR_NOM = {};
+function cleNom(nom) { return (nom||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); }
+function memoriserFamilles(rows) { (rows||[]).forEach(r => { if (r.nom && r.famille) FAMILLE_PAR_NOM[cleNom(r.nom)] = r.famille; }); }
+async function chargerFamillesLegumes() {
+  try { memoriserFamilles(await sbGet('catalogue', 'select=nom,famille')); } catch(e) { console.error('chargerFamillesLegumes', e); }
+}
+function emojiFamille(famille) {
+  const f = cleNom(famille);
+  if (!f) return '🥬';
+  const m = [
+    ['racine','🥕'],['curcub','🎃'],['cucurb','🎃'],['alliac','🧅'],['chou','🥦'],['brassic','🥦'],
+    ['legumineuse',svgCosse()],['solanac','🍅'],['tubercule','🥔'],['feuille','🥬'],['aromat','🌿'],['autre','🧺']
+  ];
+  for (const [k,e] of m) if (f.includes(k)) return e;
+  return '🧺';
 }
 
 function renderVeggies() {
@@ -2087,7 +2119,7 @@ function renderVeggies() {
   el.innerHTML = state.veggies.map(v=>`
     <div class="veg-card">
       <button class="btn-rm" onclick="removeVeggie(${v.id})">✕</button>
-      <div class="veg-emoji">${emojiLegume(v.nom)}</div>
+      <div class="veg-emoji">${emojiLegume(v.nom, v.famille)}</div>
       <div class="veg-card-info">
         <div class="veg-name">${v.nom}</div>
         <div class="veg-dispo-line">${v.kg} ${pluriel(v.kg, v.unite)} dispo</div>
@@ -3485,7 +3517,7 @@ async function repondreAnnonce(annonceId, repondant, reponse, jour) {
 
 async function initCommandeClient() {
   document.getElementById('screen-commande-client').style.display = 'block';
-  await loadClients();
+  await Promise.all([loadClients(), chargerFamillesLegumes()]);
   _cmdClientIdx = null;
   // Réafficher les blocs par défaut (au cas où un client interne les aurait masqués)
   const sw = document.querySelector('.cmd-select-wrap');
@@ -3539,7 +3571,7 @@ function renderCmdLegumes(veggies) {
             <div class="cmd-veg-name">${v.nom}</div>
           </div>
           <div class="cmd-veg-icondispo">
-            <span class="cmd-veg-emoji">${emojiLegume(v.nom)}</span>
+            <span class="cmd-veg-emoji">${emojiLegume(v.nom, v.famille)}</span>
             <div class="cmd-veg-infos">
               <span class="cmd-veg-dispo">${v.kg_dispo} ${pluriel(v.kg_dispo, v.unite)} dispo</span>
               <span class="cmd-veg-prixbadge">${v.prix_kg ? v.prix_kg.toFixed(2) + ' €/' + (v.unite||'kg') : 'Prix sur devis'}</span>
