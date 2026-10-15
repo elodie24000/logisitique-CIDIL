@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Envoi ponctuel (declenchement manuel) : notification push suite a la panne
 du site sur le week-end du 8-9 aout 2026, pour inviter les clients a commander
-avant la cloture de 12h."""
+avant la cloture de 9h."""
 import os, json, urllib.request
 from pywebpush import webpush, WebPushException
 
@@ -23,7 +23,7 @@ def delete_sub(sid):
 
 payload = json.dumps({
     'title': 'CIDIL Maraîchage 🥕',
-    'body': "Problème technique résolu ! Commandez avant 12h aujourd'hui pour la livraison de mardi.",
+    'body': "Problème technique résolu ! Commandez avant 9h aujourd'hui pour la livraison de mardi.",
     'url': 'https://elodie24000.github.io/logisitique-CIDIL/?commande'
 })
 
