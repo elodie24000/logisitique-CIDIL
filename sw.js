@@ -1,8 +1,9 @@
-const CACHE = 'cidil-v67';
+const CACHE = 'cidil-v68';
 const ASSETS = [
   '/logisitique-CIDIL/',
   '/logisitique-CIDIL/index.html',
   '/logisitique-CIDIL/logo.jpg',
+  '/logisitique-CIDIL/logo-transparent.png',
   'https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=DM+Mono:wght@400;500&display=swap'
 ];
 

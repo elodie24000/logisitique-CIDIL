@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>CIDIL — Maraîchage</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#1a3d2b">
+<meta name="theme-color" content="#3f9a5f">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="CIDIL">
@@ -27,86 +27,122 @@
 html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background:var(--cream);color:var(--text);-webkit-tap-highlight-color:transparent;}
 
 /* ── ÉCRAN DE CONNEXION ── */
-#screen-login{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  min-height:100vh;padding:24px;
-  background:linear-gradient(160deg,var(--g1) 0%,var(--g0) 100%);
+/* Fond « jardin » clair : le logo détouré s'y pose sans cadre blanc */
+#screen-login,#screen-pin{
+  --ink:#1f3a2a;--ink2:#5a7464;
+  --leaf:#3f9a5f;--leaf2:#5cb878;--lime:#a6d96a;--bug:#d9473b;
+  position:relative;overflow:hidden;isolation:isolate;
+  flex-direction:column;align-items:center;justify-content:center;
+  min-height:100vh;padding:32px 20px;
+  background:
+    radial-gradient(120% 70% at 50% -10%,#e3f1d6 0%,rgba(227,241,214,0) 60%),
+    radial-gradient(80% 50% at 110% 100%,#e6efd9 0%,rgba(230,239,217,0) 70%),
+    linear-gradient(180deg,#f2f7ec 0%,#faf6ee 100%);
 }
-.login-logo{
-  width:160px;height:auto;margin-bottom:16px;border-radius:12px;overflow:hidden;background:#fff;padding:8px 12px;
-  display:flex;align-items:center;justify-content:center;
+#screen-login::before,#screen-login::after,#screen-pin::before,#screen-pin::after{
+  content:"";position:absolute;z-index:-1;pointer-events:none;border-radius:58% 42% 63% 37% / 46% 55% 45% 54%;
 }
-.login-logo img{width:140px;height:auto;display:block;}
-.login-title{color:#fff;font-size:22px;font-weight:500;letter-spacing:-.02em;margin-bottom:4px;}
-.login-sub{color:rgba(255,255,255,.4);font-size:13px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.06em;margin-bottom:40px;}
+#screen-login::before,#screen-pin::before{
+  width:340px;height:300px;top:-110px;left:-120px;
+  background:radial-gradient(circle at 60% 60%,rgba(166,217,106,.45),rgba(166,217,106,0) 70%);
+}
+#screen-login::after,#screen-pin::after{
+  width:380px;height:340px;bottom:-150px;right:-140px;
+  background:radial-gradient(circle at 40% 40%,rgba(92,184,120,.28),rgba(92,184,120,0) 70%);
+}
+.login-logo{width:min(250px,70vw);margin-bottom:6px;animation:rise .6s ease-out both;}
+.login-logo img{width:100%;height:auto;display:block;}
+.login-title{color:var(--ink);font-size:22px;font-weight:500;letter-spacing:-.02em;margin-bottom:4px;}
+.login-sub{
+  color:var(--ink2);font-size:11px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;
+  margin-bottom:34px;display:flex;align-items:center;gap:10px;animation:rise .6s .08s ease-out both;
+}
+.login-sub::before,.login-sub::after{content:"";width:16px;flex-shrink:0;height:1px;background:currentColor;opacity:.4;}
+@keyframes rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
 
-.role-cards{display:flex;flex-direction:column;gap:12px;width:100%;max-width:340px;}
+.role-cards{display:flex;flex-direction:column;gap:12px;width:100%;max-width:360px;animation:rise .6s .16s ease-out both;}
 .role-card{
-  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);
-  border-radius:14px;padding:18px 20px;cursor:pointer;
+  background:rgba(255,255,255,.72);border:1px solid rgba(63,154,95,.16);
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  border-radius:16px;padding:16px 18px;cursor:pointer;
   display:flex;align-items:center;gap:14px;
-  transition:all .15s;
+  box-shadow:0 1px 2px rgba(31,58,42,.05),0 4px 14px rgba(31,58,42,.05);
+  transition:transform .15s,box-shadow .15s,background .15s;
 }
-.role-card:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.25);}
-.role-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.role-icon svg{width:20px;height:20px;fill:none;stroke-width:1.8;}
-.role-name{font-size:15px;font-weight:500;color:#fff;}
-.role-desc{font-size:12px;color:rgba(255,255,255,.45);margin-top:2px;}
-.role-arrow{margin-left:auto;color:rgba(255,255,255,.25);font-size:18px;}
-.role-card.primary{background:var(--g4);border-color:var(--g4);padding:26px 22px;}
-.role-card.primary:hover{background:var(--g3);border-color:var(--g3);}
-.role-card.primary .role-icon{width:52px;height:52px;background:rgba(255,255,255,.2)!important;}
-.role-card.primary .role-icon svg{width:28px;height:28px;stroke:#0d2818;}
-.role-card.primary .role-name{font-size:19px;color:#0d2818;}
-.role-card.primary .role-desc{font-size:13px;color:rgba(13,40,24,.6);}
-.role-card.primary .role-arrow{color:rgba(13,40,24,.4);font-size:22px;}
-.equipe-toggle{margin-top:14px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:16px 20px;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .15s;user-select:none;}
-.equipe-toggle:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.25);}
-.equipe-toggle .role-icon{background:rgba(255,255,255,.12);}
-.equipe-toggle .role-icon svg{stroke:#fff;}
-.equipe-chevron{margin-left:auto;color:rgba(255,255,255,.5);font-size:18px;transition:transform .2s;}
+.role-card:hover{background:#fff;box-shadow:0 2px 4px rgba(31,58,42,.06),0 10px 24px rgba(31,58,42,.09);}
+.role-card:active{transform:scale(.985);}
+.role-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.role-icon svg{width:21px;height:21px;fill:none;stroke-width:1.8;}
+.role-name{font-size:15px;font-weight:500;color:var(--ink);}
+.role-desc{font-size:12px;color:var(--ink2);margin-top:2px;}
+.role-arrow{margin-left:auto;color:rgba(31,58,42,.3);font-size:20px;}
+.role-card.primary{
+  position:relative;overflow:hidden;
+  background:linear-gradient(135deg,var(--leaf2) 0%,var(--leaf) 100%);border-color:transparent;padding:24px 22px;
+  box-shadow:0 2px 4px rgba(63,154,95,.18),0 12px 28px rgba(63,154,95,.28);
+}
+.role-card.primary::after{ /* petite touche « coccinelle » reprise du logo */
+  content:"";position:absolute;right:-26px;top:-26px;width:96px;height:96px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,255,255,.22),rgba(255,255,255,0) 70%);
+}
+.role-card.primary:hover{background:linear-gradient(135deg,#66c282 0%,#44a465 100%);}
+.role-card.primary .role-icon{width:52px;height:52px;background:rgba(255,255,255,.22)!important;}
+.role-card.primary .role-icon svg{width:28px;height:28px;stroke:#fff;}
+.role-card.primary .role-name{font-size:19px;color:#fff;}
+.role-card.primary .role-desc{font-size:13px;color:rgba(255,255,255,.85);}
+.role-card.primary .role-arrow{color:rgba(255,255,255,.75);font-size:24px;}
+.equipe-toggle{
+  margin-top:4px;background:rgba(255,255,255,.55);border:1px dashed rgba(63,154,95,.35);border-radius:16px;
+  padding:14px 18px;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .15s;user-select:none;
+}
+.equipe-toggle:hover{background:rgba(255,255,255,.85);border-style:solid;}
+.equipe-toggle .role-icon{background:rgba(63,154,95,.12);}
+.equipe-toggle .role-icon svg{stroke:var(--leaf);}
+.equipe-chevron{margin-left:auto;color:rgba(31,58,42,.4);font-size:18px;transition:transform .2s;}
 .equipe-toggle.open .equipe-chevron{transform:rotate(180deg);}
 .equipe-group{display:none;flex-direction:column;gap:10px;}
 .equipe-group.open{display:flex;}
-.equipe-back{color:rgba(255,255,255,.5);font-size:13px;cursor:pointer;padding:4px 2px 8px;user-select:none;}
-.equipe-back:hover{color:#fff;}
+.equipe-back{color:var(--ink2);font-size:13px;cursor:pointer;padding:4px 2px 8px;user-select:none;}
+.equipe-back:hover{color:var(--ink);}
+.login-foot{margin-top:28px;font-size:11px;color:rgba(31,58,42,.4);display:flex;align-items:center;gap:6px;}
+.login-foot i{width:6px;height:6px;border-radius:50%;background:var(--bug);display:inline-block;}
 
 /* ── PIN ── */
-#screen-pin{
-  display:none;flex-direction:column;align-items:center;justify-content:center;
-  min-height:100vh;padding:24px;
-  background:linear-gradient(160deg,var(--g1) 0%,var(--g0) 100%);
-}
+#screen-pin{display:none;}
 .pin-back{
   position:absolute;top:20px;left:20px;
-  color:rgba(255,255,255,.5);font-size:13px;cursor:pointer;
+  color:var(--ink2,#5a7464);font-size:13px;cursor:pointer;
   display:flex;align-items:center;gap:5px;
-  background:none;border:none;font-family:'DM Sans',sans-serif;
+  background:rgba(255,255,255,.7);border:1px solid rgba(63,154,95,.18);border-radius:20px;padding:7px 12px;
+  font-family:'DM Sans',sans-serif;
 }
-.pin-back:hover{color:#fff;}
-.pin-title{color:#fff;font-size:18px;font-weight:500;margin-bottom:6px;}
-.pin-sub{color:rgba(255,255,255,.4);font-size:13px;margin-bottom:32px;}
-.pin-dots{display:flex;gap:12px;margin-bottom:28px;}
-.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.3);transition:all .15s;}
-.pin-dot.filled{background:var(--g4);border-color:var(--g4);}
-.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:240px;}
+.pin-back:hover{color:var(--ink,#1f3a2a);background:#fff;}
+.pin-logo{width:130px;margin-bottom:22px;}
+.pin-title{color:var(--ink);font-size:20px;font-weight:500;margin-bottom:6px;}
+.pin-sub{color:var(--ink2);font-size:13px;margin-bottom:28px;}
+.pin-dots{display:flex;gap:14px;margin-bottom:28px;}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid rgba(63,154,95,.35);transition:all .15s;}
+.pin-dot.filled{background:var(--leaf);border-color:var(--leaf);transform:scale(1.1);}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:252px;}
 .pin-btn{
-  aspect-ratio:1;border-radius:50%;border:1px solid rgba(255,255,255,.15);
-  background:rgba(255,255,255,.08);color:#fff;
-  font-size:20px;font-weight:400;cursor:pointer;
+  aspect-ratio:1;border-radius:50%;border:1px solid rgba(63,154,95,.14);
+  background:rgba(255,255,255,.8);color:var(--ink);
+  font-size:22px;font-weight:400;cursor:pointer;
   font-family:'DM Sans',sans-serif;
   display:flex;align-items:center;justify-content:center;
+  box-shadow:0 1px 2px rgba(31,58,42,.06),0 3px 10px rgba(31,58,42,.05);
   transition:all .1s;
 }
-.pin-btn:active{background:rgba(255,255,255,.2);transform:scale(.95);}
-.pin-error{color:#f87171;font-size:13px;margin-top:12px;height:18px;}
+.pin-btn:active{background:#e3f1d6;transform:scale(.95);}
+.pin-error{color:var(--bug);font-size:13px;margin-top:12px;height:18px;}
 
 /* ── APP SHELL ── */
 #screen-app{display:none;min-height:100vh;flex-direction:column;}
 
 /* mobile topbar */
 .app-topbar{
-  background:var(--g1);padding:12px 16px;
+  background:linear-gradient(120deg,var(--g3) 0%,var(--g2) 100%);padding:12px 16px;
+  box-shadow:0 2px 10px rgba(45,106,79,.18);
   display:flex;align-items:center;justify-content:space-between;
   position:sticky;top:0;z-index:50;
 }
@@ -387,12 +423,16 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 
 /* ── PAGE COMMANDE CLIENT ── */
 #screen-commande-client{display:none;min-height:100vh;background:var(--cream);}
-.cmd-hero{background:linear-gradient(160deg,var(--g1) 0%,var(--g2) 100%);padding:28px 20px 36px;text-align:center;}
-.cmd-hero-logo{width:52px;height:52px;background:rgba(255,255,255,.12);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;}
+.cmd-hero{position:relative;padding:34px 20px 30px;text-align:center;border-bottom:1px solid rgba(63,154,95,.12);
+  background:radial-gradient(120% 90% at 50% -20%,#e3f1d6 0%,rgba(227,241,214,0) 65%),linear-gradient(180deg,#f2f7ec 0%,var(--cream) 100%);}
+.cmd-hero .pin-back{--ink:#1f3a2a;--ink2:#5a7464;}
+.cmd-week-tag:empty{display:none;}
+.cmd-hero-logo{width:min(190px,56vw);margin:8px auto 12px;}
+.cmd-hero-logo img{width:100%;height:auto;display:block;}
 .cmd-hero-logo svg{width:28px;height:28px;stroke:#fff;fill:none;stroke-width:1.8;}
-.cmd-hero-title{color:#fff;font-size:20px;font-weight:500;margin-bottom:4px;}
-.cmd-hero-sub{color:rgba(255,255,255,.55);font-size:13px;}
-.cmd-week-tag{display:inline-block;background:rgba(255,255,255,.12);color:rgba(255,255,255,.8);font-size:11px;font-family:'DM Mono',monospace;padding:4px 12px;border-radius:20px;margin-top:10px;}
+.cmd-hero-title{color:var(--g1);font-size:20px;font-weight:500;margin-bottom:4px;}
+.cmd-hero-sub{color:var(--tm);font-size:14px;}
+.cmd-week-tag{display:inline-block;background:#fff;border:1px solid var(--g5);color:var(--g2);font-size:11px;font-family:'DM Mono',monospace;padding:4px 12px;border-radius:20px;margin-top:10px;}
 .cmd-body{padding:20px 16px 100px;}
 .cmd-select-wrap{background:var(--white);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:20px;box-shadow:var(--sh);}
 .cmd-two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;}
@@ -457,7 +497,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 <!-- ══════════════════════ ÉCRAN LOGIN ══════════════════════ -->
 <div id="screen-login" style="display:flex">
   <div class="login-logo">
-    <img src="logo.jpg" alt="CIDIL — Jardins du Bandiat"/>
+    <img src="logo-transparent.png" alt="CIDIL — Jardins du Bandiat"/>
   </div>
   <div class="login-sub">Chantier d'insertion — volet maraîchage</div>
 
@@ -488,8 +528,8 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
       <div class="equipe-back" onclick="closeEquipe()">‹ Retour</div>
 
       <div class="role-card" onclick="selectRole('livreur')">
-        <div class="role-icon" style="background:rgba(116,198,157,.15);">
-          <svg viewBox="0 0 24 24" stroke="var(--g4)"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        <div class="role-icon" style="background:rgba(64,145,108,.12);">
+          <svg viewBox="0 0 24 24" stroke="var(--g3)"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
         </div>
         <div>
           <div class="role-name">Livreur</div>
@@ -543,11 +583,13 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
       </div>
     </div>
   </div>
+  <div class="login-foot"><i></i>Légumes de saison · Jardins du Bandiat</div>
 </div>
 
 <!-- ══════════════════════ ÉCRAN PIN ══════════════════════ -->
 <div id="screen-pin" style="position:relative;">
   <button class="pin-back" onclick="backToLogin()">‹ Retour</button>
+  <img class="pin-logo" src="logo-transparent.png" alt="CIDIL"/>
   <div class="pin-title" id="pin-role-title">Code PIN</div>
   <div class="pin-sub">Entrez votre code à 4 chiffres</div>
   <div class="pin-dots" id="pin-dots">
@@ -569,7 +611,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
     <button class="pin-btn" style="font-size:18px;" onclick="pinDel()">⌫</button>
   </div>
   <div class="pin-error" id="pin-error"></div>
-  <div style="margin-top:20px;font-size:11px;color:rgba(255,255,255,.25);font-family:'DM Mono',monospace;" id="pin-hint"></div>
+  <div style="margin-top:20px;font-size:11px;color:rgba(31,58,42,.4);font-family:'DM Mono',monospace;" id="pin-hint"></div>
 </div>
 
 <!-- ══════════════════════ APP ══════════════════════ -->
@@ -927,7 +969,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
   <div class="cmd-hero">
     <button class="pin-back" onclick="cmdRetourLogin()" style="position:absolute;top:12px;left:12px;">‹ Retour</button>
     <div class="cmd-hero-logo">
-      <img src="logo.jpg" alt="CIDIL" style="width:90px;border-radius:8px;"/>
+      <img src="logo-transparent.png" alt="CIDIL"/>
     </div>
     <div class="cmd-hero-sub">Passez votre commande de la semaine</div>
     <div class="cmd-week-tag" id="cmd-week-tag"></div>
