@@ -594,6 +594,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 .prec-cut{display:flex;flex-direction:column;align-items:center;gap:1px;background:#fff;border:1px dashed rgba(224,154,44,.55);color:#7a4f0e;
   border-radius:12px;padding:6px 8px;font-size:12px;}
 .prec-cut strong{color:#5c3d00;font-size:15px;font-weight:600;}
+.leg-svg{width:1.15em;height:1.15em;display:block;}
 </style>
 </head>
 <body>
@@ -2033,16 +2034,46 @@ async function removeVeggie(id) {
   }
 }
 
+// Petits dessins pour les légumes dont l'émoji est trop récent pour être affiché
+// sur tous les téléphones (🫜 radis = 2024, 🫛 cosse = 2022) : ils s'afficheraient vides.
+function svgRadis(peau, chair, long, trait) {
+  const bord = trait ? ` stroke="${trait}" stroke-width=".8"` : '';
+  const corps = long
+    ? `<path d="M10 9c-2.6 0-4 1.8-4 4.3 0 4.2 2.6 8.6 6 10.7 3.4-2.1 6-6.5 6-10.7C18 10.8 16.6 9 14 9z" fill="${peau}"${bord}/>`
+    : `<path d="M12 9.5c-3.9 0-6.5 2.6-6.5 6 0 3.6 2.9 6.2 6.5 6.2s6.5-2.6 6.5-6.2c0-3.4-2.6-6-6.5-6z" fill="${peau}"${bord}/><path d="M12 21.7v2" stroke="${peau}" stroke-width="1.2" stroke-linecap="round"/>`;
+  return `<svg class="leg-svg" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M12 10c-.6-3.4-2.6-6.6-5.6-7.6.2 3.2 2.4 6.2 5.6 7.6z" fill="#5cb878"/>
+    <path d="M12 10c.6-3.6 2.8-6.8 5.8-7.8-.1 3.4-2.4 6.4-5.8 7.8z" fill="#3f9a5f"/>
+    <path d="M12 10V4.6" stroke="#2e8650" stroke-width="1.2" stroke-linecap="round"/>
+    ${corps}
+    <ellipse cx="${long ? 10.2 : 9.6}" cy="${long ? 13 : 13.6}" rx="1.3" ry="2" fill="${chair}" opacity=".55"/>
+  </svg>`;
+}
+function svgCosse() {
+  return `<svg class="leg-svg" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M4 19C7 10 13 5 20.5 4.5 20 12 15 18 6 20.5z" fill="#5cb878"/>
+    <path d="M5.5 18.5C9 12 14 8 19.5 6" stroke="#2e8650" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+    <circle cx="9.3" cy="14.6" r="1.9" fill="#a6d96a"/><circle cx="12.6" cy="11.4" r="1.9" fill="#a6d96a"/><circle cx="15.8" cy="8.5" r="1.8" fill="#a6d96a"/>
+    <path d="M20.5 4.5l1.5-1.5" stroke="#2e8650" stroke-width="1.3" stroke-linecap="round"/>
+  </svg>`;
+}
+
 function emojiLegume(nom) {
   const n = (nom||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+  if (n.includes('radis')) {
+    if (n.includes('noir')) return svgRadis('#3b3232', '#ffffff', true);
+    if (n.includes('daikon') || n.includes('blanc') || n.includes('glace')) return svgRadis('#fbfaf4', '#ffffff', true, '#b9b29c');
+    if (n.includes('hiver') || n.includes('long')) return svgRadis('#d9475b', '#ffffff', true);
+    return svgRadis('#e2475f', '#ffffff', false);
+  }
   const m = [
     ['tomate','🍅'],['carotte','🥕'],['panais','🥕'],['courgette','🥒'],['concombre','🥒'],
     ['courge','🎃'],['potiron','🎃'],['butternut','🎃'],['potimarron','🎃'],['aubergine','🍆'],['piment','🌶️'],['poivron','🫑'],
     ['brocoli','🥦'],['chou','🥬'],['salade','🥬'],['laitue','🥬'],['batavia','🥬'],['feuille','🥬'],
     ['mesclun','🥬'],['roquette','🥬'],['mache','🥬'],['epinard','🥬'],['blette','🥬'],['bok','🥬'],['pak','🥬'],
     ['oignon','🧅'],['echalote','🧅'],['ciboule','🧅'],['ail','🧄'],['pomme de terre','🥔'],['patate','🥔'],
-    ['mais','🌽'],['radis','🫜'],['betterave','🍠'],['navet','⚪'],['fenouil','🌿'],['celeri','🌿'],
-    ['haricot','🫛'],['pois','🫛'],['feve','🫛'],['fraise','🍓'],['melon','🍈'],['pasteque','🍉'],
+    ['mais','🌽'],['betterave','🍠'],['navet','⚪'],['fenouil','🌿'],['celeri','🌿'],
+    ['haricot',svgCosse()],['pois',svgCosse()],['feve',svgCosse()],['fraise','🍓'],['melon','🍈'],['pasteque','🍉'],
     ['basilic','🌿'],['persil','🌿'],['coriandre','🌿'],['aromatique','🌿'],['bouquet','🌿'],['poireau','🎍']
   ];
   for (const [k,e] of m) if (n.includes(k)) return e;
