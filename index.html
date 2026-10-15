@@ -22,6 +22,7 @@
   --blue:#2563eb;--blue-bg:#eff6ff;
   --sh:0 2px 8px rgba(13,40,24,.08);
   --sh2:0 8px 32px rgba(13,40,24,.14);
+  --leaf:#2e8650;--leaf-hi:#45a466;--leaf-grad:linear-gradient(135deg,var(--leaf-hi) 0%,var(--leaf) 100%);
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background:var(--cream);color:var(--text);-webkit-tap-highlight-color:transparent;}
@@ -215,7 +216,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 .cc-actions{display:flex;gap:8px;margin-top:10px;align-items:center;}
 .btn-gps{
   display:inline-flex;align-items:center;gap:5px;
-  padding:7px 12px;background:var(--g1);color:#fff;
+  padding:7px 12px;background:var(--leaf);color:#fff;
   border-radius:8px;font-size:13px;font-weight:500;
   text-decoration:none;border:none;cursor:pointer;flex:1;justify-content:center;
 }
@@ -259,7 +260,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 }
 .finput:focus{border-color:var(--g4);}
 .btn-primary{
-  width:100%;padding:10px;background:var(--g1);color:#fff;
+  width:100%;padding:10px;background:var(--leaf);color:#fff;
   border:none;border-radius:8px;font-size:14px;font-weight:500;
   cursor:pointer;font-family:'DM Sans',sans-serif;
   display:flex;align-items:center;justify-content:center;gap:6px;
@@ -330,7 +331,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 .tour-name{font-size:20px;font-weight:500;color:var(--g1);}
 .tour-body{padding:14px 16px;}
 .tour-addr{font-size:16px;color:var(--text);margin:-2px 0 10px;}
-.tour-gps{display:flex;width:100%;justify-content:center;align-items:center;gap:8px;margin-top:8px;padding:13px 14px;background:var(--g1);color:#fff;border:none;border-radius:11px;font-size:17px;font-weight:500;text-decoration:none;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.tour-gps{display:flex;width:100%;justify-content:center;align-items:center;gap:8px;margin-top:8px;padding:13px 14px;background:var(--leaf);color:#fff;border:none;border-radius:11px;font-size:17px;font-weight:500;text-decoration:none;cursor:pointer;font-family:'DM Sans',sans-serif;}
 .tour-sign-btn{display:block;width:100%;margin-top:10px;padding:17px;border:none;border-radius:12px;background:var(--g3);color:#fff;font-size:18px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;}
 
 /* ── SIGNATURE ÉLECTRONIQUE (livreur) ── */
@@ -350,13 +351,13 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
   padding:0 0 env(safe-area-inset-bottom);
 }
 .modal-handle{width:36px;height:4px;background:var(--tx);border-radius:2px;margin:10px auto 0;}
-.modal-head{background:var(--g1);padding:16px 18px;}
+.modal-head{background:var(--leaf);padding:16px 18px;}
 .modal-head-name{font-size:16px;font-weight:500;color:#fff;}
 .modal-head-week{font-size:11px;color:rgba(255,255,255,.45);font-family:'DM Mono',monospace;margin-top:2px;}
 .modal-body{padding:14px 18px;}
 .modal-foot{padding:12px 18px;border-top:1px solid var(--bd);display:flex;gap:8px;}
 .btn-cancel{flex:1;padding:11px;border-radius:9px;border:1px solid var(--bd);background:var(--cream);color:var(--tm);font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;}
-.btn-save{flex:2;padding:11px;border-radius:9px;border:none;background:var(--g1);color:#fff;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.btn-save{flex:2;padding:11px;border-radius:9px;border:none;background:var(--leaf);color:#fff;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;}
 .btn-save:disabled{opacity:.5;cursor:not-allowed;}
 
 .order-row{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--g7);}
@@ -468,7 +469,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 .cmd-footer{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--bd);padding:14px 16px calc(14px + env(safe-area-inset-bottom));box-shadow:0 -4px 20px rgba(0,0,0,.08);}
 .cmd-total{font-size:13px;color:var(--tl);margin-bottom:8px;text-align:center;}
 .cmd-total strong{color:var(--text);}
-.btn-commander{width:100%;padding:14px;background:var(--g1);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn-commander{width:100%;padding:14px;background:var(--leaf);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;}
 .btn-commander:active{background:var(--g2);}
 .cmd-success{display:none;text-align:center;padding:40px 20px;}
 .cmd-success-icon{width:64px;height:64px;background:var(--g6);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;}
@@ -490,6 +491,75 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
   font-size:11px;color:var(--g3);font-family:'DM Mono',monospace;
   background:var(--g7);padding:2px 8px;border-radius:10px;
 }
+
+/* ══ THÈME JARDIN — écrans équipe (même esprit que l'accueil) ══ */
+#screen-app{
+  background:
+    radial-gradient(110% 40% at 50% 0%,#e6f2db 0%,rgba(230,242,219,0) 70%),
+    linear-gradient(180deg,#f3f8ee 0%,#faf6ee 60%);
+  background-attachment:fixed;
+}
+.app-topbar{
+  background:rgba(255,255,255,.78);
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  border-bottom:1px solid rgba(63,154,95,.14);box-shadow:0 1px 12px rgba(31,58,42,.05);
+}
+.app-topbar::before{ /* pastille coccinelle, rappel du logo */
+  content:"";width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-right:10px;
+  background:#d9473b;box-shadow:0 0 0 4px rgba(217,71,59,.12);}
+.app-topbar>div:first-child{margin-right:auto;min-width:0;}
+.app-topbar>div:last-child{flex-shrink:0;}
+.app-topbar-title{color:#1f3a2a;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.app-topbar-role{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.live-tag{white-space:nowrap;}
+.app-topbar-role{color:#5a7464;font-size:12px;}
+.btn-logout{background:#fff;color:#1f3a2a;border:1px solid rgba(63,154,95,.22);border-radius:20px;padding:7px 14px;font-size:14px;}
+.btn-logout:active{background:#e3f1d6;}
+.live-tag{background:#e3f1d6;color:var(--leaf);}
+
+.bottom-nav{
+  left:10px;right:10px;bottom:10px;border-radius:22px;
+  background:rgba(255,255,255,.88);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  border:1px solid rgba(63,154,95,.14);box-shadow:0 6px 24px rgba(31,58,42,.12);
+  padding:4px;margin-bottom:env(safe-area-inset-bottom);
+}
+.bn-item{border-radius:18px;padding:8px 4px 6px;font-size:13px;color:#5a7464;}
+.bn-item.active{background:#e3f1d6;color:var(--leaf);}
+.bn-item.active svg{stroke:var(--leaf);}
+.page-content{padding-bottom:110px;}
+
+.section-title{font-size:18px;color:#1f3a2a;letter-spacing:-.01em;}
+.card,.cc,.co-card,.co-week-acc,.tour-card,.add-form,.veg-card,.stat-card,.recap-veg-card,.veg-row{
+  border-color:rgba(63,154,95,.12);border-radius:16px;
+  box-shadow:0 1px 2px rgba(31,58,42,.04),0 6px 18px rgba(31,58,42,.06);
+}
+.co-head,.tour-head{background:linear-gradient(180deg,#f1f8ea 0%,#f7fbf2 100%);border-bottom-color:rgba(63,154,95,.12);}
+.tour-name{color:#1f3a2a;}
+.co-week-head{background:#f7f9f2;}
+.stat-num{color:var(--leaf);}
+.recap-titre{color:#1f3a2a;}
+.rvk{color:var(--leaf);}
+.veg-emoji,.cmd-veg-emoji,.cat-emoji{background:#eef6e6;}
+.veg-card .veg-prix-badge,.rvs,.cmd-veg-prixbadge,.b-rco{background:#e3f1d6;color:#245f3b;}
+.week-bar{background:#fff;border-color:rgba(63,154,95,.18);border-radius:14px;box-shadow:0 1px 2px rgba(31,58,42,.04);}
+.week-bar label{color:#1f3a2a;}
+.cmd-jour-h{background:#e3f1d6;color:#245f3b;border-radius:12px;}
+
+.btn-primary,.btn-gps,.tour-gps,.btn-save,.btn-commander,.btn-order-open,.flt.active{
+  background:var(--leaf-grad);border-color:transparent;box-shadow:0 2px 8px rgba(46,134,80,.25);
+}
+.btn-primary:active,.btn-gps:active,.tour-gps:active,.btn-save:active,.btn-commander:active{background:var(--leaf);transform:scale(.985);}
+.btn-primary,.btn-save,.btn-gps{border-radius:11px;}
+.tour-sign-btn{background:linear-gradient(135deg,#f0b54d 0%,#e09a2c 100%);color:#3d2a06;box-shadow:0 2px 10px rgba(224,154,44,.3);}
+.flt{border-radius:20px;border-color:rgba(63,154,95,.18);}
+.finput:focus,.order-qty:focus,.tarif-input:focus,.cmd-qty-input:focus{border-color:var(--leaf-hi);box-shadow:0 0 0 3px rgba(69,164,102,.15);}
+
+.modal{background:rgba(31,58,42,.35);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);}
+.modal-box{border-radius:22px 22px 0 0;}
+.modal-head{background:var(--leaf-grad);}
+.modal-head-week{color:rgba(255,255,255,.75);}
+.toast{background:#1f3a2a;box-shadow:0 6px 20px rgba(31,58,42,.25);bottom:96px;}
+.cmd-footer{border-top-color:rgba(63,154,95,.14);}
 </style>
 </head>
 <body>
@@ -648,7 +718,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 
       <div id="push-banner-encadrant" style="display:none;background:var(--g7);border:1px solid var(--g6);border-radius:11px;padding:12px 14px;margin-bottom:16px;">
         <div style="font-size:13px;color:var(--g1);margin-bottom:8px;">🔔 Reçois une alerte à chaque nouvelle commande ou nouveau client, et le jeudi si la liste de légumes de la semaine suivante n'est pas encore saisie.</div>
-        <button onclick="subscribePush('encadrant')" style="background:var(--g1);color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">Activer les notifications</button>
+        <button onclick="subscribePush('encadrant')" style="background:var(--leaf);color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">Activer les notifications</button>
       </div>
 
       <div class="add-form" style="margin-bottom:20px;">
@@ -959,7 +1029,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
     <div style="font-size:20px;font-weight:500;color:var(--g1);margin-bottom:8px;" id="inscr-modal-titre">Nouvelle inscription !</div>
     <div style="font-size:14px;color:var(--tm);margin-bottom:6px;">De nouveaux clients se sont inscrits en ligne et attendent d'être validés :</div>
     <div id="inscr-modal-noms" style="font-size:15px;font-weight:500;color:var(--g1);background:#fff7e6;border-radius:10px;padding:10px 12px;margin-bottom:20px;"></div>
-    <button onclick="inscrModalVoir()" style="width:100%;background:var(--g1);color:#fff;border:none;border-radius:11px;padding:14px;font-size:15px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:8px;">Voir et valider maintenant</button>
+    <button onclick="inscrModalVoir()" style="width:100%;background:var(--leaf);color:#fff;border:none;border-radius:11px;padding:14px;font-size:15px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:8px;">Voir et valider maintenant</button>
     <button onclick="document.getElementById('inscr-modal').style.display='none'" style="width:100%;background:none;border:none;color:var(--tl);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;padding:6px;">Plus tard</button>
   </div>
 </div>
@@ -978,7 +1048,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
     <div id="annonces-banner" style="display:none;background:#fff7e6;border:1px solid #f0c36d;border-radius:11px;padding:12px 14px;margin-bottom:16px;"></div>
     <div id="push-banner" style="display:none;background:var(--g7);border:1px solid var(--g6);border-radius:11px;padding:12px 14px;margin-bottom:16px;">
       <div style="font-size:13px;color:var(--g1);margin-bottom:8px;">🔔 Recevez une alerte chaque vendredi à 10h quand la liste de légumes est validée et les commandes ouvrent.</div>
-      <button onclick="subscribePush()" style="background:var(--g1);color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">Activer les notifications</button>
+      <button onclick="subscribePush()" style="background:var(--leaf);color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">Activer les notifications</button>
     </div>
     <div class="cmd-select-wrap">
       <div class="cmd-two-col">
@@ -1026,7 +1096,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
         <input class="finput cl-field" id="ins-commune" placeholder="Commune *" style="margin-top:8px;">
         <div style="display:flex;gap:8px;margin-top:12px;">
           <button onclick="toggleInscription()" style="flex:1;padding:11px;border:1px solid var(--g5);border-radius:9px;background:#fff;color:var(--tm);font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;">Annuler</button>
-          <button onclick="submitInscription()" style="flex:1;padding:11px;border:none;border-radius:9px;background:var(--g1);color:#fff;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">Valider mon inscription</button>
+          <button onclick="submitInscription()" style="flex:1;padding:11px;border:none;border-radius:9px;background:var(--leaf);color:#fff;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">Valider mon inscription</button>
         </div>
         </div>
        </div>
@@ -2944,7 +3014,7 @@ function majAlertesEquipe() {
   const el = document.getElementById('alertes-equipe');
   if (!el) return;
   el.style.background = '#fff3cd'; el.style.borderColor = '#e0a800';
-  const bouton = (txt, fn) => `<button onclick="${fn}" style="background:var(--g1);color:#fff;border:none;border-radius:9px;padding:11px 16px;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:10px;">${txt}</button>`;
+  const bouton = (txt, fn) => `<button onclick="${fn}" style="background:var(--leaf);color:#fff;border:none;border-radius:9px;padding:11px 16px;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:10px;">${txt}</button>`;
   if (estIphoneHorsRaccourci()) {
     el.innerHTML = `<div style="font-size:15px;font-weight:600;color:#7a5200;">🔔 Alertes nouvelles commandes</div>
       <div style="font-size:14px;color:#5c3d00;margin-top:4px;">Sur iPhone, ouvrez l'application depuis son <strong>icône sur l'écran d'accueil</strong> pour pouvoir activer les alertes.</div>`;
