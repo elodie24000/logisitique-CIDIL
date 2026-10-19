@@ -1872,6 +1872,7 @@ function renderCatalogue() {
             <input type="checkbox" class="cat-chk" id="cat-${v._uid}" value="${v.nom}" data-unite="${v._unite}" data-id="${v.id}" onchange="toggleItem('${v._uid}')">
             <div class="cat-emoji">${emojiLegume(v.nom, v.famille)}</div>
             <label class="cat-nom" for="cat-${v._uid}">${v.nom} <span style="font-size:11px;color:var(--tl);font-weight:400;">(${v._unite})</span></label>
+            <button type="button" class="tarif-del" onclick="supprimerDuCatalogue(${v.id}, '${(v.nom||'').replace(/'/g, "\\'")}')" title="Supprimer du catalogue">✕</button>
           </div>
           <div class="cat-inputs">
             <div class="finput" style="background:var(--g7);color:var(--tl);text-align:center;padding:8px;">${v._unite}</div>
@@ -1915,6 +1916,19 @@ async function creerNouveauLegume() {
     showToast('✓ ' + nom + ' ajouté au catalogue — cochez-le ci-dessus pour le publier');
   } catch(e) {
     showToast('Erreur : ' + e.message);
+  }
+}
+
+async function supprimerDuCatalogue(id, nom) {
+  if (!confirm('Supprimer « ' + nom + ' » du catalogue ? Cette variété ne sera plus proposée pour être publiée les semaines suivantes.')) return;
+  try {
+    await sbDelete('catalogue', id);
+    catalogue = catalogue.filter(c => c.id !== id);
+    renderCatalogue();
+    showToast('✓ ' + nom + ' supprimé du catalogue');
+  } catch(e) {
+    showToast('Erreur suppression');
+    console.error(e);
   }
 }
 
