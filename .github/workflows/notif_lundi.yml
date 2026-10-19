@@ -1,12 +1,10 @@
-name: Rappel lundi 7h (push + email) - cloture lundi 9h (livraison mardi)
+name: Rappel lundi (manuel uniquement) - push + email clôture lundi 9h
 
+# Les envois automatiques sont faits par Supabase (fonction rappels-clients + pg_cron),
+# à l'heure exacte de Paris : GitHub lançait ces envois avec plusieurs heures de retard.
+# Ce workflow reste disponible pour un envoi manuel de secours (onglet Actions → Run workflow).
 on:
-  schedule:
-    # 7h heure française toute l'année : 5h UTC en heure d'été, 6h UTC en heure d'hiver.
-    # Les deux créneaux sont programmés ; le job « heure » ne garde que le bon.
-    - cron: '0 5 * * 1'
-    - cron: '0 6 * * 1'
-  workflow_dispatch:        # Permet aussi un declenchement manuel pour tester
+  workflow_dispatch:
 
 jobs:
   heure:

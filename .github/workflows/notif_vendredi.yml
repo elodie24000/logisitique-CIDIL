@@ -1,10 +1,10 @@
-name: Rappel vendredi (push + email)
+name: Rappel vendredi (manuel uniquement) - push + email ouverture des commandes
 
+# Les envois automatiques sont faits par Supabase (fonction rappels-clients + pg_cron),
+# à l'heure exacte de Paris : GitHub lançait ces envois avec plusieurs heures de retard.
+# Ce workflow reste disponible pour un envoi manuel de secours (onglet Actions → Run workflow).
 on:
-  schedule:
-    - cron: '0 8 * * 5'   # Chaque vendredi 10h heure française (8h UTC)
-  workflow_dispatch:        # Permet aussi un declenchement manuel pour tester
-# Le recap des commandes au gestionnaire part a 14h : voir recap_vendredi.yml
+  workflow_dispatch:
 
 jobs:
   push:
