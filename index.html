@@ -595,6 +595,22 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
   border-radius:12px;padding:6px 8px;font-size:12px;}
 .prec-cut strong{color:#5c3d00;font-size:15px;font-weight:600;}
 .leg-svg{width:1.15em;height:1.15em;display:block;}
+
+/* ── Commande client : carte à onglets (Déjà client / Je crée ma fiche) ── */
+.acc-card{padding:0!important;overflow:hidden;border-radius:20px!important;background:#fff;}
+.acc-tabs{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid rgba(63,154,95,.16);}
+.acc-tab{background:none;border:none;padding:18px 8px 15px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;color:#7d9286;
+  cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s;}
+.acc-tab.active{color:#1f3a2a;border-bottom-color:var(--leaf);}
+.acc-pane{padding:20px 18px 18px;}
+.acc-label{display:block;font-size:14px;font-weight:600;color:#1f3a2a;margin-bottom:8px;}
+.acc-input{width:100%;box-sizing:border-box;height:50px;padding:0 14px;border:1.5px solid rgba(63,154,95,.22);border-radius:14px;
+  font-size:16px;font-family:'DM Sans',sans-serif;color:var(--text);background:#fbfdf8;outline:none;}
+.acc-input:focus{border-color:var(--leaf-hi);box-shadow:0 0 0 3px rgba(69,164,102,.15);background:#fff;}
+.acc-hint{margin-top:14px;font-size:13px;color:var(--tm);line-height:1.5;}
+.acc-hint a{color:var(--leaf);font-weight:500;}
+#cmd-inscription-form .cl-field{height:46px;border-radius:12px;border:1.5px solid rgba(63,154,95,.22);background:#fbfdf8;font-size:15px;}
+#cmd-inscription-form .cl-field:focus{background:#fff;}
 </style>
 </head>
 <body>
@@ -1085,54 +1101,26 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
       <div style="font-size:13px;color:var(--g1);margin-bottom:8px;">🔔 Recevez une alerte chaque vendredi à 10h quand la liste de légumes est validée et les commandes ouvrent.</div>
       <button onclick="subscribePush()" style="background:var(--leaf);color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">Activer les notifications</button>
     </div>
-    <div class="cmd-select-wrap">
-      <div class="cmd-two-col">
-       <div class="cmd-col who-card">
-        <div class="who-avatar">
-          <svg viewBox="0 0 64 64" aria-hidden="true">
-            <circle cx="32" cy="32" r="32" fill="#e3f1d6"/>
-            <path d="M32 13c-2-6-9-8-13-6 2 5 7 8 13 6z" fill="#5cb878"/><path d="M32 13c3-5 9-6 12-4-2 4-7 6-12 4z" fill="#3f9a5f"/><path d="M32 13v6" stroke="#3f9a5f" stroke-width="2" stroke-linecap="round"/>
-            <circle cx="32" cy="37" r="17" fill="#f4c99e"/>
-            <path d="M16 33c1-9 8-14 16-14s15 5 16 14c-5-4-10-6-16-6s-11 2-16 6z" fill="#8a5a3c"/>
-            <circle cx="26" cy="37" r="2" fill="#2b2b2b"/><circle cx="38" cy="37" r="2" fill="#2b2b2b"/>
-            <circle cx="22" cy="42" r="2.6" fill="#f29a8f" opacity=".6"/><circle cx="42" cy="42" r="2.6" fill="#f29a8f" opacity=".6"/>
-            <path d="M27 43c2.5 3 7.5 3 10 0" stroke="#2b2b2b" stroke-width="2" fill="none" stroke-linecap="round"/>
-          </svg>
-        </div>
-        <div class="who-title">Déjà client</div>
-        <div class="who-sub">Tapez votre nom</div>
-        <div class="who-action" style="position:relative;">
-          <input type="text" id="cmd-client-search" class="cmd-client-sel who-input"
-            placeholder="Votre nom…"
-            oninput="cmdSearchClient(this.value)" autocomplete="off"/>
-          <div id="cmd-client-results" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--g5);border-top:none;border-radius:0 0 12px 12px;z-index:10;max-height:200px;overflow-y:auto;text-align:left;"></div>
-        </div>
-        <div id="cmd-client-choisi" style="display:none;margin-top:8px;padding:8px 12px;background:var(--g7);border-radius:10px;font-size:14px;color:var(--g1);display:flex;justify-content:space-between;align-items:center;width:100%;">
-          <span id="cmd-client-nom"></span>
-          <button onclick="cmdResetClient()" style="background:none;border:none;color:var(--g3);font-size:18px;cursor:pointer;padding:0 4px;">×</button>
-        </div>
-       </div>
-       <div class="cmd-col who-card who-new" id="cmd-inscription-link">
-        <div class="who-avatar">
-          <svg viewBox="0 0 64 64" aria-hidden="true">
-            <circle cx="32" cy="32" r="32" fill="#fdf0d8"/>
-            <circle cx="32" cy="36" r="17" fill="#e9b48a"/>
-            <path d="M15 34c0-10 7-17 17-17s17 7 17 17c-3-6-8-9-12-9-3 3-9 5-15 4-3 1-5 3-7 5z" fill="#3b2a20"/>
-            <circle cx="26" cy="37" r="2" fill="#2b2b2b"/><circle cx="38" cy="37" r="2" fill="#2b2b2b"/>
-            <circle cx="22" cy="42" r="2.6" fill="#f29a8f" opacity=".6"/><circle cx="42" cy="42" r="2.6" fill="#f29a8f" opacity=".6"/>
-            <path d="M26.5 42.5c3 3.5 8 3.5 11 0" stroke="#2b2b2b" stroke-width="2" fill="none" stroke-linecap="round"/>
-            <circle cx="50" cy="48" r="9" fill="#e09a2c" stroke="#fff" stroke-width="2.5"/><path d="M50 44v8M46 48h8" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
-          </svg>
-        </div>
-        <div class="who-title">Nouveau client</div>
-        <div class="who-sub">Bienvenue&nbsp;!</div>
-        <div class="who-action">
-          <button type="button" class="who-btn" onclick="toggleInscription()">Créer votre fiche</button>
-        </div>
-       </div>
+    <div class="cmd-select-wrap acc-card">
+      <div class="acc-tabs" role="tablist">
+        <button type="button" class="acc-tab active" id="acc-tab-deja" role="tab" onclick="cmdOnglet('deja')">Je suis déjà client</button>
+        <button type="button" class="acc-tab" id="cmd-inscription-link" role="tab" onclick="cmdOnglet('new')">Je crée ma fiche</button>
       </div>
-      <div id="cmd-inscription-form" style="display:none;margin-top:14px;background:var(--g7);border-radius:11px;padding:14px;">
-        <div class="cmd-select-label" style="margin-bottom:10px;">Créer ma fiche client</div>
+      <div class="acc-pane" id="acc-pane-deja">
+        <label class="acc-label" for="cmd-client-search">Votre nom ou celui de votre établissement</label>
+        <div style="position:relative;">
+          <input type="text" id="cmd-client-search" class="acc-input"
+            placeholder="Tapez les 3 premières lettres…"
+            oninput="cmdSearchClient(this.value)" autocomplete="off"/>
+          <div id="cmd-client-results" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--g5);border-top:none;border-radius:0 0 12px 12px;z-index:10;max-height:200px;overflow-y:auto;"></div>
+        </div>
+        <div id="cmd-client-choisi" style="display:none;margin-top:10px;padding:10px 14px;background:#e3f1d6;border-radius:12px;font-size:15px;color:#1f3a2a;justify-content:space-between;align-items:center;">
+          <span id="cmd-client-nom"></span>
+          <button onclick="cmdResetClient()" style="background:none;border:none;color:var(--g3);font-size:20px;cursor:pointer;padding:0 4px;">×</button>
+        </div>
+        <div class="acc-hint">Première commande ? <a href="#" onclick="cmdOnglet('new');return false;">Créez votre fiche</a>, c'est rapide.</div>
+      </div>
+      <div id="cmd-inscription-form" class="acc-pane" style="display:none;">
         <input class="finput cl-field" id="ins-nom" placeholder="Nom de l'établissement / votre nom *">
         <input class="finput cl-field" id="ins-siret" placeholder="N° SIRET (si entreprise)" style="margin-top:8px;">
         <input class="finput cl-field" id="ins-contact" placeholder="Personne à contacter" style="margin-top:8px;">
@@ -1142,8 +1130,8 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
         <input class="finput cl-field" id="ins-cp" placeholder="Code postal *" style="margin-top:8px;">
         <input class="finput cl-field" id="ins-commune" placeholder="Commune *" style="margin-top:8px;">
         <div style="display:flex;gap:8px;margin-top:12px;">
-          <button onclick="toggleInscription()" style="flex:1;padding:11px;border:1px solid var(--g5);border-radius:9px;background:#fff;color:var(--tm);font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;">Annuler</button>
-          <button onclick="submitInscription()" style="flex:1;padding:11px;border:none;border-radius:9px;background:var(--leaf);color:#fff;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">Valider mon inscription</button>
+          <button onclick="cmdOnglet('deja')" style="flex:1;padding:11px;border:1px solid var(--g5);border-radius:9px;background:#fff;color:var(--tm);font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;">Annuler</button>
+          <button onclick="submitInscription()" style="flex:1;padding:11px;border:none;border-radius:9px;background:var(--leaf);color:#fff;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">Créer ma fiche</button>
         </div>
         </div>
     </div>
@@ -3423,9 +3411,18 @@ function cmdJourChange() {
   });
 }
 
+// Carte à onglets de la page commande : 'deja' (recherche du nom) ou 'new' (création de fiche)
+function cmdOnglet(quel) {
+  const neuf = quel === 'new';
+  document.getElementById('acc-pane-deja').style.display = neuf ? 'none' : '';
+  document.getElementById('cmd-inscription-form').style.display = neuf ? 'block' : 'none';
+  document.getElementById('acc-tab-deja').classList.toggle('active', !neuf);
+  document.getElementById('cmd-inscription-link').classList.toggle('active', neuf);
+  if (neuf) document.getElementById('ins-nom').focus();
+}
 function toggleInscription() {
   const f = document.getElementById('cmd-inscription-form');
-  f.style.display = (f.style.display === 'none' || !f.style.display) ? 'block' : 'none';
+  cmdOnglet(f.style.display === 'block' ? 'deja' : 'new');
 }
 
 async function submitInscription() {
@@ -3450,7 +3447,7 @@ async function submitInscription() {
       note: 'Inscription en ligne — à vérifier'
     });
     await loadClients();
-    document.getElementById('cmd-inscription-form').style.display = 'none';
+    cmdOnglet('deja');
     document.getElementById('cmd-inscription-link').style.display = 'none';
     ['ins-nom','ins-siret','ins-contact','ins-tel','ins-email','ins-adresse','ins-cp','ins-commune'].forEach(i=>document.getElementById(i).value='');
     cmdSelectClient(row.id);
@@ -3561,8 +3558,8 @@ async function initCommandeClient() {
   document.getElementById('cmd-client-choisi').style.display = 'none';
   document.getElementById('cmd-legumes-wrap').style.display = 'none';
   document.getElementById('cmd-footer').style.display = 'none';
-  const insF = document.getElementById('cmd-inscription-form'); if (insF) insF.style.display = 'none';
   const insL = document.getElementById('cmd-inscription-link'); if (insL) insL.style.display = '';
+  cmdOnglet('deja');
 
   // Semaine à proposer pour la commande (bascule sur la semaine suivante une fois mercredi 9h passé)
   const d = semaineCommandeActive();
