@@ -334,6 +334,45 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 .tour-addr{font-size:16px;color:var(--text);margin:-2px 0 10px;}
 .tour-gps{display:flex;width:100%;justify-content:center;align-items:center;gap:8px;margin-top:8px;padding:13px 14px;background:var(--leaf);color:#fff;border:none;border-radius:11px;font-size:17px;font-weight:500;text-decoration:none;cursor:pointer;font-family:'DM Sans',sans-serif;}
 .tour-sign-btn{display:block;width:100%;margin-top:10px;padding:17px;border:none;border-radius:12px;background:var(--g3);color:#fff;font-size:18px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.tour-tel{display:flex;width:100%;justify-content:center;align-items:center;gap:8px;margin-top:8px;padding:13px 14px;background:var(--white);color:var(--g1);border:1.5px solid var(--g4);border-radius:11px;font-size:17px;font-weight:500;text-decoration:none;font-family:'DM Sans',sans-serif;}
+.tour-souci-btn{display:block;width:100%;margin-top:8px;padding:13px;border:1.5px solid #e0a800;border-radius:11px;background:#fff8e1;color:#5c3d00;font-size:16px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.tour-souci-tag{font-size:15px;color:#5c3d00;background:#fff3cd;border-radius:9px;padding:8px 12px;margin-bottom:10px;}
+.tour-bandeau{border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:15px;line-height:1.4;}
+.tour-bandeau.attente{background:#fff3cd;border:2px solid #e0a800;color:#5c3d00;}
+.tour-bandeau.horsligne{background:var(--blue-bg);border:1px solid #bfd3fb;color:#1e3a8a;}
+.tour-bandeau button{margin-top:8px;padding:9px 14px;border:none;border-radius:9px;background:#e0a800;color:#3d2a06;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.tour-mode{display:flex;align-items:center;gap:10px;font-size:15px;color:var(--g1);background:var(--g7);border:1px solid var(--bd);border-radius:11px;padding:10px 14px;margin-bottom:12px;cursor:pointer;user-select:none;}
+.tour-mode input{width:22px;height:22px;accent-color:var(--leaf);}
+.tour-nav{display:flex;gap:8px;margin-top:4px;}
+.tour-nav button{flex:1;padding:14px;border-radius:11px;border:1px solid var(--bd);background:var(--white);color:var(--g1);font-size:17px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.tour-nav button:disabled{opacity:.35;cursor:default;}
+.tour-etape{font-size:15px;color:var(--tm);text-align:center;margin-bottom:8px;}
+.souci-choix{display:block;width:100%;text-align:left;padding:16px;margin-bottom:8px;border-radius:12px;border:1.5px solid var(--bd);background:var(--white);font-size:18px;color:var(--text);cursor:pointer;font-family:'DM Sans',sans-serif;}
+.souci-choix.choisi{border-color:#e0a800;background:#fff8e1;font-weight:500;}
+
+/* ── REPRENDRE LA DERNIÈRE COMMANDE (client) ── */
+.reprise-box{background:var(--g7);border:1.5px solid var(--g5);border-radius:14px;padding:14px 16px;margin-bottom:16px;}
+.reprise-titre{font-size:17px;font-weight:500;color:var(--g1);margin-bottom:4px;}
+.reprise-detail{font-size:14px;color:var(--tm);margin-bottom:10px;line-height:1.45;}
+.reprise-btn{width:100%;padding:14px;border:none;border-radius:11px;background:var(--leaf);color:#fff;font-size:16px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;}
+
+/* ── BILAN (gestionnaire) ── */
+.bl-filtres{display:flex;gap:8px;margin-bottom:14px;}
+.bl-filtres select{flex:1;}
+.bl-actions{display:flex;gap:8px;flex-wrap:wrap;margin:-12px 0 20px;}
+.bl-note{font-size:12px;color:var(--tl);background:var(--g7);border-radius:8px;padding:8px 12px;margin-bottom:18px;line-height:1.45;}
+.bl-client{background:var(--white);border:1px solid var(--bd);border-radius:12px;padding:12px 14px;margin-bottom:8px;box-shadow:var(--sh);display:flex;align-items:center;gap:10px;}
+.bl-client-info{flex:1;min-width:0;}
+.bl-client-nom{font-size:15px;font-weight:500;color:var(--g1);}
+.bl-client-chiffres{font-size:13px;color:var(--tm);font-family:'DM Mono',monospace;margin-top:2px;}
+.bl-table{width:100%;border-collapse:collapse;background:var(--white);border:1px solid var(--bd);border-radius:12px;overflow:hidden;margin-bottom:8px;font-size:14px;}
+.bl-table th{background:var(--g7);color:var(--g1);font-weight:500;text-align:left;padding:8px 10px;font-size:12px;}
+.bl-table td{padding:8px 10px;border-top:1px solid var(--bd);}
+.bl-table td svg{display:inline-block;vertical-align:middle;width:1.2em;height:1.2em;}
+.bl-table td.n,.bl-table th.n{text-align:right;font-family:'DM Mono',monospace;white-space:nowrap;}
+.bl-reglages{background:var(--white);border:1px solid var(--bd);border-radius:12px;padding:12px 14px;margin-top:22px;}
+.bl-reglages summary{cursor:pointer;font-size:14px;font-weight:500;color:var(--g1);}
+.bl-reglages .finput{width:100%;margin-bottom:8px;}
 
 /* ── SIGNATURE ÉLECTRONIQUE (livreur) ── */
 .sig-canvas-wrap{background:var(--white);border:1.5px dashed var(--bd);border-radius:12px;overflow:hidden;touch-action:none;}
@@ -756,6 +795,8 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
         <span>À livrer</span>
         <span class="badge b-rco" id="tn-count">0</span>
       </div>
+      <div id="tn-bandeaux"></div>
+      <label class="tour-mode"><input type="checkbox" id="tn-une-a-la-fois" onchange="changerModeTournee()"> Une livraison à la fois</label>
       <div id="tournee-list"><div class="empty-msg">Chargement…</div></div>
     </div>
 
@@ -890,6 +931,56 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
       </div>
     </div>
 
+    <!-- PAGE BILAN (gestionnaire) : kilos et euros par client / mois / légume, export tableur, attestation -->
+    <div class="page" id="page-bilan">
+      <div class="recap-titre">Bilan des ventes</div>
+      <div class="bl-filtres">
+        <select class="finput" id="bl-annee" onchange="chargerBilan()"></select>
+        <select class="finput" id="bl-mois" onchange="renderBilan()">
+          <option value="">Toute l'année</option>
+          <option value="0">Janvier</option><option value="1">Février</option><option value="2">Mars</option>
+          <option value="3">Avril</option><option value="4">Mai</option><option value="5">Juin</option>
+          <option value="6">Juillet</option><option value="7">Août</option><option value="8">Septembre</option>
+          <option value="9">Octobre</option><option value="10">Novembre</option><option value="11">Décembre</option>
+        </select>
+      </div>
+      <div class="recap-resume" id="bl-resume">Chargement…</div>
+      <div class="bl-actions">
+        <button class="btn-rnm" onclick="exporterBilanCsv('clients')">⬇ Tableur par client</button>
+        <button class="btn-rnm" onclick="exporterBilanCsv('detail')">⬇ Tableur détaillé</button>
+      </div>
+      <div class="bl-note">Toutes les commandes enregistrées sont comptées, avec les quantités corrigées au réel ; les légumes « non disponibles » sont retirés. Les commandes supprimées avec « Effacer toutes les commandes » ne sont plus dans le bilan.</div>
+
+      <div class="section-title">Par client</div>
+      <div id="bl-clients"><div class="empty-msg">Chargement…</div></div>
+
+      <div class="section-title" style="margin-top:22px;">Par mois</div>
+      <div id="bl-mois-list"></div>
+
+      <div class="section-title" style="margin-top:22px;">Par légume</div>
+      <div id="bl-legumes"></div>
+
+      <details class="bl-reglages">
+        <summary>⚙️ Réglages de l'attestation d'achats</summary>
+        <div style="font-size:12px;color:var(--tl);margin:10px 0;line-height:1.45;">
+          Le bouton 📄 de chaque client prépare une attestation à imprimer ou enregistrer en PDF, utile aux cantines pour leur déclaration Egalim (ma-cantine).
+          Attention : le « local » seul ne compte pas dans les 50 % Egalim, il se déclare à part. Si vos légumes ont un label (Bio, HVE…), indiquez-le ci-dessous : il apparaîtra sur l'attestation.
+        </div>
+        <label class="cl-lbl" style="margin-top:0;">Nom du signataire</label>
+        <input class="finput" id="att-signataire" placeholder="Ex : Marie Dupont" oninput="sauverReglagesAttestation()">
+        <label class="cl-lbl" style="margin-top:0;">Fonction</label>
+        <input class="finput" id="att-fonction" placeholder="Ex : Directrice" oninput="sauverReglagesAttestation()">
+        <label class="cl-lbl" style="margin-top:0;">Lieu de production</label>
+        <input class="finput" id="att-lieu" placeholder="Ex : Montbron (Charente)" oninput="sauverReglagesAttestation()">
+        <label class="cl-lbl" style="margin-top:0;">Ville (« Fait à … »)</label>
+        <input class="finput" id="att-ville" placeholder="Ex : Montbron" oninput="sauverReglagesAttestation()">
+        <label class="cl-lbl" style="margin-top:0;">Label / signe de qualité (laisser vide si aucun)</label>
+        <input class="finput" id="att-label" placeholder="Ex : Agriculture biologique (certificat n°…)" oninput="sauverReglagesAttestation()">
+        <label class="cl-lbl" style="margin-top:0;">Mention sur les prix (optionnel)</label>
+        <input class="finput" id="att-prix" placeholder="Ex : Montants HT / association non assujettie à la TVA" oninput="sauverReglagesAttestation()">
+      </details>
+    </div>
+
     <!-- PAGE CLIENTS (gestionnaire) -->
     <div class="page" id="page-clients">
       <button class="btn-primary" style="margin-bottom:14px;" onclick="openClientModal()">
@@ -1016,6 +1107,29 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
     <div class="modal-foot">
       <button class="btn-cancel" onclick="closeSignatureModal()">Annuler</button>
       <button class="btn-save" id="sig-validate-btn" disabled onclick="validerLivraisonSignee()">Valider la livraison ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ MODALE SOUCI DE LIVRAISON (livreur) ══════ -->
+<div class="modal" id="modal-souci">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <div class="modal-head-name" id="souci-name">Client</div>
+      <div class="modal-head-week">Je ne peux pas livrer</div>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:16px;color:var(--text);margin-bottom:12px;">Que se passe-t-il ?</div>
+      <button type="button" class="souci-choix" data-motif="Client absent" onclick="choisirSouci(this)">🚪 Personne n'est là</button>
+      <button type="button" class="souci-choix" data-motif="Fermé" onclick="choisirSouci(this)">🔒 C'est fermé</button>
+      <button type="button" class="souci-choix" data-motif="Adresse introuvable" onclick="choisirSouci(this)">🗺️ Je ne trouve pas l'adresse</button>
+      <button type="button" class="souci-choix" data-motif="Autre souci" onclick="choisirSouci(this)">📝 Autre souci</button>
+      <textarea class="finput" id="souci-note" placeholder="Un mot pour l'encadrant (pas obligatoire)" style="width:100%;min-height:60px;margin-top:4px;font-family:'DM Sans',sans-serif;font-size:16px;"></textarea>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="fermerSouci()">Annuler</button>
+      <button class="btn-save" id="souci-valider" disabled onclick="validerSouci()">Prévenir ✓</button>
     </div>
   </div>
 </div>
@@ -1152,6 +1266,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
       </div>
     </div>
     <div id="cmd-legumes-wrap" style="display:none;">
+      <div id="cmd-reprise"></div>
       <div id="cmd-legumes-list"></div>
       <div id="cmd-mode-wrap" style="margin-top:16px;">
         <div class="cmd-select-label">Comment récupérez-vous votre commande ?</div>
@@ -1313,7 +1428,16 @@ let clients = CLIENTS_SEED.slice();
 let clientById = {};
 function indexClients() { clientById = {}; clients.forEach(c => { if (c.id != null) clientById[c.id] = c; }); }
 async function loadClients() {
-  try { clients = await sbGet('clients', 'order=id.asc'); } catch(e) { console.error('loadClients', e); }
+  try {
+    clients = await sbGet('clients', 'order=id.asc');
+    try { localStorage.setItem(CLE_CACHE_CLIENTS, JSON.stringify(clients)); } catch(_) {}
+  } catch(e) {
+    console.error('loadClients', e);
+    // Livreur sans réseau : dernière liste reçue (adresses, téléphones) au lieu de la liste figée
+    if (currentRole === 'livreur') {
+      try { const c = JSON.parse(localStorage.getItem(CLE_CACHE_CLIENTS)); if (c && c.length) clients = c; } catch(_) {}
+    }
+  }
   indexClients();
 }
 function getClient(id) { return clientById[id] || clients.find(c => String(c.id) === String(id)) || {}; }
@@ -1404,6 +1528,7 @@ const NAV_CONFIG = {
     {id:'clients',label:'Clients',icon:'<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>'},
     {id:'tarifs',label:'Tarifs',icon:'<svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 100 7h5a3.5 3.5 0 110 7H6"/></svg>'},
     {id:'commandes',label:'Commandes',icon:'<svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>'},
+    {id:'bilan',label:'Bilan',icon:'<svg viewBox="0 0 24 24"><path d="M3 21h18"/><rect x="5" y="11" width="3" height="7"/><rect x="10.5" y="6" width="3" height="12"/><rect x="16" y="9" width="3" height="9"/></svg>'},
   ],
 };
 
@@ -1548,6 +1673,7 @@ function initPage(id) {
   if (id==='tarifs') loadTarifs();
   if (id==='recap') { loadClients().then(majBanniereInscriptions); loadVeggies().then(()=>loadCommandes()).then(()=>renderRecap()); }
   if (id==='clients') renderClients2();
+  if (id==='bilan') initBilan();
 }
 
 function showInscriptionModal() {
@@ -2240,8 +2366,10 @@ async function loadCommandes() {
     state.pastOrders = Object.entries(byWeek)
       .sort((a,b) => b[0].localeCompare(a[0]))
       .map(([semaine, records]) => ({semaine, records}));
+    memoriserCommandesTournee(rows);
   } catch(e) {
     console.error('Erreur chargement commandes:', e);
+    if (currentRole === 'livreur') reprendreCommandesTournee();
   }
   renderOrders();
 }
@@ -2522,33 +2650,44 @@ async function marquerCommandePrete(idx) {
 // Commandes prêtes mais pas encore livrées, nécessitant un passage du livreur
 // (hors clients internes et hors retrait sur place, gérés directement au statut "prête").
 function commandesALivrer() {
+  const signeesEnAttente = new Set(lireFileAttente().filter(a => a.type === 'signature').map(a => a.commande_id));
   return Object.keys(state.orders).filter(idx => {
     const od = state.orders[idx];
     const c = getClient(idx);
-    return od._prete && !od._livre && necessiteLivreur(c, od);
+    return od._prete && !od._livre && necessiteLivreur(c, od) && !signeesEnAttente.has(od._sbId);
   });
 }
 
 function renderTournee() {
   const el = document.getElementById('tournee-list');
   if (!el) return;
+  majBandeauxTournee();
   const idxs = commandesALivrer();
   const cnt = document.getElementById('tn-count');
   if (cnt) cnt.textContent = idxs.length;
   if (!idxs.length) { el.innerHTML = '<div class="empty-msg">Aucune livraison en attente 🎉</div>'; return; }
-  el.innerHTML = idxs.map(idx => {
+  const uneALaFois = modeTourneeUneALaFois();
+  const chk = document.getElementById('tn-une-a-la-fois');
+  if (chk) chk.checked = uneALaFois;
+  if (_tourneePos >= idxs.length) _tourneePos = idxs.length - 1;
+  if (_tourneePos < 0) _tourneePos = 0;
+  const aAfficher = uneALaFois ? [idxs[_tourneePos]] : idxs;
+  const soucis = lireSoucis();
+  el.innerHTML = (uneALaFois ? `<div class="tour-etape">Livraison ${_tourneePos+1} sur ${idxs.length}</div>` : '') + aAfficher.map(idx => {
     const c = getClient(idx);
     const od = state.orders[idx];
     const {lines, total, hasP} = lignesCommandeHtml(od);
     const frais = fraisLivraison(c);
     const totalTxt = hasP ? (total+frais).toFixed(2)+' €' : '';
     const adrEsc = (c.adresse||'').replace(/'/g,"\\'");
+    const souci = soucis[od._sbId];
     return `<div class="tour-card">
       <div class="tour-head">
         <span class="tour-name">${c.nom}</span>
         ${c.km!=null?`<span class="km-tag">${c.km}km</span>`:''}
       </div>
       <div class="tour-body">
+        ${souci?`<div class="tour-souci-tag">⚠️ Souci signalé à ${souci.heure} : ${escapeHtml(souci.motif)}</div>`:''}
         ${c.adresse?`<div class="tour-addr">📍 ${c.adresse}</div>`:'<div class="tour-addr">Adresse à compléter</div>'}
         ${c.tel?`<div class="tour-addr">📞 ${c.tel}</div>`:''}
         ${c.note?`<div class="note-tag">⚠ ${c.note}</div>`:''}
@@ -2556,10 +2695,15 @@ function renderTournee() {
         ${totalTxt?`<div class="co-total">Total : ${totalTxt}</div>`:''}
         ${c.adresse?`<button type="button" class="tour-gps" onclick="openItineraire('${adrEsc}')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>Itinéraire GPS</button>`:''}
+        ${c.tel?`<a class="tour-tel" href="tel:${lienTel(c.tel)}">📞 Appeler</a>`:''}
         <button class="tour-sign-btn" onclick="openSignatureModal('${idx}')">✍️ Signer la livraison</button>
+        <button class="tour-souci-btn" onclick="ouvrirSouci('${idx}')">⚠️ Je ne peux pas livrer</button>
       </div>
     </div>`;
-  }).join('');
+  }).join('') + (uneALaFois && idxs.length > 1 ? `<div class="tour-nav">
+      <button onclick="tourneeDeplacer(-1)" ${_tourneePos===0?'disabled':''}>‹ Précédente</button>
+      <button onclick="tourneeDeplacer(1)" ${_tourneePos>=idxs.length-1?'disabled':''}>Suivante ›</button>
+    </div>` : '');
 }
 
 function openItineraire(adr) {
@@ -2663,6 +2807,8 @@ async function validerLivraisonSignee() {
     showToast('✓ Livraison confirmée et signée');
   } catch(e) {
     console.error(e);
+    // Pas de réseau : la livraison est gardée sur le téléphone et partira toute seule plus tard
+    if (erreurReseau(e) && mettreSignatureEnAttente(idx)) { btn.disabled = !sigHasStroke; btn.textContent = btnTexte; return; }
     showToast('Erreur lors de l\'envoi de la signature');
     btn.disabled = !sigHasStroke; btn.textContent = btnTexte;
     return;
@@ -3378,6 +3524,7 @@ function cmdSelectClient(idx) {
   document.getElementById('cmd-legumes-wrap').style.display = 'block';
   document.getElementById('cmd-footer').style.display = 'block';
   document.getElementById('cmd-jour-titre').textContent = cli.cat === 'Interne' ? 'Jour de réassort souhaité' : 'Jour de livraison souhaité';
+  proposerRepriseCommande(idx);
   const joursDispo = joursDisponiblesPourClient(cli);
   afficherJourImpose(cli);
   renderJourOptions('cmd-jour-options', 'livraison', joursDispo, 'cmdJourChange', null);
@@ -3731,6 +3878,462 @@ async function submitClientOrder() {
     showToast('Erreur envoi commande');
     console.error(e);
   }
+}
+
+// ══════ TOURNÉE SANS RÉSEAU (livreur) ══════
+// Les signatures (et les soucis signalés) faites sans réseau sont gardées sur le téléphone
+// (file d'attente dans localStorage) et envoyées dès que le réseau revient. La liste des
+// livraisons et des clients reçue en dernier est aussi gardée, pour rouvrir l'appli hors réseau.
+const CLE_FILE_ATTENTE = 'cidil_file_attente';
+const CLE_CACHE_COMMANDES = 'cidil_cache_commandes';
+const CLE_CACHE_CLIENTS = 'cidil_cache_clients';
+const CLE_SOUCIS = 'cidil_soucis_livraison';
+const CLE_TOURNEE_UNE = 'cidil_tournee_une_a_la_fois';
+let _envoiFileEnCours = false;
+let _tourneeHorsLigneDepuis = null; // heure de la liste gardée, si on l'affiche faute de réseau
+
+function lireFileAttente() { try { return JSON.parse(localStorage.getItem(CLE_FILE_ATTENTE)) || []; } catch(e) { return []; } }
+function ecrireFileAttente(f) { try { localStorage.setItem(CLE_FILE_ATTENTE, JSON.stringify(f)); return true; } catch(e) { return false; } }
+function erreurReseau(e) { return !navigator.onLine || e instanceof TypeError; }
+function heureCourte(d) { return (d ? new Date(d) : new Date()).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}); }
+
+function memoriserCommandesTournee(rows) {
+  _tourneeHorsLigneDepuis = null;
+  // Sans les signatures (images lourdes) : seule compte la présence d'une signature
+  const semaine = rows.filter(r => r.semaine === state.semaineEquipe)
+    .map(r => Object.assign({}, r, { signature_data: r.signature_data ? '1' : null }));
+  try { localStorage.setItem(CLE_CACHE_COMMANDES, JSON.stringify({ semaine: state.semaineEquipe, at: new Date().toISOString(), rows: semaine })); } catch(_) {}
+}
+function reprendreCommandesTournee() {
+  try {
+    const cache = JSON.parse(localStorage.getItem(CLE_CACHE_COMMANDES));
+    if (!cache || cache.semaine !== state.semaineEquipe) return;
+    state.orders = {};
+    cache.rows.forEach(r => { state.orders[r.client_idx] = commandeDepuisLigne(r); });
+    _tourneeHorsLigneDepuis = cache.at;
+  } catch(_) {}
+}
+
+function mettreSignatureEnAttente(idx) {
+  const od = state.orders[idx];
+  const canvas = document.getElementById('sig-canvas');
+  const ok = ecrireFileAttente([...lireFileAttente(), {
+    type: 'signature',
+    commande_id: od._sbId,
+    signature_base64: canvas.toDataURL('image/png'),
+    signataire_nom: document.getElementById('sig-signataire').value.trim() || null,
+    client_nom: getClient(idx).nom,
+    at: new Date().toISOString(),
+  }]);
+  if (!ok) return false; // téléphone plein : on garde le message d'erreur habituel
+  closeSignatureModal();
+  renderTournee();
+  showToast('📶 Pas de réseau : livraison gardée, elle partira toute seule');
+  return true;
+}
+
+async function envoyerFileAttente() {
+  if (_envoiFileEnCours) return;
+  const file = lireFileAttente();
+  if (!file.length) return;
+  _envoiFileEnCours = true;
+  const restants = [];
+  let envoyees = 0, coupure = false;
+  for (const a of file) {
+    if (coupure) { restants.push(a); continue; }
+    try {
+      if (a.type === 'signature') {
+        const res = await fetch(DELIVERY_SIGN_FUNCTION_URL, {
+          method: 'POST',
+          headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ commande_id: a.commande_id, signature_base64: a.signature_base64, signataire_nom: a.signataire_nom })
+        });
+        if (!res.ok) throw new Error(await res.text());
+        logActivity('livraison_signee', `${a.client_nom} — livraison signée à ${heureCourte(a.at)} (envoyée au retour du réseau)`, 'livreur');
+        envoyees++;
+      } else if (a.type === 'souci') {
+        await sbPost('activity_log', { type: 'livraison_souci', details: a.details, role: 'livreur' });
+      }
+    } catch(e) {
+      console.error('envoyerFileAttente', e);
+      if (erreurReseau(e)) coupure = true;
+      restants.push(a);
+    }
+  }
+  ecrireFileAttente(restants);
+  _envoiFileEnCours = false;
+  if (envoyees) {
+    showToast(`✓ ${envoyees} livraison${envoyees>1?'s':''} envoyée${envoyees>1?'s':''}`);
+    if (currentPage === 'tournee') loadCommandes().then(() => renderTournee());
+  } else if (currentPage === 'tournee') renderTournee();
+}
+
+function majBandeauxTournee() {
+  const el = document.getElementById('tn-bandeaux');
+  if (!el) return;
+  const nb = lireFileAttente().filter(a => a.type === 'signature').length;
+  let html = '';
+  if (nb) html += `<div class="tour-bandeau attente">⏳ <strong>${nb} livraison${nb>1?'s':''} signée${nb>1?'s':''}</strong> pas encore envoyée${nb>1?'s':''}.<br>Elle${nb>1?'s':''} partir${nb>1?'ont':'a'} toute${nb>1?'s':''} seule${nb>1?'s':''} quand le réseau revient.<br><button onclick="envoyerFileAttente()">Réessayer maintenant</button></div>`;
+  if (_tourneeHorsLigneDepuis) html += `<div class="tour-bandeau horsligne">📶 Pas de réseau : liste gardée à ${heureCourte(_tourneeHorsLigneDepuis)}.</div>`;
+  el.innerHTML = html;
+}
+
+window.addEventListener('online', envoyerFileAttente);
+setInterval(() => { if (navigator.onLine && lireFileAttente().length) envoyerFileAttente(); }, 30000);
+setTimeout(envoyerFileAttente, 3000);
+
+// ══════ SOUCI DE LIVRAISON (livreur) ══════
+// « Je ne peux pas livrer » : le motif part dans le journal d'activité (visible par la
+// gestionnaire) et reste affiché sur la carte. La commande reste à livrer.
+let _souciIdx = null;
+function lireSoucis() { try { return JSON.parse(localStorage.getItem(CLE_SOUCIS)) || {}; } catch(e) { return {}; } }
+function lienTel(tel) {
+  const n = String(tel).replace(/[^\d+]/g, '');
+  return n.length === 9 ? '0' + n : n;
+}
+function ouvrirSouci(idx) {
+  _souciIdx = idx;
+  document.getElementById('souci-name').textContent = getClient(idx).nom;
+  document.querySelectorAll('#modal-souci .souci-choix').forEach(b => b.classList.remove('choisi'));
+  document.getElementById('souci-note').value = '';
+  document.getElementById('souci-valider').disabled = true;
+  document.getElementById('modal-souci').classList.add('open');
+}
+function fermerSouci() { document.getElementById('modal-souci').classList.remove('open'); }
+function choisirSouci(btn) {
+  document.querySelectorAll('#modal-souci .souci-choix').forEach(b => b.classList.toggle('choisi', b === btn));
+  document.getElementById('souci-valider').disabled = false;
+}
+async function validerSouci() {
+  const btn = document.querySelector('#modal-souci .souci-choix.choisi');
+  if (!btn || _souciIdx == null) return;
+  const od = state.orders[_souciIdx];
+  const nom = getClient(_souciIdx).nom;
+  const note = document.getElementById('souci-note').value.trim();
+  const motif = btn.dataset.motif + (note ? ' — ' + note : '');
+  const soucis = lireSoucis();
+  soucis[od._sbId] = { motif, heure: heureCourte() };
+  try { localStorage.setItem(CLE_SOUCIS, JSON.stringify(soucis)); } catch(_) {}
+  fermerSouci();
+  renderTournee();
+  const details = `${nom} — pas livré : ${motif}`;
+  try {
+    await sbPost('activity_log', { type: 'livraison_souci', details, role: 'livreur' });
+    showToast('✓ Souci signalé');
+  } catch(e) {
+    if (erreurReseau(e) && ecrireFileAttente([...lireFileAttente(), { type: 'souci', details, at: new Date().toISOString() }])) {
+      showToast('📶 Pas de réseau : le souci partira tout seul');
+    } else showToast('Erreur : souci non envoyé');
+  }
+}
+
+// ══════ MODE « UNE LIVRAISON À LA FOIS » (livreur) ══════
+let _tourneePos = 0;
+function modeTourneeUneALaFois() { try { return localStorage.getItem(CLE_TOURNEE_UNE) === '1'; } catch(e) { return false; } }
+function changerModeTournee() {
+  const on = document.getElementById('tn-une-a-la-fois').checked;
+  try { localStorage.setItem(CLE_TOURNEE_UNE, on ? '1' : '0'); } catch(_) {}
+  _tourneePos = 0;
+  renderTournee();
+}
+function tourneeDeplacer(pas) {
+  _tourneePos += pas;
+  renderTournee();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ══════ REPRENDRE LA DERNIÈRE COMMANDE (client) ══════
+// Propose de recopier la dernière commande d'une semaine précédente. Les légumes changent
+// d'identifiant chaque semaine : on les retrouve par leur nom, dans la limite du stock.
+let _derniereCommande = null;
+async function proposerRepriseCommande(idx) {
+  const el = document.getElementById('cmd-reprise');
+  if (!el) return;
+  el.innerHTML = '';
+  _derniereCommande = null;
+  if (!state.semaine) return;
+  try {
+    const rows = await sbGet('commandes_clients', `client_idx=eq.${idx}&semaine=lt.${state.semaine}&select=semaine,items,created_at&order=semaine.desc,created_at.desc&limit=1`);
+    if (_cmdClientIdx !== idx || !rows.length) return;
+    const items = (typeof rows[0].items === 'string' ? JSON.parse(rows[0].items) : (rows[0].items || [])).filter(it => it.quantite > 0);
+    if (!items.length) return;
+    _derniereCommande = items;
+    const resume = items.map(it => `${escapeHtml(it.nom)} ${it.quantite} ${pluriel(it.quantite, it.unite || 'kg')}`).join(', ');
+    el.innerHTML = `<div class="reprise-box">
+      <div class="reprise-titre">🔁 Comme la dernière fois ?</div>
+      <div class="reprise-detail">Semaine du ${fmtDate(rows[0].semaine + 'T00:00:00')} : ${resume}</div>
+      <button class="reprise-btn" onclick="reprendreDerniereCommande()">Reprendre cette commande</button>
+    </div>`;
+  } catch(e) { console.error('proposerRepriseCommande', e); }
+}
+
+function reprendreDerniereCommande() {
+  if (!_derniereCommande) return;
+  const veggies = window._cmdVeggies || [];
+  const repris = [], reduits = [], absents = [];
+  _derniereCommande.forEach(it => {
+    const v = veggies.find(x => cleNom(x.nom) === cleNom(it.nom) && (x.unite || 'kg') === (it.unite || 'kg'))
+           || veggies.find(x => cleNom(x.nom) === cleNom(it.nom));
+    const dispo = v ? (v.kg_dispo || 0) : 0;
+    if (!v || dispo <= 0) { absents.push(it.nom); return; }
+    const qty = Math.min(it.quantite, dispo);
+    if (qty < it.quantite) reduits.push(`${it.nom} (${qty} au lieu de ${it.quantite})`);
+    repris.push(it.nom);
+    document.getElementById('cmdchk-' + v.id).checked = true;
+    document.getElementById('cmdcard-' + v.id).classList.add('selected');
+    document.getElementById('cmdqty-' + v.id).value = qty;
+  });
+  updateCmdTotal();
+  let html = repris.length
+    ? `<div class="reprise-titre">✓ ${repris.length} légume${repris.length>1?'s':''} repris</div><div class="reprise-detail" style="margin-bottom:0;">Vous pouvez changer les quantités en dessous.`
+    : `<div class="reprise-titre">Aucun de ces légumes n'est disponible cette semaine</div><div class="reprise-detail" style="margin-bottom:0;">`;
+  if (reduits.length) html += `<br>⚠ Moins de stock : ${reduits.map(escapeHtml).join(', ')}.`;
+  if (absents.length && repris.length) html += `<br>Pas disponible cette semaine : ${absents.map(escapeHtml).join(', ')}.`;
+  document.getElementById('cmd-reprise').innerHTML = `<div class="reprise-box">${html}</div></div>`;
+}
+
+// ══════ BILAN (gestionnaire) ══════
+// Kilos et euros par client, par mois et par légume sur une année, à partir de toutes les
+// commandes enregistrées (quantité réelle si corrigée, légumes non disponibles exclus).
+// Écran en lecture seule : ne modifie aucune commande.
+const MOIS_NOMS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+let _bilan = { annee: null, lignes: [], commandes: [] };
+
+function initBilan() {
+  const sel = document.getElementById('bl-annee');
+  const an = new Date().getFullYear();
+  if (!sel.options.length) {
+    for (let a = an; a >= 2026; a--) sel.add(new Option(a, a));
+    document.getElementById('bl-mois').value = '';
+  }
+  chargerReglagesAttestation();
+  loadClients().then(chargerBilan);
+}
+
+// Date de livraison d'une commande : jour de commande pour les clients sans jour fixe,
+// sinon le mardi/jeudi de la semaine (le lundi si aucun jour n'est indiqué).
+function dateBilan(r, client) {
+  if (sansJourFixe(client) && r.created_at) return new Date(r.created_at);
+  const d = new Date(r.semaine + 'T00:00:00');
+  if (r.jour_livraison && r.jour_livraison in JOUR_OFFSET) d.setDate(d.getDate() + JOUR_OFFSET[r.jour_livraison]);
+  return d;
+}
+
+async function chargerBilan() {
+  const annee = parseInt(document.getElementById('bl-annee').value);
+  document.getElementById('bl-resume').textContent = 'Chargement…';
+  // Une commande de fin décembre peut être livrée en janvier (et inversement) : marge d'une semaine
+  try {
+    const rows = await sbGet('commandes_clients',
+      `and=(semaine.gte.${annee-1}-12-24,semaine.lte.${annee}-12-31)&select=id,client_idx,client_nom,semaine,items,jour_livraison,mode_livraison,created_at&order=semaine.asc`);
+    const lignes = [], commandes = [];
+    rows.forEach(r => {
+      const c = getClient(r.client_idx);
+      const date = dateBilan(r, c);
+      if (date.getFullYear() !== annee) return;
+      const items = typeof r.items === 'string' ? JSON.parse(r.items) : (r.items || []);
+      let compte = false;
+      items.forEach(it => {
+        if (it.dispo === false) return;
+        const qte = Number(it.quantite_reelle != null ? it.quantite_reelle : it.quantite) || 0;
+        if (qte <= 0) return;
+        compte = true;
+        const prix = it.prix_kg != null ? Number(it.prix_kg) : null;
+        lignes.push({ commande: r.id, date, mois: date.getMonth(), client: r.client_idx, clientNom: c.nom || r.client_nom, cat: c.cat || '',
+          legume: it.nom, unite: it.unite || 'kg', qte, prix, montant: prix != null ? prix * qte : 0 });
+      });
+      if (!compte) return;
+      const frais = r.mode_livraison === 'retrait' ? 0 : fraisLivraison(c);
+      commandes.push({ id: r.id, date, mois: date.getMonth(), client: r.client_idx, clientNom: c.nom || r.client_nom, cat: c.cat || '', frais });
+    });
+    _bilan = { annee, lignes, commandes };
+  } catch(e) {
+    console.error('chargerBilan', e);
+    _bilan = { annee, lignes: [], commandes: [] };
+    document.getElementById('bl-resume').textContent = 'Erreur de chargement, réessayez';
+    return;
+  }
+  renderBilan();
+}
+
+function filtreBilanMois() {
+  const v = document.getElementById('bl-mois').value;
+  return v === '' ? null : parseInt(v);
+}
+function donneesBilan() {
+  const m = filtreBilanMois();
+  return {
+    lignes: m == null ? _bilan.lignes : _bilan.lignes.filter(l => l.mois === m),
+    commandes: m == null ? _bilan.commandes : _bilan.commandes.filter(c => c.mois === m),
+  };
+}
+function euros(n) { return n.toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €'; }
+function kilos(n) { return (Math.round(n*10)/10).toLocaleString('fr-FR') + ' kg'; }
+
+// Regroupe lignes et commandes par une clé : { cle: {nb, kg, legumes, frais, ...} }
+function regrouperBilan(lignes, commandes, cleFn) {
+  const g = {};
+  const get = k => g[k] = g[k] || { nb: 0, kg: 0, legumes: 0, frais: 0 };
+  commandes.forEach(c => { const x = get(cleFn(c)); x.nb++; x.frais += c.frais; });
+  lignes.forEach(l => { const x = get(cleFn(l)); if (l.unite === 'kg') x.kg += l.qte; x.legumes += l.montant; });
+  return g;
+}
+
+function renderBilan() {
+  const { lignes, commandes } = donneesBilan();
+  const m = filtreBilanMois();
+  const periode = (m == null ? '' : MOIS_NOMS[m] + ' ') + _bilan.annee;
+  const tot = regrouperBilan(lignes, commandes, () => 'tout').tout;
+  document.getElementById('bl-resume').textContent = tot
+    ? `${periode} · ${tot.nb} commande(s) · ${kilos(tot.kg)} · Légumes ${euros(tot.legumes)} · Livraison ${euros(tot.frais)} · Total ${euros(tot.legumes + tot.frais)}`
+    : `${periode} · Aucune commande`;
+
+  const parClient = regrouperBilan(lignes, commandes, x => x.client);
+  const clientsTries = Object.entries(parClient).sort((a, b) => (b[1].legumes + b[1].frais) - (a[1].legumes + a[1].frais));
+  const nomClient = id => { const c = commandes.find(x => String(x.client) === String(id)); return c ? c.clientNom : ''; };
+  document.getElementById('bl-clients').innerHTML = clientsTries.length ? clientsTries.map(([id, x]) => `
+    <div class="bl-client">
+      <div class="bl-client-info">
+        <div class="bl-client-nom">${escapeHtml(nomClient(id))}</div>
+        <div class="bl-client-chiffres">${x.nb} cde · ${kilos(x.kg)} · ${euros(x.legumes + x.frais)}</div>
+      </div>
+      <button class="btn-rnm" onclick="imprimerAttestation('${id}')" title="Attestation d'achats">📄 Attestation</button>
+    </div>`).join('') : '<div class="empty-msg">Aucune commande sur cette période</div>';
+
+  const parMois = regrouperBilan(lignes, commandes, x => x.mois);
+  const moisTries = Object.keys(parMois).map(Number).sort((a, b) => a - b);
+  document.getElementById('bl-mois-list').innerHTML = moisTries.length ? `<table class="bl-table">
+    <tr><th>Mois</th><th class="n">Cdes</th><th class="n">Kilos</th><th class="n">Total</th></tr>
+    ${moisTries.map(k => { const x = parMois[k]; return `<tr><td>${MOIS_NOMS[k]}</td><td class="n">${x.nb}</td><td class="n">${kilos(x.kg)}</td><td class="n">${euros(x.legumes + x.frais)}</td></tr>`; }).join('')}
+  </table>` : '<div class="empty-msg">—</div>';
+
+  const parLegume = {};
+  lignes.forEach(l => {
+    const k = cleNom(l.legume) + '|' + l.unite;
+    parLegume[k] = parLegume[k] || { nom: l.legume, unite: l.unite, qte: 0, montant: 0 };
+    parLegume[k].qte += l.qte; parLegume[k].montant += l.montant;
+  });
+  const legTries = Object.values(parLegume).sort((a, b) => b.montant - a.montant);
+  document.getElementById('bl-legumes').innerHTML = legTries.length ? `<table class="bl-table">
+    <tr><th>Légume</th><th class="n">Quantité</th><th class="n">Montant</th></tr>
+    ${legTries.map(x => `<tr><td>${emojiLegume(x.nom)} ${escapeHtml(x.nom)}</td><td class="n">${Math.round(x.qte*10)/10} ${pluriel(x.qte, x.unite)}</td><td class="n">${euros(x.montant)}</td></tr>`).join('')}
+  </table>` : '<div class="empty-msg">—</div>';
+}
+
+// Export tableur (CSV pour Excel / LibreOffice : point-virgule, virgule décimale)
+function exporterBilanCsv(type) {
+  const { lignes, commandes } = donneesBilan();
+  if (!commandes.length) return showToast('Aucune commande sur cette période');
+  const num = n => (Math.round(n * 100) / 100).toString().replace('.', ',');
+  const cell = v => { const s = String(v == null ? '' : v); return /[;"\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  let entetes, data;
+  if (type === 'clients') {
+    const g = regrouperBilan(lignes, commandes, x => x.client);
+    entetes = ['Client', 'Catégorie', 'Nombre de commandes', 'Kilos', 'Légumes (€)', 'Livraison (€)', 'Total (€)'];
+    data = Object.entries(g).map(([id, x]) => {
+      const c = commandes.find(y => String(y.client) === String(id));
+      return [c.clientNom, c.cat, x.nb, num(x.kg), num(x.legumes), num(x.frais), num(x.legumes + x.frais)];
+    }).sort((a, b) => String(a[0]).localeCompare(String(b[0]), 'fr'));
+  } else {
+    entetes = ['Date de livraison', 'Mois', 'Client', 'Catégorie', 'Légume', 'Quantité', 'Unité', 'Prix unitaire (€)', 'Montant (€)'];
+    data = lignes.slice().sort((a, b) => a.date - b.date).map(l =>
+      [l.date.toLocaleDateString('fr-FR'), MOIS_NOMS[l.mois], l.clientNom, l.cat, l.legume, num(l.qte), l.unite, l.prix != null ? num(l.prix) : '', num(l.montant)]);
+  }
+  const csv = '﻿' + [entetes, ...data].map(r => r.map(cell).join(';')).join('\r\n');
+  const m = filtreBilanMois();
+  const nom = `CIDIL-bilan-${type === 'clients' ? 'clients' : 'detail'}-${_bilan.annee}${m == null ? '' : '-' + String(m + 1).padStart(2, '0')}.csv`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = nom;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+// Réglages de l'attestation (gardés sur cet appareil)
+const CLE_ATTESTATION = 'cidil_reglages_attestation';
+const CHAMPS_ATTESTATION = ['signataire', 'fonction', 'lieu', 'ville', 'label', 'prix'];
+function reglagesAttestation() { try { return JSON.parse(localStorage.getItem(CLE_ATTESTATION)) || {}; } catch(e) { return {}; } }
+function chargerReglagesAttestation() {
+  const r = reglagesAttestation();
+  CHAMPS_ATTESTATION.forEach(k => { const el = document.getElementById('att-' + k); if (el) el.value = r[k] || ''; });
+}
+function sauverReglagesAttestation() {
+  const r = {};
+  CHAMPS_ATTESTATION.forEach(k => { r[k] = document.getElementById('att-' + k).value.trim(); });
+  try { localStorage.setItem(CLE_ATTESTATION, JSON.stringify(r)); } catch(_) {}
+}
+
+// Attestation d'achats pour un client sur la période choisie : page à imprimer / enregistrer en PDF
+function imprimerAttestation(clientId) {
+  const { lignes } = donneesBilan();
+  const lc = lignes.filter(l => String(l.client) === String(clientId));
+  if (!lc.length) return showToast('Aucun achat sur cette période');
+  const r = reglagesAttestation();
+  const e = escapeHtml;
+  const c = getClient(clientId);
+  const nom = lc[0].clientNom;
+  const m = filtreBilanMois();
+  const an = _bilan.annee;
+  const debut = m == null ? new Date(an, 0, 1) : new Date(an, m, 1);
+  const fin = m == null ? new Date(an, 11, 31) : new Date(an, m + 1, 0);
+  const fmtLong = d => d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+  const parLeg = {};
+  lc.forEach(l => {
+    const k = cleNom(l.legume) + '|' + l.unite;
+    parLeg[k] = parLeg[k] || { nom: l.legume, unite: l.unite, qte: 0, montant: 0 };
+    parLeg[k].qte += l.qte; parLeg[k].montant += l.montant;
+  });
+  const legs = Object.values(parLeg).sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
+  const totMontant = legs.reduce((s, x) => s + x.montant, 0);
+  const totKg = legs.filter(x => x.unite === 'kg').reduce((s, x) => s + x.qte, 0);
+  const nbLivraisons = new Set(lc.map(l => l.commande)).size;
+  const logo = new URL('logo.jpg', location.href).href;
+  const signataire = r.signataire ? `${e(r.signataire)}${r.fonction ? ', ' + e(r.fonction) : ''}` : '……………………………………';
+  const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Attestation d'achats — ${e(nom)} — ${an}</title>
+<style>
+  body{font-family:Arial,Helvetica,sans-serif;color:#1c2b22;margin:32px;font-size:13px;line-height:1.5;}
+  .tete{display:flex;align-items:center;gap:16px;border-bottom:2px solid #2e8650;padding-bottom:12px;margin-bottom:22px;}
+  .tete img{height:64px;}
+  .tete .asso{font-size:18px;font-weight:bold;color:#1a3d2b;}
+  h1{font-size:20px;color:#1a3d2b;margin:0 0 4px;}
+  .sous{color:#4a6358;margin-bottom:18px;}
+  table{width:100%;border-collapse:collapse;margin:14px 0;}
+  th{background:#f0faf3;text-align:left;padding:7px 9px;border:1px solid #ddeee4;font-size:12px;}
+  td{padding:6px 9px;border:1px solid #ddeee4;}
+  td.n,th.n{text-align:right;white-space:nowrap;}
+  tr.tot td{font-weight:bold;background:#f0faf3;}
+  .qualite{background:#f0faf3;border-left:4px solid #2e8650;padding:8px 12px;margin:14px 0;}
+  .signature{margin-top:30px;display:flex;justify-content:flex-end;}
+  .signature div{width:300px;}
+  .cadre{border:1px solid #b9cfc2;height:90px;margin-top:6px;}
+  .pied{margin-top:30px;font-size:11px;color:#8aab97;}
+  @media print{body{margin:14mm;} .noprint{display:none;}}
+</style></head><body>
+<div class="noprint" style="margin-bottom:18px;"><button onclick="window.print()" style="padding:10px 18px;font-size:15px;">🖨️ Imprimer / Enregistrer en PDF</button></div>
+<div class="tete"><img src="${logo}" alt=""><div><div class="asso">CIDIL</div><div>Maraîchage — chantier d'insertion</div></div></div>
+<h1>Attestation d'achats de produits locaux</h1>
+<div class="sous">Période : du ${fmtLong(debut)} au ${fmtLong(fin)}</div>
+<p>Je soussigné(e) ${signataire}, pour l'association CIDIL, atteste que <strong>${e(nom)}</strong>${c.adresse ? ' (' + e(c.adresse) + ')' : ''}
+a acheté directement à notre structure, sur la période indiquée, les légumes ci-dessous, cultivés sur notre exploitation${r.lieu ? ' à ' + e(r.lieu) : ' en Charente'}
+et vendus sans intermédiaire (circuit court), en ${nbLivraisons} commande${nbLivraisons > 1 ? 's' : ''}.</p>
+<table>
+  <tr><th>Légume</th><th class="n">Quantité</th><th class="n">Montant</th></tr>
+  ${legs.map(x => `<tr><td>${e(x.nom)}</td><td class="n">${(Math.round(x.qte * 10) / 10).toLocaleString('fr-FR')} ${e(pluriel(x.qte, x.unite))}</td><td class="n">${euros(x.montant)}</td></tr>`).join('')}
+  <tr class="tot"><td>Total</td><td class="n">${totKg ? kilos(totKg) : ''}</td><td class="n">${euros(totMontant)}</td></tr>
+</table>
+<div style="font-size:12px;color:#4a6358;">Montant des denrées uniquement, hors frais de livraison.${r.prix ? ' ' + e(r.prix) + '.' : ''}</div>
+${r.label ? `<div class="qualite"><strong>Signe de qualité :</strong> ${e(r.label)}</div>` : ''}
+<div class="signature"><div>Fait${r.ville ? ' à ' + e(r.ville) : ''}, le ${fmtLong(new Date())}<br>Signature et cachet :<div class="cadre"></div></div></div>
+<div class="pied">Document établi à partir des commandes enregistrées dans l'application de logistique CIDIL.</div>
+</body></html>`;
+  const w = window.open('', '_blank');
+  if (w) { w.document.open(); w.document.write(html); w.document.close(); return; }
+  // Fenêtres bloquées (appli installée) : impression depuis un cadre caché
+  const f = document.createElement('iframe');
+  f.style.cssText = 'position:fixed;width:0;height:0;border:0;';
+  document.body.appendChild(f);
+  f.contentDocument.open(); f.contentDocument.write(html); f.contentDocument.close();
+  setTimeout(() => { f.contentWindow.print(); setTimeout(() => f.remove(), 60000); }, 600);
 }
 
 // Init
