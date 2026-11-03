@@ -2291,7 +2291,7 @@ function renderVeggies() {
         </div>` : `
         <div class="veg-dispo-line">${v.kg} ${pluriel(v.kg, v.unite)} dispo</div>
         <div class="veg-prix-badge">${v.prix!==null ? v.prix.toFixed(2)+' €/'+(v.unite||'kg') : 'Prix NC'}</div>
-        <div class="veg-modif-hint">✎ Toucher pour modifier</div>`}
+        <div class="veg-modif-hint">✎ Modifier</div>`}
       </div>
     </div>`).join('');
 }
