@@ -837,7 +837,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
       </div>
       <div id="veg-list"><div class="empty-msg">Aucun légume cette semaine · Ajoutez-en ci-dessous</div></div>
 
-      <!-- Catalogue en accordéon PAR FAMILLE -->
+      <!-- Catalogue en accordéon, par ordre alphabétique -->
       <div class="add-form" style="margin-top:20px;">
         <div class="add-form-title" id="catalogue-toggle" onclick="toggleCatalogue()" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none;">
           <span style="display:flex;align-items:center;gap:8px;">
@@ -1812,6 +1812,9 @@ function toggleDone(idx) {
 
 // ══════ TARIFS ══════
 let tarifsData = [];
+// Tri alphabétique des légumes (insensible aux accents et majuscules)
+function triAlpha(liste) { return [...(liste||[])].sort((a, b) => (a.nom||'').localeCompare(b.nom||'', 'fr', {sensitivity:'base'})); }
+
 let tarifLegumePrix = {};  // nom (minuscule) -> prix le plus récent saisi dans les légumes
 
 async function loadTarifs() {
@@ -1819,7 +1822,7 @@ async function loadTarifs() {
   if (!el) return;
   el.innerHTML = '<div class="empty-msg">Chargement...</div>';
   try {
-    const rows = await sbGet('catalogue', 'order=famille.asc,nom.asc');
+    const rows = await sbGet('catalogue', 'order=nom.asc');
     tarifsData = rows;
     // Récupérer les prix saisis dans les légumes (toutes semaines, le plus récent gagne)
     tarifLegumePrix = {};
@@ -1836,15 +1839,9 @@ async function loadTarifs() {
 function renderTarifs() {
   const el = document.getElementById('tarifs-list');
   if (!el) return;
-  const familles = {};
-  tarifsData.forEach(v => {
-    if (!familles[v.famille]) familles[v.famille] = [];
-    familles[v.famille].push(v);
-  });
-  el.innerHTML = Object.entries(familles).map(([fam, vegs]) => `
+  el.innerHTML = `
     <div class="tarif-famille">
-      <div class="tarif-famille-title">${fam}</div>
-      ${vegs.map(v => {
+      ${triAlpha(tarifsData).map(v => {
         const unite = (v.unites||'kg').split(',')[0];
         const prixLeg = tarifLegumePrix[(v.nom||'').toLowerCase().trim()];
         const valeur = v.prix_defaut ?? prixLeg ?? '';
@@ -1858,7 +1855,7 @@ function renderTarifs() {
           <button class="tarif-del" onclick="deleteTarif(${v.id}, '${(v.nom||'').replace(/'/g, "\\'")}')" title="Supprimer">✕</button>
         </div>`;
       }).join('')}
-    </div>`).join('');
+    </div>`;
 }
 
 async function saveTarifs() {
@@ -1957,7 +1954,7 @@ function toggleCatalogue() {
 
 async function loadCatalogue() {
   try {
-    const rows = await sbGet('catalogue', 'order=famille.asc,nom.asc');
+    const rows = await sbGet('catalogue', 'order=nom.asc');
     catalogue = rows;
     memoriserFamilles(rows);
     renderCatalogue();
@@ -1969,30 +1966,18 @@ async function loadCatalogue() {
 function renderCatalogue() {
   const el = document.getElementById('catalogue-list');
   if (!el) return;
-  const familles = {};
-  catalogue.forEach(v => {
-    if (!familles[v.famille]) familles[v.famille] = [];
-    familles[v.famille].push(v);
-  });
-  // Pour les légumes multi-unités, on crée une ligne par unité
+  // Pour les légumes multi-unités, on crée une ligne par unité (ordre alphabétique)
   const lignes = [];
-  catalogue.forEach(v => {
+  triAlpha(catalogue).forEach(v => {
     const unites = (v.unites||'kg').split(',').map(u => u.trim());
     unites.forEach((unite, ui) => {
       lignes.push({...v, _unite: unite, _uid: `${v.id}_${ui}`});
     });
   });
 
-  const famillesL = {};
-  lignes.forEach(l => {
-    if (!famillesL[l.famille]) famillesL[l.famille] = [];
-    famillesL[l.famille].push(l);
-  });
-
-  el.innerHTML = Object.entries(famillesL).map(([fam, items]) => `
+  el.innerHTML = `
     <div class="famille-group">
-      <div class="famille-label">${fam}</div>
-      ${items.map(v => `
+      ${lignes.map(v => `
         <div class="cat-item" id="item-${v._uid}">
           <div class="cat-item-top">
             <input type="checkbox" class="cat-chk" id="cat-${v._uid}" value="${v.nom}" data-unite="${v._unite}" data-id="${v.id}" onchange="toggleItem('${v._uid}')">
@@ -2007,7 +1992,7 @@ function renderCatalogue() {
             <input class="finput" type="number" id="px-${v._uid}" placeholder="Prix/unité" min="0" step="0.1" value="${v.prix_defaut ?? ''}" style="grid-column:1/-1;">
           </div>
         </div>`).join('')}
-    </div>`).join('');
+    </div>`;
 }
 
 function toggleNouveauLegume() {
@@ -2277,7 +2262,7 @@ function renderVeggies() {
   const el = document.getElementById('veg-list');
   if (!el) return;
   if (!state.veggies.length) { el.innerHTML='<div class="empty-msg">Aucun légume · Ajoutez-en ci-dessous</div>'; return; }
-  el.innerHTML = state.veggies.map(v=>`
+  el.innerHTML = triAlpha(state.veggies).map(v=>`
     <div class="veg-card">
       <button class="btn-rm" onclick="removeVeggie(${v.id})">✕</button>
       <div class="veg-emoji">${emojiLegume(v.nom, v.famille)}</div>
@@ -3744,17 +3729,9 @@ async function initCommandeClient() {
 function renderCmdLegumes(veggies) {
   const wrap = document.getElementById('cmd-legumes-list');
   if (!veggies.length) { wrap.innerHTML = '<div class="empty-msg">Aucun légume disponible cette semaine</div>'; return; }
-  const familles = {};
-  veggies.forEach(v => {
-    const fam = v.famille || '';
-    if (!familles[fam]) familles[fam] = [];
-    familles[fam].push(v);
-  });
-  wrap.innerHTML = '<div class="cmd-famille-title">Liste des légumes disponibles</div>' +
-    Object.entries(familles).map(([fam, vegs]) => `
-    ${fam ? `<div class="cmd-famille-title">${fam}</div>` : ''}
+  wrap.innerHTML = '<div class="cmd-famille-title">Liste des légumes disponibles</div>' + `
     <div class="cmd-veg-grid">
-    ${vegs.map(v => `
+    ${triAlpha(veggies).map(v => `
       <div class="cmd-veg-card" id="cmdcard-${v.id}">
         <div class="cmd-veg-top" onclick="toggleCmdVeg(${v.id})">
           <div class="cmd-veg-headrow">
@@ -3776,7 +3753,7 @@ function renderCmdLegumes(veggies) {
         </div>
       </div>`).join('')}
     </div>
-  `).join('');
+  `;
 }
 
 function cmdClientChange() {

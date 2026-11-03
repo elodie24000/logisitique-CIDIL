@@ -224,7 +224,7 @@ let semaine = '';
 
   // Charger légumes de la semaine
   try {
-    const rows = await sbGet('legumes', `semaine=eq.${semaine}&order=famille.asc,nom.asc`);
+    const rows = await sbGet('legumes', `semaine=eq.${semaine}&order=nom.asc`);
     veggies = rows;
     renderVeggies();
   } catch(e) {
@@ -246,15 +246,9 @@ function renderVeggies() {
     el.innerHTML = '<div class="empty-msg">Aucun légume disponible cette semaine.<br>Revenez bientôt !</div>';
     return;
   }
-  const familles = {};
-  veggies.forEach(v => {
-    const fam = v.famille || 'Autres';
-    if (!familles[fam]) familles[fam] = [];
-    familles[fam].push(v);
-  });
-  el.innerHTML = Object.entries(familles).map(([fam, vegs]) => `
-    <div class="famille-title">${fam}</div>
-    ${vegs.map(v => {
+  const tries = [...veggies].sort((a, b) => (a.nom||'').localeCompare(b.nom||'', 'fr', {sensitivity:'base'}));
+  el.innerHTML = `
+    ${tries.map(v => {
       const unitesList = (v.unites||v.unite||'kg').split(',');
       const unite = unitesList[0];
       const step = unite === 'kg' ? '0.5' : '1';
@@ -283,7 +277,7 @@ function renderVeggies() {
         </div>
       </div>`;
     }).join('')}
-  `).join('');
+  `;
 }
 
 function toggleVeg(id, fromCheckbox) {
