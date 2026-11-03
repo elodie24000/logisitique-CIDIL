@@ -4043,6 +4043,28 @@ function majBandeauxTournee() {
 
 window.addEventListener('online', envoyerFileAttente);
 setInterval(() => { if (navigator.onLine && lireFileAttente().length) envoyerFileAttente(); }, 30000);
+
+// ══════ MISE À JOUR AUTOMATIQUE DES COMMANDES ══════
+// L'appli peut rester ouverte toute la journée : la liste des commandes (Commandes, Tournée,
+// Récap) est rechargée toute seule toutes les 30 minutes, et aussi quand on revient sur
+// l'appli après l'avoir quittée un moment. Pas de rechargement pendant une saisie (fenêtre ouverte).
+const RAFRAICHIR_COMMANDES_MS = 30 * 60 * 1000;
+let _dernierRafraichissement = Date.now();
+async function rafraichirCommandes() {
+  if (!currentRole || !['commandes', 'tournee', 'recap'].includes(currentPage)) return;
+  if (document.querySelector('.modal.open')) return;
+  if (!navigator.onLine) return;
+  _dernierRafraichissement = Date.now();
+  try {
+    await loadCommandes();
+    if (currentPage === 'tournee') renderTournee();
+    if (currentPage === 'recap') renderRecap();
+  } catch(e) { console.error('rafraichirCommandes', e); }
+}
+setInterval(rafraichirCommandes, RAFRAICHIR_COMMANDES_MS);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && Date.now() - _dernierRafraichissement > 2 * 60 * 1000) rafraichirCommandes();
+});
 setTimeout(envoyerFileAttente, 3000);
 
 // ══════ SOUCI DE LIVRAISON (livreur) ══════
