@@ -283,6 +283,15 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
 .veg-card .veg-dispo-line{font-size:16px;font-weight:500;color:var(--text);text-align:center;}
 .veg-card .veg-prix-badge{background:var(--g6);color:var(--g1);border-radius:8px;padding:6px 8px;text-align:center;font-size:16px;font-weight:500;font-family:'DM Mono',monospace;white-space:nowrap;}
 .veg-card .btn-rm{position:absolute;top:8px;right:8px;flex-shrink:0;}
+.veg-card{cursor:pointer;}
+.veg-card .veg-modif-hint{font-size:12px;color:var(--g3);}
+.veg-edit{width:100%;display:flex;flex-direction:column;gap:8px;margin-top:4px;cursor:default;}
+.veg-edit label{font-size:12px;color:var(--tm);text-align:left;}
+.veg-edit input{width:100%;padding:12px;border:1.5px solid var(--g5);border-radius:9px;font-size:20px;font-family:'DM Mono',monospace;text-align:center;outline:none;}
+.veg-edit-btns{display:flex;gap:6px;}
+.veg-edit-btns button{flex:1;padding:11px;border-radius:9px;font-size:15px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.veg-edit-ok{border:none;background:var(--leaf);color:#fff;}
+.veg-edit-annul{border:1px solid var(--bd);background:var(--cream);color:var(--tm);}
 .btn-rm{
   width:28px;height:28px;border-radius:7px;border:1px solid var(--bd);
   background:var(--white);color:var(--tl);cursor:pointer;
@@ -2263,15 +2272,63 @@ function renderVeggies() {
   if (!el) return;
   if (!state.veggies.length) { el.innerHTML='<div class="empty-msg">Aucun légume · Ajoutez-en ci-dessous</div>'; return; }
   el.innerHTML = triAlpha(state.veggies).map(v=>`
-    <div class="veg-card">
-      <button class="btn-rm" onclick="removeVeggie(${v.id})">✕</button>
+    <div class="veg-card" onclick="ouvrirModifVeggie(${v.id})" title="Toucher pour modifier la quantité">
+      <button class="btn-rm" onclick="event.stopPropagation();removeVeggie(${v.id})">✕</button>
       <div class="veg-emoji">${emojiLegume(v.nom, v.famille)}</div>
       <div class="veg-card-info">
         <div class="veg-name">${v.nom}</div>
+        ${vegEnModif === v.id ? `
+        <div class="veg-edit" onclick="event.stopPropagation()">
+          <label for="vegmod-kg-${v.id}">Quantité disponible (${v.unite||'kg'})</label>
+          <input type="number" id="vegmod-kg-${v.id}" value="${v.kg ?? ''}" min="0" step="${(v.unite||'kg')==='kg'?'0.5':'1'}" inputmode="decimal" onkeydown="if(event.key==='Enter')enregistrerModifVeggie(${v.id})">
+          <label for="vegmod-px-${v.id}">Prix (€/${v.unite||'kg'})</label>
+          <input type="number" id="vegmod-px-${v.id}" value="${v.prix ?? ''}" min="0" step="0.1" inputmode="decimal" onkeydown="if(event.key==='Enter')enregistrerModifVeggie(${v.id})">
+          <div class="veg-edit-btns">
+            <button type="button" class="veg-edit-annul" onclick="fermerModifVeggie()">Annuler</button>
+            <button type="button" class="veg-edit-ok" onclick="enregistrerModifVeggie(${v.id})">Enregistrer</button>
+          </div>
+        </div>` : `
         <div class="veg-dispo-line">${v.kg} ${pluriel(v.kg, v.unite)} dispo</div>
         <div class="veg-prix-badge">${v.prix!==null ? v.prix.toFixed(2)+' €/'+(v.unite||'kg') : 'Prix NC'}</div>
+        <div class="veg-modif-hint">✎ Toucher pour modifier</div>`}
       </div>
     </div>`).join('');
+}
+
+// ── Modifier la quantité (et le prix) d'un légume déjà publié, sans le supprimer ──
+let vegEnModif = null;
+function ouvrirModifVeggie(id) {
+  if (vegEnModif === id) return;
+  vegEnModif = id;
+  renderVeggies();
+  const inp = document.getElementById('vegmod-kg-'+id);
+  if (inp) { inp.focus(); inp.select(); }
+}
+function fermerModifVeggie() { vegEnModif = null; renderVeggies(); }
+async function enregistrerModifVeggie(id) {
+  const v = state.veggies.find(x => x.id === id);
+  if (!v) return fermerModifVeggie();
+  const kg = parseFloat(document.getElementById('vegmod-kg-'+id).value);
+  const pxTxt = document.getElementById('vegmod-px-'+id).value.trim();
+  const prix = pxTxt === '' ? null : parseFloat(pxTxt);
+  if (isNaN(kg) || kg < 0) return showToast('Indiquez une quantité (0 ou plus)');
+  if (prix !== null && (isNaN(prix) || prix < 0)) return showToast('Prix invalide');
+  try {
+    await sbPatch('legumes', id, { kg_dispo: kg, prix_kg: prix });
+    const avant = `${v.kg} ${v.unite||'kg'}`;
+    v.kg = kg; v.prix = prix;
+    if (window._cmdVeggies) {
+      const vv = window._cmdVeggies.find(x => x.id == id);
+      if (vv) { vv.kg_dispo = kg; vv.prix_kg = prix; }
+    }
+    vegEnModif = null;
+    renderVeggies();
+    renderOrders();
+    showToast('✓ ' + v.nom + ' : ' + kg + ' ' + pluriel(kg, v.unite) + ' dispo');
+    logActivity('legume_modification', `${v.nom} : ${avant} → ${kg} ${v.unite||'kg'} (semaine ${state.semaine})`);
+  } catch(e) {
+    showToast('Erreur : ' + e.message);
+  }
 }
 
 // ══════ COMMANDES ══════
