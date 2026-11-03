@@ -1179,6 +1179,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
       <select class="finput cl-field" id="cl-jours-livraison">
         <option value="">Jours habituels</option>
         <option value="mardi">Mardi uniquement</option>
+        <option value="mercredi">Mercredi uniquement</option>
         <option value="jeudi">Jeudi uniquement</option>
       </select>
       <label class="cl-lbl">Note</label>
@@ -1358,7 +1359,8 @@ function joursPourClient(c) {
   if (c && c.cat === 'Interne') jours = JOURS_INTERNE;
   else if (c && c.sans_delai) jours = JOURS_FLEXIBLE;
   const imposes = joursImposes(c);
-  return imposes.length ? jours.filter(([v]) => imposes.includes(v)) : jours;
+  // Jours imposés pris dans la semaine complète (ex : mercredi pour la ferme charentaise)
+  return imposes.length ? JOURS_INTERNE.filter(([v]) => imposes.includes(v)) : jours;
 }
 
 // Jours de livraison imposés à un client (colonne clients.jours_livraison, ex : "mardi" pour le Patio,
@@ -1367,7 +1369,7 @@ function joursImposes(c) {
   return String((c && c.jours_livraison) || '').split(',').map(j => j.trim().toLowerCase()).filter(Boolean);
 }
 
-// Retire les jours dont la commande est fermée : mardi ferme le lundi 9h, jeudi ferme le mercredi 9h
+// Retire les jours dont la commande est fermée : mardi ferme le lundi 9h, mercredi le mardi 9h, jeudi le mercredi 9h
 // (pas de délai pour Boutique/Labo, ni pour les clients marqués "sans_delai")
 function joursDisponiblesPourClient(c) {
   const tousJours = joursPourClient(c);
@@ -1375,10 +1377,12 @@ function joursDisponiblesPourClient(c) {
   if (!state.semaine) return tousJours;
   const lundi = new Date(state.semaine + 'T00:00:00');
   const cutoffMardi = new Date(lundi); cutoffMardi.setHours(9,0,0,0);
+  const cutoffMercredi = new Date(lundi); cutoffMercredi.setDate(lundi.getDate()+1); cutoffMercredi.setHours(9,0,0,0);
   const cutoffJeudi = new Date(lundi); cutoffJeudi.setDate(lundi.getDate()+2); cutoffJeudi.setHours(9,0,0,0);
   const now = new Date();
   return tousJours.filter(([val]) => {
     if (val === 'mardi') return now < cutoffMardi;
+    if (val === 'mercredi') return now < cutoffMercredi;
     if (val === 'jeudi') return now < cutoffJeudi;
     return true;
   });
