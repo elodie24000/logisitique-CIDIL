@@ -7,9 +7,13 @@
 // l'heure de Paris et décide quoi envoyer.
 //
 //   lundi    7h00–8h59  → rappel « dernière chance » (livraison mardi, clôture lundi 9h)
+//   mardi    7h00–8h59  → rappel « dernière chance » (livraison mercredi, clôture mardi 9h)
 //   mercredi 7h00–8h59  → rappel « dernière chance » (livraison jeudi, clôture mercredi 9h)
 //   vendredi 10h00–13h59 → « les légumes de la semaine sont disponibles » (email + push)
 //   chaque jour 9h30–11h59 → veille : alerte la gestionnaire si un rappel du jour n'est pas parti
+//
+// Chaque client ne reçoit que les rappels de ses jours de livraison (colonne clients.jours_livraison,
+// ex : « mercredi » pour la ferme charentaise) ; sans jour imposé : mardi et jeudi.
 //
 // Chaque envoi est inscrit dans la table rappels_envoyes (clé unique par jour) : il ne
 // part qu'une seule fois, même si la fonction est appelée plusieurs fois ou de l'extérieur.
@@ -17,6 +21,7 @@
 // { apercu: true } : ne fait rien, renvoie ce qui serait envoyé maintenant (pour vérifier).
 // { test: 'cloture' | 'vendredi' } : envoie le message à la gestionnaire uniquement
 // (au plus une fois par heure et par type), pour voir le rendu réel.
+// Options du test : jour (1 = lundi, 2 = mardi, 3 = mercredi) et jours_livraison (ex : 'mercredi').
 
 import webpush from 'npm:web-push@3.6.7';
 
@@ -145,15 +150,21 @@ function blocLegumes(legumes: Legume[]) {
   return `<table style="width:100%;border-collapse:collapse;font-size:14px;">${lignes}</table>`;
 }
 
-function mailVendredi(nom: string, legumesHtml: string) {
+const QUAND_COMMANDER: Record<string, string> = {
+  mardi: 'Livraison le <strong>mardi</strong> → commandez avant <strong>lundi 9h</strong>',
+  mercredi: 'Livraison le <strong>mercredi</strong> → commandez avant <strong>mardi 9h</strong>',
+  jeudi: 'Livraison le <strong>jeudi</strong> → commandez avant <strong>mercredi 9h</strong>',
+};
+
+function mailVendredi(nom: string, legumesHtml: string, jours: string[] = JOURS_HABITUELS) {
+  const lignes = jours.filter((j) => QUAND_COMMANDER[j]);
   return gabarit(`
     <p>Bonjour ${echapper(nom)},</p>
     <p>Voici les légumes disponibles pour la semaine à venir. Pensez à passer votre commande !</p>
     <div style="background:#fff;border-radius:10px;padding:14px 16px;margin:18px 0;">${legumesHtml}</div>
     <div style="background:#fff;border-radius:10px;padding:14px 16px;margin:18px 0;">
       <p style="margin:0 0 8px;font-weight:bold;">📅 Quand commander ?</p>
-      <p style="margin:0 0 4px;">Livraison le <strong>mardi</strong> → commandez avant <strong>lundi 9h</strong></p>
-      <p style="margin:0;">Livraison le <strong>jeudi</strong> → commandez avant <strong>mercredi 9h</strong></p>
+      ${(lignes.length ? lignes : JOURS_HABITUELS).map((j) => `<p style="margin:0 0 4px;">${QUAND_COMMANDER[j]}</p>`).join('')}
     </div>`);
 }
 
@@ -172,15 +183,24 @@ async function legumesSemaine(semaine: string, dupliquer: boolean): Promise<Legu
   return derniere;
 }
 
-async function clientsAvecEmail(): Promise<{ nom: string; email: string }[]> {
-  const rows = await sbGet('clients?select=nom,email&email=not.is.null&cat=neq.Interne');
+type Client = { id?: number; nom: string; email: string; jours_livraison?: string | null };
+
+const JOURS_HABITUELS = ['mardi', 'jeudi'];
+// Jours de livraison d'un client : ceux imposés sur sa fiche, sinon mardi et jeudi
+function joursClient(c: Client): string[] {
+  const imposes = String(c.jours_livraison || '').split(',').map((j) => j.trim().toLowerCase()).filter(Boolean);
+  return imposes.length ? imposes : JOURS_HABITUELS;
+}
+
+async function clientsAvecEmail(): Promise<Client[]> {
+  const rows = await sbGet('clients?select=id,nom,email,jours_livraison&email=not.is.null&cat=neq.Interne');
   return rows.filter((c: { email: string }) => /\S+@\S+\.\S+/.test(c.email || ''));
 }
 
-async function envoyerEmails(clients: { nom: string; email: string }[], sujet: string, html: (nom: string) => string) {
+async function envoyerEmails(clients: Client[], sujet: string, html: (c: Client) => string) {
   let ok = 0; const echecs: string[] = [];
   for (const c of clients) {
-    try { await envoyerEmail({ email: c.email.trim(), name: c.nom }, sujet, html(c.nom)); ok++; }
+    try { await envoyerEmail({ email: c.email.trim(), name: c.nom }, sujet, html(c)); ok++; }
     catch (e) { echecs.push(`${c.email} : ${String(e).slice(0, 120)}`); }
   }
   return { ok, echecs };
@@ -196,11 +216,14 @@ async function clePriveeVapid(): Promise<string | null> {
   return res.ok ? await res.json() : null;
 }
 
-async function envoyerPush(message: Record<string, string>) {
+// clientIds : si donné, n'envoie qu'aux téléphones abonnés de ces clients
+async function envoyerPush(message: Record<string, string>, clientIds?: number[]) {
   const cle = await clePriveeVapid();
   if (!cle) return { ok: 0, echecs: 1, erreur: 'clé VAPID introuvable' };
   webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, cle);
-  const subs = await sbGet('push_subscriptions?select=id,subscription');
+  if (clientIds && !clientIds.length) return { ok: 0, echecs: 0 };
+  const filtre = clientIds ? `&client_id=in.(${clientIds.join(',')})` : '';
+  const subs = await sbGet('push_subscriptions?select=id,subscription' + filtre);
   const payload = JSON.stringify({ ...message, url: LIEN_COMMANDE });
   const vus = new Set<string>();
   let ok = 0, echecs = 0;
@@ -224,28 +247,34 @@ async function envoyerPush(message: Record<string, string>) {
 // ── Les envois ──
 const CLOTURES: Record<number, { livraison: string; cloture: string }> = {
   1: { livraison: 'mardi', cloture: 'lundi' },
+  2: { livraison: 'mercredi', cloture: 'mardi' },
   3: { livraison: 'jeudi', cloture: 'mercredi' },
 };
 
-async function rappelCloture(jour: number, destinataires?: { nom: string; email: string }[]) {
+async function rappelCloture(jour: number, destinataires?: Client[]) {
   const c = CLOTURES[jour] || CLOTURES[1];
-  const clients = destinataires ?? await clientsAvecEmail();
+  // Seulement les clients livrés ce jour-là
+  const clients = destinataires ?? (await clientsAvecEmail()).filter((cl) => joursClient(cl).includes(c.livraison));
   const mails = await envoyerEmails(clients, `CIDIL - Dernière chance pour commander (livraison ${c.livraison})`,
-    (nom) => mailCloture(nom, c.livraison, c.cloture));
+    (cl) => mailCloture(cl.nom, c.livraison, c.cloture));
+  // Mardi/jeudi : tous les téléphones abonnés (comme avant). Autre jour (mercredi) : seulement
+  // les téléphones des clients livrés ce jour-là.
+  const pushCible = JOURS_HABITUELS.includes(c.livraison) ? undefined
+    : clients.map((cl) => cl.id).filter((id): id is number => id != null);
   const push = destinataires ? { ok: 0, echecs: 0 } : await envoyerPush({
     title: 'CIDIL Maraîchage 🥕',
     body: `Dernière chance pour commander pour la livraison de ${c.livraison} ! Clôture aujourd'hui à 9h.`,
     tag: `cidil-cloture-${c.livraison}`,
-  });
+  }, pushCible);
   return { emails: mails, push };
 }
 
-async function ouvertureVendredi(dateParis: string, destinataires?: { nom: string; email: string }[]) {
+async function ouvertureVendredi(dateParis: string, destinataires?: Client[]) {
   const semaine = lundiSuivant(dateParis);
   const legumes = await legumesSemaine(semaine, !destinataires);
   const html = blocLegumes(legumes);
   const clients = destinataires ?? await clientsAvecEmail();
-  const mails = await envoyerEmails(clients, 'CIDIL - Les légumes de la semaine sont disponibles', (nom) => mailVendredi(nom, html));
+  const mails = await envoyerEmails(clients, 'CIDIL - Les légumes de la semaine sont disponibles', (cl) => mailVendredi(cl.nom, html, joursClient(cl)));
   const push = destinataires ? { ok: 0, echecs: 0 } : await envoyerPush({
     title: 'CIDIL Maraîchage 🥕',
     body: 'Les légumes de la semaine sont disponibles ! Commandez avant lundi 9h (livraison mardi) ou mercredi 9h (livraison jeudi).',
@@ -298,10 +327,13 @@ Deno.serve(async (req) => {
 
     if (body.test === 'cloture' || body.test === 'vendredi') {
       const heure = Math.floor(now.minutes / 60);
-      if (!(await reserver(`test-${body.test}-${now.date}-${heure}`))) return repondre({ skipped: 'test déjà envoyé cette heure-ci' });
+      const jourTest = Number(body.jour) || (CLOTURES[now.jour] ? now.jour : 1);
+      const joursTest = body.jours_livraison ? String(body.jours_livraison) : null;
+      if (!(await reserver(`test-${body.test}-${now.date}-${heure}-${jourTest}-${joursTest ?? ''}`))) return repondre({ skipped: 'test déjà envoyé cette heure-ci' });
+      const moi: Client[] = [{ nom: 'Elodie (test)', email: GESTIONNAIRE.email, jours_livraison: joursTest }];
       const r = body.test === 'cloture'
-        ? await rappelCloture(CLOTURES[now.jour] ? now.jour : 1, [{ nom: 'Elodie (test)', email: GESTIONNAIRE.email }])
-        : await ouvertureVendredi(now.date, [{ nom: 'Elodie (test)', email: GESTIONNAIRE.email }]);
+        ? await rappelCloture(jourTest, moi)
+        : await ouvertureVendredi(now.date, moi);
       return repondre({ test: body.test, ...r });
     }
 
