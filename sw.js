@@ -1,4 +1,4 @@
-const CACHE = 'cidil-v78';
+const CACHE = 'cidil-v79';
 const ASSETS = [
   '/logisitique-CIDIL/',
   '/logisitique-CIDIL/index.html',
@@ -20,9 +20,12 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  e.respondWith(
-    fetch(e.request).catch(() => caches.match(e.request))
-  );
+  const req = e.request;
+  // Pages et fichiers de l'appli : toujours redemander la dernière version au serveur
+  // (sinon le téléphone peut garder l'ancienne page jusqu'à 10 min après une mise à jour).
+  const memeSite = req.method === 'GET' && new URL(req.url).origin === self.location.origin;
+  const reseau = memeSite ? fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' }) : fetch(req);
+  e.respondWith(reseau.catch(() => caches.match(req)));
 });
 
 // Réception d'une notification push
