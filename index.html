@@ -1450,7 +1450,10 @@ async function loadClients() {
   }
   indexClients();
 }
-function getClient(id) { return clientById[id] || clients.find(c => String(c.id) === String(id)) || {}; }
+// Une clé de commande peut être "idClient" (1re commande de la semaine) ou "idClient~idCommande"
+// (commandes suivantes du même client, ex : Intermarché qui commande pour mardi ET vendredi).
+function idClientDeCle(cle) { return String(cle).split('~')[0]; }
+function getClient(id) { if (String(id).includes('~')) id = idClientDeCle(id); return clientById[id] || clients.find(c => String(c.id) === String(id)) || {}; }
 
 // ══════ GESTION DU STOCK (kg_dispo) ══════
 // deltaQty > 0 = on retire du stock (commande passée/augmentée)
@@ -2380,6 +2383,13 @@ function legumeDeCommande(od, vid) {
   return state.veggies.find(v => v.id == vid) || (od && od._items && od._items[vid]) || null;
 }
 
+// Range une commande dans la liste sans écraser une autre commande du même client la même semaine.
+function rangerCommande(map, r) {
+  let cle = String(r.client_idx);
+  if (map[cle]) cle = r.client_idx + '~' + r.id;
+  map[cle] = commandeDepuisLigne(r);
+}
+
 // Commandes de la semaine choisie pour la saisie par l'équipe (fiche commande) :
 // semaine en cours, ou semaine suivante une fois les commandes client basculées (mercredi 9h).
 function commandesSemaineSaisie() {
@@ -2392,14 +2402,14 @@ async function loadCommandes() {
   const debut = new Date(state.semaineEquipe + 'T00:00:00'); debut.setDate(debut.getDate() - 14);
   const since = fmtIsoDate(debut);
   try {
-    const rows = await sbGet('commandes_clients', `semaine=gte.${since}&order=semaine.desc,client_nom.asc`);
+    const rows = await sbGet('commandes_clients', `semaine=gte.${since}&order=semaine.desc,client_nom.asc,created_at.asc`);
     // Semaine en cours → state.orders ; semaine suivante déjà commandée → state.nextOrders
     state.orders = {};
     state.nextOrders = {};
     const byWeek = {};
     rows.forEach(r => {
-      if (r.semaine === state.semaineEquipe) state.orders[r.client_idx] = commandeDepuisLigne(r);
-      else if (r.semaine > state.semaineEquipe) state.nextOrders[r.client_idx] = commandeDepuisLigne(r);
+      if (r.semaine === state.semaineEquipe) rangerCommande(state.orders, r);
+      else if (r.semaine > state.semaineEquipe) rangerCommande(state.nextOrders, r);
       else {
         if (!byWeek[r.semaine]) byWeek[r.semaine] = [];
         byWeek[r.semaine].push(r);
@@ -2556,6 +2566,10 @@ function fmtSemaine(s) {
   return `Semaine du ${d.toLocaleDateString('fr-FR', opt)} au ${fin.toLocaleDateString('fr-FR', opt)}`;
 }
 
+function fmtHeure(iso) {
+  return new Date(iso).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}).replace(':', 'h');
+}
+
 function fmtDate(iso) {
   if (!iso) return '';
   return new Date(iso).toLocaleDateString('fr-FR', {day:'numeric', month:'short'});
@@ -2581,9 +2595,9 @@ function sansJourFixe(client) {
 // et récap gestionnaire). Pour un client sans jour fixe, le jour de commande fait foi comme
 // jour de livraison (pas de jour mardi/jeudi imposé pour ces clients-là).
 function blocDates(client, createdAt, semaine, jour) {
-  const partsCmd = createdAt ? `Commandée le ${fmtDate(createdAt)}` : '';
+  const partsCmd = createdAt ? `Commandée le ${fmtDate(createdAt)} à ${fmtHeure(createdAt)}` : '';
   let partsLiv = '';
-  if (sansJourFixe(client)) {
+  if (sansJourFixe(client) && !(jour in JOUR_OFFSET)) {
     if (createdAt) partsLiv = `Livrée le ${fmtDate(createdAt)}`;
   } else {
     const dLiv = dateLivraisonPrevue(semaine, jour);
@@ -2644,12 +2658,12 @@ function carteCommande(idx) {
     ? (od._livre
         ? `<button class="co-adjust-btn" disabled style="opacity:.6;">✓ Livré${od._signe?' et signé':''}</button>`
         : `<button class="co-adjust-btn" disabled style="opacity:.6;">📤 Prête — en attente du livreur</button>`)
-    : `<button class="co-adjust-btn" onclick="marquerCommandePrete(${idx})">📦 Commande prête</button>`;
+    : `<button class="co-adjust-btn" onclick="marquerCommandePrete('${idx}')">📦 Commande prête</button>`;
   const datesBloc = blocDates(c, od._createdAt, od._semaine || state.semaineEquipe, od._jour);
   return `<div class="co-card ${od._livre?'co-livre':''}">
     <div class="co-head"><span class="co-name">${c.nom}</span>${statut}</div>
     <div class="co-body">${modeBadge}${datesBloc}${lines}${totalBloc}
-      <button class="co-adjust-btn" onclick="openAjusterModal(${idx})">✎ Ajuster la commande</button>
+      <button class="co-adjust-btn" onclick="openAjusterModal('${idx}')">✎ Ajuster la commande</button>
       ${preteBtn}
     </div>
   </div>`;
@@ -3108,7 +3122,7 @@ function renderRecap() {
       return `<span style="font-size:12px;background:var(--g6);color:var(--g1);padding:3px 9px;border-radius:10px;font-family:'DM Mono',monospace;">${v.nom} ${qtyEff}kg</span>`;
     }).filter(Boolean).join(' ');
     return `<div class="card" style="margin-bottom:8px;">
-      <div style="font-size:14px;font-weight:500;margin-bottom:6px;">${c.nom||'Client'}</div>
+      <div style="font-size:14px;font-weight:500;margin-bottom:6px;">${c.nom||'Client'}${od._jour?` <span style="font-weight:400;color:var(--tm);">· ${JOURS_LABELS[od._jour]||od._jour}</span>`:''}</div>
       <div style="display:flex;gap:5px;flex-wrap:wrap;">${pills}</div>
     </div>`;
   }).join(''):'<div class="empty-msg">Aucune commande</div>';
@@ -3854,7 +3868,20 @@ function updateCmdTotal() {
   }
 }
 
+// Empêche d'envoyer deux fois la même commande (double appui sur « Commander »)
+let _envoiCommandeClient = false;
 async function submitClientOrder() {
+  if (_envoiCommandeClient) return;
+  _envoiCommandeClient = true;
+  const btn = document.querySelector('#cmd-footer .btn-commander');
+  if (btn) { btn.disabled = true; btn.style.opacity = '.6'; }
+  try { await envoyerCommandeClient(); }
+  finally {
+    _envoiCommandeClient = false;
+    if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+  }
+}
+async function envoyerCommandeClient() {
   const idx = _cmdClientIdx !== null ? _cmdClientIdx : parseInt(document.getElementById('cmd-client-sel')?.value);
   if (idx === null || isNaN(idx)) return showToast('Sélectionnez votre nom');
   const veggies = window._cmdVeggies || [];
@@ -3944,7 +3971,8 @@ function reprendreCommandesTournee() {
     const cache = JSON.parse(localStorage.getItem(CLE_CACHE_COMMANDES));
     if (!cache || cache.semaine !== state.semaineEquipe) return;
     state.orders = {};
-    cache.rows.forEach(r => { state.orders[r.client_idx] = commandeDepuisLigne(r); });
+    cache.rows.sort((a, b) => String(a.created_at||'').localeCompare(String(b.created_at||'')))
+      .forEach(r => rangerCommande(state.orders, r));
     _tourneeHorsLigneDepuis = cache.at;
   } catch(_) {}
 }
