@@ -4111,11 +4111,79 @@ async function rafraichirCommandes() {
   } catch(e) { console.error('rafraichirCommandes', e); }
 }
 setInterval(rafraichirCommandes, RAFRAICHIR_COMMANDES_MS);
-document.addEventListener('visibilitychange', () => {
+
+// ══════ L'APPLI SE MET À JOUR TOUTE SEULE ══════
+// Sur téléphone, l'appli reste souvent ouverte en arrière-plan pendant des heures : elle garde
+// alors l'ancienne page et les anciennes données. Dès qu'on revient dessus :
+//  1. si une nouvelle version de l'appli a été publiée, la page se recharge d'elle-même ;
+//  2. sinon, les données de la page affichée (légumes, commandes, clients, tarifs) sont rechargées.
+// Jamais pendant une saisie (fenêtre ouverte, champ en cours de frappe, commande client en cours) :
+// dans ce cas un bandeau « Nouvelle version » propose de mettre à jour d'un geste.
+function saisieEnCours() {
+  if (document.querySelector('.modal.open')) return true;
+  const inscr = document.getElementById('inscr-modal');
+  if (inscr && inscr.style.display === 'flex') return true;
+  const a = document.activeElement;
+  if (a && ['INPUT', 'TEXTAREA', 'SELECT'].includes(a.tagName)) return true;
+  if (document.getElementById('screen-commande-client')?.style.display === 'block') return true;
+  return false;
+}
+function empreinte(txt) {
+  let h = 0;
+  for (let i = 0; i < txt.length; i++) h = (h * 31 + txt.charCodeAt(i)) | 0;
+  return txt.length + ':' + h;
+}
+let _versionAppli = null;
+async function lireVersionEnLigne() {
+  const r = await fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store', credentials: 'same-origin' });
+  if (!r.ok) return null;
+  return empreinte(await r.text());
+}
+async function verifierNouvelleVersion() {
+  if (!navigator.onLine) return false;
+  try {
+    const v = await lireVersionEnLigne();
+    if (!v) return false;
+    if (_versionAppli === null) { _versionAppli = v; return false; }
+    if (v === _versionAppli) return false;
+    if (!saisieEnCours()) { location.reload(); return true; }
+    afficherBandeauNouvelleVersion();
+    return true;
+  } catch(e) { return false; }
+}
+function afficherBandeauNouvelleVersion() {
+  if (document.getElementById('bandeau-maj')) return;
+  const b = document.createElement('button');
+  b.id = 'bandeau-maj';
+  b.textContent = '🔄 Nouvelle version de l\'appli — toucher pour mettre à jour';
+  b.style.cssText = 'position:fixed;left:12px;right:12px;bottom:calc(76px + env(safe-area-inset-bottom));z-index:9999;background:#2d6a4f;color:#fff;border:none;border-radius:12px;padding:13px 16px;font:500 14px "DM Sans",sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.25);cursor:pointer;';
+  b.onclick = () => location.reload();
+  document.body.appendChild(b);
+}
+let _dernierRafraichissementPage = Date.now();
+async function rafraichirPageAffichee() {
+  if (!currentRole || !navigator.onLine || saisieEnCours()) return;
+  _dernierRafraichissementPage = Date.now();
+  try {
+    if (currentPage === 'legumes') { loadCatalogue(); loadVeggies(); }
+    else if (currentPage === 'clients') { await loadClients(); renderClients2(); majBanniereInscriptions(); }
+    else if (currentPage === 'tarifs') loadTarifs();
+  } catch(e) { console.error('rafraichirPageAffichee', e); }
+}
+// Version de référence : celle qu'on vient de charger.
+lireVersionEnLigne().then(v => { if (_versionAppli === null) _versionAppli = v; }).catch(() => {});
+// Vérification aussi toutes les 30 minutes si l'appli reste au premier plan.
+setInterval(verifierNouvelleVersion, RAFRAICHIR_COMMANDES_MS);
+
+document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState !== 'visible') return;
+  if (await verifierNouvelleVersion()) return;
   rafraichirSemaineCommandeClient();
   if (Date.now() - _dernierRafraichissement > 2 * 60 * 1000) rafraichirCommandes();
+  if (Date.now() - _dernierRafraichissementPage > 2 * 60 * 1000) rafraichirPageAffichee();
 });
+// iPhone : revenir sur l'appli installée ne déclenche pas toujours « visibilitychange ».
+window.addEventListener('pageshow', e => { if (e.persisted) verifierNouvelleVersion(); });
 setTimeout(envoyerFileAttente, 3000);
 
 // ══════ SOUCI DE LIVRAISON (livreur) ══════
