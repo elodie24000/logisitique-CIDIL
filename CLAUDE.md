@@ -22,7 +22,7 @@ Tout est en **français** : textes de l'appli, commentaires, messages de commit.
 
 | Rôle | Onglets | Qui |
 |---|---|---|
-| `encadrant` | Légumes, Commandes, Clients | **Atika**, l'encadrante technique : utilisatrice principale au quotidien |
+| `encadrant` | Légumes, Commandes, Clients | Les deux encadrantes techniques, **Atika** et **Amélie** (même PIN ; « Qui êtes-vous ? » à la 1re connexion, prénom gardé par le téléphone et enregistré dans la colonne `qui` de `activity_log` et `push_subscriptions`) |
 | `gestionnaire` | Récap, Clients, Tarifs, Commandes, Bilan | Élodie (propriétaire du projet) |
 | `livreur` | Tournée (signature, souci, mode hors réseau) | Le livreur |
 | `boutique`, `labo` | Commande interne + annonces de stock | Clients internes |
@@ -63,9 +63,9 @@ Tables Supabase utilisées par la page : `clients`, `catalogue`, `legumes` (lég
 
 ## Qui demande quoi : ce que tu as le droit de faire
 
-Chaque demande précise qui l'envoie. **En cas de doute sur l'auteur, applique les règles « Atika ».**
+Chaque demande précise qui l'envoie. **En cas de doute sur l'auteur, applique les règles « encadrantes ».**
 
-**Demande d'Atika, l'encadrante technique** (ou d'un autre membre de l'équipe) — tu corriges toi-même :
+**Demande d'Atika ou d'Amélie, les encadrantes techniques** (ou d'un autre membre de l'équipe) — tu corriges toi-même :
 - un bug (bouton qui ne marche pas, blocage, écran vide, erreur affichée, donnée qui n'apparaît pas) ;
 - un petit ajustement d'affichage ou de texte (libellé, taille, faute, ordre d'un bouton).
 

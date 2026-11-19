@@ -1427,7 +1427,6 @@ const CLIENTS_SEED = [
   {cat:'Commerce',nom:'Cave St Sornin',contact:null,tel:'602543543',email:'au16survins@gmail.com',adresse:'1 Route de Montbron, Saint Sornin',km:10.4},
   {cat:'Commerce',nom:'La Grange de Champagnac',contact:null,tel:'749437663',email:'grangechampagnac@outlook.fr',adresse:'Champagnac Lieu dit, Yvrac-et-Malleyrand',km:14.2},
   {cat:'Commerce',nom:'Tabac-Civette de Marthon',contact:null,tel:'545635996',email:'lacivettedemarthon@gmail.com',adresse:'2 Pl. du Pigeonnier, Marthon',km:22},
-  {cat:'Maraichage',nom:'ACI ARU Trois-Palis',contact:'Amélie Blanquart',role:'Eti',tel:null,email:'amelie.blanquart@aru-angouleme.fr',adresse:"Imp. des Cressonnières, Trois-Palis",km:93},
   {cat:'Maraichage',nom:'ACI MAIA Croix Rouge',contact:'Patricia',role:'Eti',tel:null,email:null,adresse:'226 route de Royan, St Yrieix',km:74.8},
   {cat:'Maraichage',nom:'Marché de Léopold',contact:'Barbot Laurie',tel:null,email:'laurie.barbot@lemarchedeleopold.com',adresse:'120 Rte de Paris, Gond Pontouvre',km:65.8},
   {cat:'Maraichage',nom:"Ferme du champ de l'œil",contact:'Teddy, Louise, Renaud',role:'Responsable exploit.',tel:'665303943',email:null,adresse:"2982 L'Echanleuil, Sainte-Croix-de-Mareuil",km:68.2},
@@ -1493,7 +1492,10 @@ async function appliquerDeltaStock(ancienOd, nouvelOd) {
 // ══════ JOURNAL D'ACTIVITÉ ══════
 async function logActivity(type, details, role) {
   try {
-    await sbPost('activity_log', { type, details: details || '', role: role || currentRole || 'client' });
+    const r = role || currentRole || 'client';
+    const ligne = { type, details: details || '', role: r };
+    if (r === 'encadrant' && quiEncadrant()) ligne.qui = quiEncadrant();
+    await sbPost('activity_log', ligne);
   } catch(e) { console.error('logActivity', e); }
 }
 
@@ -1632,6 +1634,10 @@ async function enterApp(role) {
   document.getElementById('screen-app').style.display = 'flex';
   document.getElementById('app-title').textContent = 'CIDIL · ' + ROLE_LABELS[role];
   document.getElementById('app-role-badge').textContent = ROLE_ICONS[role] + ' ' + ROLE_LABELS[role];
+  if (role === 'encadrant') {
+    if (!quiEncadrant()) await demanderQuiEncadrant();
+    afficherQuiEncadrant();
+  }
   buildNav(role);
   await Promise.all([loadClients(), chargerFamillesLegumes()]);
   populateClientSel();
@@ -1644,8 +1650,72 @@ async function enterApp(role) {
   initSemaine();
 }
 
+// ══════ QUI EST L'ENCADRANTE ? (Atika / Amélie) ══════
+// Les deux encadrantes partagent le rôle « Encadrant » et son code PIN. À la première connexion
+// sur un téléphone, l'appli demande « Qui êtes-vous ? » ; le téléphone s'en souvient ensuite.
+// Le prénom est ajouté au journal d'activité et à l'abonnement aux notifications (colonne qui).
+// Toucher le badge en haut de l'écran permet de changer.
+const ENCADRANTES = ['Atika', 'Amélie'];
+const CLE_QUI_ENCADRANT = 'cidil_qui_encadrant';
+function quiEncadrant() {
+  try { const q = localStorage.getItem(CLE_QUI_ENCADRANT); return ENCADRANTES.includes(q) ? q : null; }
+  catch(e) { return null; }
+}
+function demanderQuiEncadrant() {
+  return new Promise(resolve => {
+    const fond = document.createElement('div');
+    fond.id = 'qui-encadrant';
+    fond.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(13,40,24,.55);display:flex;align-items:center;justify-content:center;padding:16px;';
+    fond.innerHTML = `<div style="background:#fff;border-radius:18px;padding:24px 20px;width:100%;max-width:340px;text-align:center;font-family:'DM Sans',sans-serif;box-shadow:0 8px 30px rgba(0,0,0,.25);">
+      <div style="font-size:34px;margin-bottom:6px;">🌿</div>
+      <div style="font-size:19px;font-weight:500;color:#1c2b22;margin-bottom:4px;">Qui êtes-vous ?</div>
+      <div style="font-size:13px;color:#4a6358;margin-bottom:18px;">Le téléphone s'en souviendra.</div>
+      ${ENCADRANTES.map(n => `<button data-qui="${n}" style="display:block;width:100%;margin-bottom:10px;padding:15px;border:none;border-radius:12px;background:linear-gradient(135deg,#40916c,#2d6a4f);color:#fff;font:500 17px 'DM Sans',sans-serif;cursor:pointer;">${n}</button>`).join('')}
+    </div>`;
+    fond.querySelectorAll('button[data-qui]').forEach(b => b.onclick = () => {
+      try { localStorage.setItem(CLE_QUI_ENCADRANT, b.dataset.qui); } catch(e) {}
+      fond.remove();
+      etiqueterAbonnementEquipe();
+      resolve(b.dataset.qui);
+    });
+    document.body.appendChild(fond);
+  });
+}
+function afficherQuiEncadrant() {
+  const badge = document.getElementById('app-role-badge');
+  if (!badge || currentRole !== 'encadrant') return;
+  badge.textContent = ROLE_ICONS.encadrant + ' ' + (quiEncadrant() || ROLE_LABELS.encadrant);
+  badge.style.cursor = 'pointer';
+  badge.title = 'Changer de personne';
+  badge.onclick = async () => {
+    if (currentRole !== 'encadrant') return;
+    await demanderQuiEncadrant();
+    afficherQuiEncadrant();
+  };
+}
+// Met le prénom sur l'abonnement aux notifications de ce téléphone (une fois par prénom).
+async function etiqueterAbonnementEquipe() {
+  const qui = quiEncadrant();
+  if (!qui || currentRole !== 'encadrant' || !pushSupporte()) return;
+  try {
+    if (localStorage.getItem('cidil_qui_abonnement') === qui) return;
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (!sub) return;
+    const txt = JSON.stringify(sub);
+    // Pas de droit de modification sur la table : on remplace la ligne (sans créer de doublon).
+    await fetch(`${SUPA_URL}/rest/v1/push_subscriptions?subscription=eq.${encodeURIComponent(txt)}`, {
+      method: 'DELETE', headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+    });
+    await sbPost('push_subscriptions', { subscription: txt, client_id: null, role: 'encadrant', qui });
+    localStorage.setItem('cidil_qui_abonnement', qui);
+  } catch(e) { console.error('etiqueterAbonnementEquipe', e); }
+}
+
 function logout() {
   currentRole = null;
+  const badge = document.getElementById('app-role-badge');
+  if (badge) { badge.onclick = null; badge.style.cursor = ''; badge.title = ''; }
   document.getElementById('screen-app').style.display = 'none';
   document.getElementById('screen-login').style.display = 'flex';
   document.getElementById('bottom-nav').innerHTML = '';
@@ -3093,7 +3163,7 @@ async function loadActivityLog() {
     el.innerHTML = rows.map(r => `
       <div class="co-line" style="align-items:flex-start;padding:8px 0;">
         <span>${ACTIVITY_ICONS[r.type]||'•'} <strong>${ACTIVITY_LABELS[r.type]||r.type}</strong><br>
-          <span style="font-size:12px;color:var(--tm);">${r.details||''}</span>
+          <span style="font-size:12px;color:var(--tm);">${r.details||''}${r.qui ? ' · <em>' + r.qui + '</em>' : ''}</span>
         </span>
         <span style="font-size:11px;color:var(--tl);white-space:nowrap;">${heureRelative(r.created_at)}</span>
       </div>`).join('');
@@ -3375,7 +3445,7 @@ async function verifierAbonnementEquipe() {
       ok = cleSub === cleApp;
     }
     _abonnementEquipeOk = ok && localStorage.getItem(CLE_ALERTES_EQUIPE) !== 'non';
-    if (_abonnementEquipeOk) localStorage.setItem(CLE_ALERTES_EQUIPE, '1');
+    if (_abonnementEquipeOk) { localStorage.setItem(CLE_ALERTES_EQUIPE, '1'); etiqueterAbonnementEquipe(); }
   } catch(e) { console.error('verifierAbonnementEquipe', e); }
 }
 function alertesEquipeActives() {
@@ -3552,8 +3622,10 @@ async function subscribePush(role) {
     if (!sub) {
       sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8(VAPID_PUBLIC) });
     }
-    await sbPost('push_subscriptions', { subscription: JSON.stringify(sub), client_id: (_cmdClientIdx ?? null), role: role || null });
-    if (role === 'encadrant') { try { localStorage.setItem(CLE_ALERTES_EQUIPE, '1'); } catch(e) {} }
+    const ligneAbo = { subscription: JSON.stringify(sub), client_id: (_cmdClientIdx ?? null), role: role || null };
+    if (role === 'encadrant' && quiEncadrant()) ligneAbo.qui = quiEncadrant();
+    await sbPost('push_subscriptions', ligneAbo);
+    if (role === 'encadrant') { try { localStorage.setItem(CLE_ALERTES_EQUIPE, '1'); if (ligneAbo.qui) localStorage.setItem('cidil_qui_abonnement', ligneAbo.qui); } catch(e) {} }
     showToast('🔔 Notifications activées !');
     majBannierePush();
     majBannierePushEncadrant();
