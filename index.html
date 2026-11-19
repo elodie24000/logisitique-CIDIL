@@ -3652,6 +3652,29 @@ function cmdJourChange() {
   });
 }
 
+// Sur mobile, l'écran de commande reste souvent ouvert en arrière-plan (onglet suspendu,
+// appli non fermée) à cheval sur un horaire de fermeture (lundi/mardi/mercredi 9h) : la
+// "semaine" calculée au chargement de l'écran reste figée en mémoire pendant ce temps, si
+// bien que le jour coché ne correspond plus à rien de valide au moment de valider — blocage
+// signalé par un client (Latoti) qui n'avait plus aucun jour sélectionnable sur téléphone.
+// Recalcule la semaine active et rafraîchit les jours proposés, sans toucher au reste du
+// formulaire (légumes déjà cochés, mode livraison/retrait déjà choisi).
+function rafraichirSemaineCommandeClient() {
+  if (document.getElementById('screen-commande-client')?.style.display !== 'block') return;
+  if (_cmdClientIdx === null) return;
+  const d = semaineCommandeActive();
+  const semaine = [d.getFullYear(), String(d.getMonth()+1).padStart(2,'0'), String(d.getDate()).padStart(2,'0')].join('-');
+  if (semaine === state.semaine) return;
+  state.semaine = semaine;
+  const cli = getClient(_cmdClientIdx);
+  const jourActuel = document.querySelector('input[name="livraison"]:checked')?.value || null;
+  const joursDispo = joursDisponiblesPourClient(cli);
+  renderJourOptions('cmd-jour-options', 'livraison', joursDispo, 'cmdJourChange', joursDispo.some(([v]) => v === jourActuel) ? jourActuel : null);
+  if (!joursDispo.length) {
+    document.getElementById('cmd-jour-options').innerHTML = '<div class="empty-msg" style="margin:0;">Commandes fermées pour cette semaine — revenez la semaine prochaine</div>';
+  }
+}
+
 // Carte à onglets de la page commande : 'deja' (recherche du nom) ou 'new' (création de fiche)
 function cmdOnglet(quel) {
   const neuf = quel === 'new';
@@ -3907,6 +3930,7 @@ async function submitClientOrder() {
 async function envoyerCommandeClient() {
   const idx = _cmdClientIdx !== null ? _cmdClientIdx : parseInt(document.getElementById('cmd-client-sel')?.value);
   if (idx === null || isNaN(idx)) return showToast('Sélectionnez votre nom');
+  rafraichirSemaineCommandeClient();
   const veggies = window._cmdVeggies || [];
   const items = [];
   veggies.forEach(v => {
@@ -3921,7 +3945,9 @@ async function envoyerCommandeClient() {
   if (!jour || !encoreOuvert) {
     showToast(jour ? '⚠ Les commandes pour ' + jour + ' sont fermées, choisissez un autre jour' : '⚠ Choisissez d\'abord un jour');
     if (livW) {
-      cmdSelectClient(idx); // rafraîchit les jours proposés
+      // Les jours proposés viennent déjà d'être rafraîchis par rafraichirSemaineCommandeClient()
+      // ci-dessus ; pas besoin de rappeler cmdSelectClient (qui réinitialiserait le mode
+      // livraison/retrait déjà choisi par le client).
       livW.scrollIntoView({behavior:'smooth', block:'center'});
       livW.classList.add('flash-required');
       setTimeout(()=>livW.classList.remove('flash-required'), 1600);
@@ -4086,7 +4112,9 @@ async function rafraichirCommandes() {
 }
 setInterval(rafraichirCommandes, RAFRAICHIR_COMMANDES_MS);
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && Date.now() - _dernierRafraichissement > 2 * 60 * 1000) rafraichirCommandes();
+  if (document.visibilityState !== 'visible') return;
+  rafraichirSemaineCommandeClient();
+  if (Date.now() - _dernierRafraichissement > 2 * 60 * 1000) rafraichirCommandes();
 });
 setTimeout(envoyerFileAttente, 3000);
 
