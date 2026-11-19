@@ -44,6 +44,10 @@ Les dates renvoient à l'historique git (`git log --since=AAAA-MM-JJ`).
 
 ## Sécurité
 
+- **Atika / Amélie** (19/11/2026) : même rôle `encadrant` et même PIN ; à la 1re connexion sur un téléphone l'appli
+  demande « Qui êtes-vous ? » et s'en souvient (toucher le badge en haut pour changer). C'est déclaratif, pas une
+  sécurité : suffisant pour savoir qui a fait quoi en interne.
+
 - **Codes PIN** vérifiés côté Supabase (`verifier_pin`), blocage 10 min après 10 erreurs (01/10/2026). Ils ne doivent
   jamais réapparaître dans la page.
 

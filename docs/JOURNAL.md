@@ -6,3 +6,5 @@ Une ligne par intervention, la plus récente en bas. Format :
 2026-11-19 | Atika | impossible de créer une commande pour Les Papilles, aucun jour proposé | fiche commande calée sur la semaine affichée, créneaux déjà fermés | bouton « Passer à la semaine prochaine »
 2026-11-19 | client Latoti | « choisissez un jour » sans jour sélectionnable sur mobile | semaine de commande figée pendant que l'appli dormait en arrière-plan | recalcul au retour sur l'appli et avant l'envoi
 2026-11-19 | Élodie | Atika doit sans cesse rafraîchir l'appli | appli ouverte des heures en arrière-plan avec l'ancienne version et les anciennes données | rechargement automatique au retour (version + données de toutes les pages)
+2026-11-19 | Élodie | distinguer Atika et Amélie (même PIN encadrant) | rien ne les différenciait | « Qui êtes-vous ? » à la 1re connexion, prénom dans le journal d'activité et l'abonnement aux notifications
+2026-11-19 | Élodie | retirer Amélie Blanquart (ACI ARU Trois-Palis) des clients : c'est l'encadrante | déjà absente de la base | retirée de la liste de secours dans index.html
