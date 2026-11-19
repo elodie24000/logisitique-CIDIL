@@ -2469,9 +2469,28 @@ function openOrderModal(idxOverride) {
   }
   renderJourOptions('mo-jour-options', 'mo-livraison', joursDispo, 'moJourChange', jour);
   if (!joursDispo.length) {
-    document.getElementById('mo-jour-options').innerHTML = '<div class="empty-msg" style="margin:0;">Commandes fermées pour cette semaine</div>';
+    // La semaine affichée dans le tableau de bord (state.semaine) est fermée aux commandes pour ce
+    // client (ex : jeudi après-midi, une fois les créneaux mardi/jeudi passés) : sans action, l'encadrant
+    // reste bloqué sans aucun jour sélectionnable. On propose de basculer directement sur la semaine
+    // d'commande active (même règle que l'écran client, voir semaineCommandeActive).
+    document.getElementById('mo-jour-options').innerHTML = `<div class="empty-msg" style="margin:0 0 8px;">Commandes fermées pour cette semaine</div>
+      <button type="button" class="co-adjust-btn" onclick="moCommanderSemaineSuivante(${idx})">→ Passer à la semaine prochaine</button>`;
   }
   document.getElementById('modal-order').classList.add('open');
+}
+
+// Recharge légumes + commandes pour la semaine d'commande active puis rouvre la fiche, pour
+// sortir l'encadrant du blocage "Commandes fermées pour cette semaine" (voir openOrderModal).
+async function moCommanderSemaineSuivante(idx) {
+  const d = semaineCommandeActive();
+  state.semaine = [d.getFullYear(), String(d.getMonth()+1).padStart(2,'0'), String(d.getDate()).padStart(2,'0')].join('-');
+  const si = document.getElementById('sem-input');
+  if (si) si.value = state.semaine;
+  showToast('Semaine prochaine — chargement…');
+  await loadVeggies();
+  await loadCommandes();
+  if (!state.veggies.length) { showToast('Aucun légume publié pour la semaine prochaine'); return; }
+  openOrderModal(idx);
 }
 
 function moJourChange() {
