@@ -51,7 +51,9 @@ Tout est en **français** : textes de l'appli, commentaires, messages de commit.
 Tables Supabase utilisées par la page : `clients`, `catalogue`, `legumes` (légumes de la semaine + `kg_dispo`),
 `commandes_clients`, `activity_log`, `annonces_stock`, `annonces_stock_reponses`, `push_subscriptions`, `signalements`.
 
-**Bouton « 🛟 Un problème ? »** (section `DÉCLARER UN PROBLÈME`, tous les rôles équipe sauf gestionnaire) :
+**Déclarer un problème** (section `DÉCLARER UN PROBLÈME`) : encadré sur la page Légumes des encadrantes, sous
+« Prévenir Boutique / Labo » (« Atika, décris le bug… », boutons Vocal / Envoyer / Annuler = effacer) ; petit bouton
+« 🛟 Un problème ? » pour livreur, Boutique, Labo ; rien chez la gestionnaire.
 le message (dicté ou écrit) va dans `signalements` (qui, rôle, page, texte, contexte technique, statut
 `nouveau` → `transmis`) ; la fonction Edge `signalement-recu` prévient Élodie par e-mail. Canal séparé des alertes équipe.
 
