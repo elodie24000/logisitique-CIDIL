@@ -1694,7 +1694,14 @@ function afficherQuiEncadrant() {
   };
 }
 // Met le prénom sur l'abonnement aux notifications de ce téléphone (une fois par prénom).
-async function etiqueterAbonnementEquipe() {
+// Appelée à deux endroits presque en même temps (choix du prénom + vérification de l'abonnement) :
+// sans ce verrou, les deux remplaçaient la ligne en parallèle et le téléphone était inscrit deux fois.
+let _etiquetageEnCours = null;
+function etiqueterAbonnementEquipe() {
+  if (!_etiquetageEnCours) _etiquetageEnCours = etiqueterAbonnementEquipe_().finally(() => { _etiquetageEnCours = null; });
+  return _etiquetageEnCours;
+}
+async function etiqueterAbonnementEquipe_() {
   const qui = quiEncadrant();
   if (!qui || currentRole !== 'encadrant' || !pushSupporte()) return;
   try {
