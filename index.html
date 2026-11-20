@@ -1644,6 +1644,7 @@ async function enterApp(role) {
   if (role === 'encadrant' || role === 'gestionnaire') {
     setTimeout(showInscriptionModal, 500);
   }
+  afficherBoutonProbleme();
   const defaultPage = NAV_CONFIG[role][0].id;
   showPage(defaultPage);
   initPage(defaultPage);
@@ -1719,8 +1720,98 @@ async function etiqueterAbonnementEquipe_() {
   } catch(e) { console.error('etiqueterAbonnementEquipe', e); }
 }
 
+// ══════ DÉCLARER UN PROBLÈME (équipe → Élodie) ══════
+// Bouton « 🛟 Un problème ? » pour l'équipe (pas pour la gestionnaire). Le message, dicté ou écrit,
+// part dans la table signalements avec le prénom, la page et quelques détails techniques ; la
+// fonction Edge signalement-recu prévient aussitôt Élodie par e-mail. Canal séparé des alertes équipe.
+const _dernieresErreurs = [];
+window.addEventListener('error', e => { _dernieresErreurs.push(String(e.message || e).slice(0, 200)); if (_dernieresErreurs.length > 5) _dernieresErreurs.shift(); });
+window.addEventListener('unhandledrejection', e => { _dernieresErreurs.push(String(e.reason && (e.reason.message || e.reason)).slice(0, 200)); if (_dernieresErreurs.length > 5) _dernieresErreurs.shift(); });
+
+function afficherBoutonProbleme() {
+  document.getElementById('btn-probleme')?.remove();
+  if (!currentRole || currentRole === 'gestionnaire') return;
+  const b = document.createElement('button');
+  b.id = 'btn-probleme';
+  b.textContent = '🛟 Un problème ?';
+  b.style.cssText = 'position:fixed;right:14px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:900;background:#fff;color:#2d6a4f;border:2px solid #40916c;border-radius:999px;padding:10px 16px;font:500 14px "DM Sans",sans-serif;box-shadow:0 4px 14px rgba(13,40,24,.18);cursor:pointer;';
+  b.onclick = ouvrirProbleme;
+  document.body.appendChild(b);
+}
+
+let _dictee = null;
+function ouvrirProbleme() {
+  if (document.getElementById('fenetre-probleme')) return;
+  const Reco = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const qui = currentRole === 'encadrant' ? quiEncadrant() : null;
+  const fond = document.createElement('div');
+  fond.id = 'fenetre-probleme';
+  fond.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(13,40,24,.55);display:flex;align-items:flex-end;justify-content:center;';
+  fond.innerHTML = `<div style="background:#fff;border-radius:18px 18px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom));width:100%;max-width:520px;font-family:'DM Sans',sans-serif;">
+    <div style="font-size:18px;font-weight:500;color:#1c2b22;">🛟 Déclarer un problème</div>
+    <div style="font-size:13px;color:#4a6358;margin:4px 0 12px;">${qui ? qui + ', d' : 'D'}ites ou écrivez ce qui ne va pas. Élodie est prévenue tout de suite.</div>
+    <textarea id="probleme-texte" rows="5" placeholder="Ex. : je ne peux pas enregistrer la commande du Patio, le bouton ne fait rien…" style="width:100%;border:1.5px solid #ddeee4;border-radius:12px;padding:12px;font:15px 'DM Sans',sans-serif;resize:vertical;"></textarea>
+    ${Reco ? `<button id="probleme-micro" type="button" style="margin-top:10px;width:100%;padding:12px;border:1.5px solid #40916c;border-radius:12px;background:#f0faf3;color:#2d6a4f;font:500 15px 'DM Sans',sans-serif;cursor:pointer;">🎤 Parler au lieu d'écrire</button>` : `<div style="font-size:12px;color:#8aab97;margin-top:8px;">Astuce : le micro 🎤 du clavier permet de dicter.</div>`}
+    <div id="probleme-erreur" style="color:#b23b3b;font-size:13px;margin-top:8px;"></div>
+    <div style="display:flex;gap:10px;margin-top:12px;">
+      <button id="probleme-annuler" type="button" style="flex:1;padding:14px;border:none;border-radius:12px;background:#eef2ef;color:#4a6358;font:500 15px 'DM Sans',sans-serif;cursor:pointer;">Annuler</button>
+      <button id="probleme-envoyer" type="button" style="flex:2;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#40916c,#2d6a4f);color:#fff;font:500 15px 'DM Sans',sans-serif;cursor:pointer;">Envoyer à Élodie</button>
+    </div>
+  </div>`;
+  document.body.appendChild(fond);
+  const zone = fond.querySelector('#probleme-texte');
+  const fermer = () => { try { _dictee && _dictee.stop(); } catch(e) {} _dictee = null; fond.remove(); };
+  fond.querySelector('#probleme-annuler').onclick = fermer;
+  fond.onclick = e => { if (e.target === fond) fermer(); };
+  const micro = fond.querySelector('#probleme-micro');
+  if (micro) micro.onclick = () => {
+    if (_dictee) { _dictee.stop(); return; }
+    const r = new Reco();
+    r.lang = 'fr-FR'; r.continuous = true; r.interimResults = false;
+    const debut = zone.value ? zone.value.replace(/\s*$/, ' ') : '';
+    let dicte = '';
+    r.onresult = ev => {
+      for (let i = ev.resultIndex; i < ev.results.length; i++) if (ev.results[i].isFinal) dicte += ev.results[i][0].transcript + ' ';
+      zone.value = debut + dicte.trim();
+    };
+    r.onend = () => { _dictee = null; micro.textContent = '🎤 Parler au lieu d\'écrire'; micro.style.background = '#f0faf3'; };
+    r.onerror = ev => { if (ev.error === 'not-allowed') fond.querySelector('#probleme-erreur').textContent = 'Le micro est refusé : autorisez-le, ou utilisez le micro du clavier.'; };
+    _dictee = r;
+    r.start();
+    micro.textContent = '⏹ J\'ai fini de parler';
+    micro.style.background = '#fdf3e1';
+  };
+  fond.querySelector('#probleme-envoyer').onclick = async ev => {
+    const texte = zone.value.trim();
+    const err = fond.querySelector('#probleme-erreur');
+    if (texte.length < 3) { err.textContent = 'Écrivez ou dites quelques mots sur le problème.'; return; }
+    const btn = ev.currentTarget; btn.disabled = true; btn.textContent = 'Envoi…';
+    try { _dictee && _dictee.stop(); } catch(e) {}
+    const nav = (NAV_CONFIG[currentRole] || []).find(n => n.id === currentPage);
+    const contexte = [
+      'Téléphone : ' + navigator.userAgent,
+      'Écran : ' + window.innerWidth + '×' + window.innerHeight,
+      'Version appli : ' + (_versionAppli || '?'),
+      'Semaine affichée : ' + (state.semaine || '?'),
+      'En ligne : ' + (navigator.onLine ? 'oui' : 'non'),
+      _dernieresErreurs.length ? 'Dernières erreurs : ' + _dernieresErreurs.join(' | ') : 'Aucune erreur technique enregistrée'
+    ].join('\n');
+    try {
+      await sbPost('signalements', { qui, role: currentRole, page: nav ? nav.label : (currentPage || ''), texte: texte.slice(0, 4000), contexte });
+      fermer();
+      showToast('✅ Merci ! Élodie est prévenue.');
+    } catch(e) {
+      console.error('signalement', e);
+      btn.disabled = false; btn.textContent = 'Envoyer à Élodie';
+      err.textContent = navigator.onLine ? 'L\'envoi a échoué, réessayez dans un instant.' : 'Pas de réseau : réessayez quand le réseau revient.';
+    }
+  };
+  setTimeout(() => zone.focus(), 100);
+}
+
 function logout() {
   currentRole = null;
+  document.getElementById('btn-probleme')?.remove();
   const badge = document.getElementById('app-role-badge');
   if (badge) { badge.onclick = null; badge.style.cursor = ''; badge.title = ''; }
   document.getElementById('screen-app').style.display = 'none';

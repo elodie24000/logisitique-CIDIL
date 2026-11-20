@@ -49,7 +49,11 @@ Tout est en **français** : textes de l'appli, commentaires, messages de commit.
 - `scripts/*.py` + `.github/workflows/*` : e-mails/push planifiés, synchro des prix (SharePoint, RNM), vérification du site.
 
 Tables Supabase utilisées par la page : `clients`, `catalogue`, `legumes` (légumes de la semaine + `kg_dispo`),
-`commandes_clients`, `activity_log`, `annonces_stock`, `annonces_stock_reponses`, `push_subscriptions`.
+`commandes_clients`, `activity_log`, `annonces_stock`, `annonces_stock_reponses`, `push_subscriptions`, `signalements`.
+
+**Bouton « 🛟 Un problème ? »** (section `DÉCLARER UN PROBLÈME`, tous les rôles équipe sauf gestionnaire) :
+le message (dicté ou écrit) va dans `signalements` (qui, rôle, page, texte, contexte technique, statut
+`nouveau` → `transmis`) ; la fonction Edge `signalement-recu` prévient Élodie par e-mail. Canal séparé des alertes équipe.
 
 ## Règles métier à ne JAMAIS changer sans l'accord explicite d'Élodie
 
