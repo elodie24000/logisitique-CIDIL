@@ -57,6 +57,14 @@ Tables Supabase utilisées par la page : `clients`, `catalogue`, `legumes` (lég
 le message (dicté ou écrit) va dans `signalements` (qui, rôle, page, texte, contexte technique, statut
 `nouveau` → `transmis`) ; la fonction Edge `signalement-recu` prévient Élodie par e-mail. Canal séparé des alertes équipe.
 
+**Claude de dépannage** (circuit complet) : la fonction Edge `signalement-github` ouvre une fiche GitHub (repère
+`<!-- signalement-app id=N -->`) et y recopie chaque réponse de l'équipe (table `signalement_messages`) ;
+le workflow `.github/workflows/claude-signalement.yml` lance Claude (abonnement Pro d'Élodie, secret
+`CLAUDE_CODE_OAUTH_TOKEN`) qui ne peut modifier que `index.html`, `sw.js`, `docs/JOURNAL.md`, sans terminal ;
+`scripts/signalement_conversation.py` pose un tag `avant-signalement-…`, vérifie que le JS compile, publie sur
+`main` (sinon branche `signalement-N` pour Élodie), écrit la réponse de Claude dans l'encadré (« Tes derniers
+échanges ») et envoie le récap par e-mail à Élodie. Statuts : transmis → corrige | repondu | pour_elodie.
+
 ## Règles métier à ne JAMAIS changer sans l'accord explicite d'Élodie
 
 - Clôture des commandes à **9h** : lundi pour mardi, mardi pour mercredi, mercredi pour jeudi

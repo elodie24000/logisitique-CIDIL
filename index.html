@@ -1749,7 +1749,8 @@ function htmlProbleme() {
       <button type="button" class="pb-vocal" style="${btn}flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border:1.5px solid var(--g3);background:var(--g7);color:var(--g2);">${MICRO_SVG}<span>Vocal</span></button>
       <button type="button" class="pb-envoyer" style="${btn}flex:1.4;border:none;background:linear-gradient(135deg,#40916c,#2d6a4f);color:#fff;">Envoyer</button>
       <button type="button" class="pb-annuler" style="${btn}flex:1;border:none;background:#eef2ef;color:var(--tm);">Annuler</button>
-    </div>`;
+    </div>
+    <div class="pb-echanges" style="margin-top:4px;"></div>`;
 }
 
 // Branche l'encadré : vocal, envoyer, annuler (= effacer le message pour recommencer).
@@ -1807,8 +1808,8 @@ function brancherProbleme(boite, apresAnnuler) {
         page: nav ? nav.label : (currentPage || ''), texte: texte.slice(0, 4000), contexte
       });
       zone.value = ''; err.textContent = '';
-      showToast('✅ Merci ! Élodie est prévenue.');
-      if (apresAnnuler) apresAnnuler();
+      showToast('✅ Envoyé ! La réponse s\'affichera juste en dessous.');
+      chargerEchangesProbleme(boite);
     } catch(e) {
       console.error('signalement', e);
       err.textContent = navigator.onLine ? 'L\'envoi a échoué, réessaie dans un instant.' : 'Pas de réseau : réessaie quand le réseau revient.';
@@ -1823,6 +1824,81 @@ function initEncadreProbleme() {
   if (!boite) return;
   if (!boite.dataset.pret) { boite.innerHTML = htmlProbleme(); brancherProbleme(boite); boite.dataset.pret = '1'; }
   boite.querySelector('.pb-intro').textContent = texteIntroProbleme();
+  chargerEchangesProbleme(boite);
+}
+
+// ── La conversation avec Claude, sous l'encadré ──
+// Les 3 derniers signalements de la personne (prénom pour les encadrantes, sinon rôle), avec les réponses
+// de Claude (table signalement_messages, écrites par le workflow GitHub claude-signalement.yml).
+// Tant que Claude cherche, l'encadré se recharge tout seul toutes les 30 secondes.
+let _minuterieEchanges = null;
+function echapperHtml(t) {
+  return String(t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function auteurProbleme() {
+  return (currentRole === 'encadrant' && quiEncadrant()) || ROLE_LABELS[currentRole] || currentRole || 'Équipe';
+}
+async function chargerEchangesProbleme(boite) {
+  const zone = boite && boite.querySelector('.pb-echanges');
+  if (!zone || !currentRole) return;
+  clearTimeout(_minuterieEchanges);
+  const qui = currentRole === 'encadrant' ? quiEncadrant() : null;
+  let sigs = [], msgs = [];
+  try {
+    const filtre = qui ? `qui=eq.${encodeURIComponent(qui)}` : `role=eq.${encodeURIComponent(currentRole)}`;
+    sigs = await sbGet('signalements', `${filtre}&select=id,created_at,texte,statut,github_issue&order=created_at.desc&limit=3`);
+    if (sigs.length) msgs = await sbGet('signalement_messages', `signalement_id=in.(${sigs.map(x => x.id).join(',')})&order=created_at.asc`);
+  } catch(e) { console.error('chargerEchangesProbleme', e); return; }
+  if (!sigs.length) { zone.innerHTML = ''; return; }
+  let attente = false;
+  const bulle = (auteur, texte, quand, claude) => `
+    <div style="display:flex;justify-content:${claude ? 'flex-start' : 'flex-end'};margin-top:8px;">
+      <div style="max-width:88%;padding:10px 12px;border-radius:14px;${claude ? 'background:#e7f5ec;border-top-left-radius:4px;' : 'background:#f1f3f2;border-top-right-radius:4px;'}">
+        <div style="font-size:11px;color:var(--tl);margin-bottom:3px;">${claude ? '🤖 Claude' : echapperHtml(auteur)} · ${heureRelative(quand)}</div>
+        <div style="font-size:14px;line-height:1.45;white-space:pre-wrap;color:var(--text);">${echapperHtml(texte)}</div>
+      </div>
+    </div>`;
+  zone.innerHTML = `<div style="font-size:12px;font-weight:500;color:var(--tm);margin:16px 0 2px;border-top:1px solid var(--bd);padding-top:12px;">Tes derniers échanges</div>` +
+    sigs.map((sig, i) => {
+      const fil = msgs.filter(m => m.signalement_id === sig.id);
+      const dernier = fil.length ? fil[fil.length - 1] : null;
+      const claudeAttendu = !!sig.github_issue && (!dernier || dernier.auteur !== 'Claude');
+      const jeune = Date.now() - new Date(sig.created_at).getTime() < 3 * 60 * 1000;
+      if (claudeAttendu || (!sig.github_issue && jeune)) attente = true;
+      const etat = claudeAttendu || (!sig.github_issue && jeune) ? '⏳ Claude cherche… (quelques minutes)'
+        : !sig.github_issue ? '📨 Envoyé à Élodie'
+        : sig.statut === 'corrige' ? '✅ Corrigé'
+        : sig.statut === 'pour_elodie' ? '🙋 Transmis à Élodie'
+        : '💬 Claude t\'a répondu';
+      const peutRepondre = i === 0 && dernier && dernier.auteur === 'Claude';
+      return `<div style="margin-top:10px;padding-bottom:10px;${i < sigs.length - 1 ? 'border-bottom:1px dashed var(--bd);' : ''}">
+        <div style="font-size:12px;color:var(--g2);font-weight:500;">${etat}</div>
+        ${bulle(auteurProbleme(), sig.texte, sig.created_at, false)}
+        ${fil.map(m => bulle(m.auteur, m.texte, m.created_at, m.auteur === 'Claude')).join('')}
+        ${peutRepondre ? `<div style="display:flex;gap:6px;margin-top:8px;">
+          <input class="finput pb-reponse" data-sig="${sig.id}" placeholder="Répondre à Claude…" style="flex:1;min-width:0;font-family:'DM Sans',sans-serif;">
+          <button type="button" class="pb-repondre" data-sig="${sig.id}" style="padding:10px 14px;border:none;border-radius:10px;background:#2d6a4f;color:#fff;font:500 14px 'DM Sans',sans-serif;cursor:pointer;">Répondre</button>
+        </div>` : ''}
+      </div>`;
+    }).join('');
+  zone.querySelectorAll('.pb-repondre').forEach(b => b.onclick = async () => {
+    const champ = zone.querySelector(`.pb-reponse[data-sig="${b.dataset.sig}"]`);
+    const texte = (champ.value || '').trim();
+    if (!texte) { champ.focus(); return; }
+    b.disabled = true; b.textContent = '…';
+    try {
+      await sbPost('signalement_messages', { signalement_id: Number(b.dataset.sig), auteur: auteurProbleme(), texte: texte.slice(0, 4000) });
+      chargerEchangesProbleme(boite);
+    } catch(e) {
+      console.error('réponse signalement', e);
+      b.disabled = false; b.textContent = 'Répondre';
+      showToast('L\'envoi a échoué, réessaie.');
+    }
+  });
+  if (attente) _minuterieEchanges = setTimeout(() => {
+    if (document.visibilityState === 'visible' && boite.isConnected && !saisieEnCours()) chargerEchangesProbleme(boite);
+    else _minuterieEchanges = setTimeout(() => chargerEchangesProbleme(boite), 30000);
+  }, 30000);
 }
 
 // Livreur, Boutique, Labo : petit bouton qui ouvre l'encadré dans une fenêtre.
@@ -1846,6 +1922,7 @@ function ouvrirProbleme() {
   document.body.appendChild(fond);
   const fermer = () => { try { _dictee && _dictee.stop(); } catch(e) {} fond.remove(); };
   brancherProbleme(fond, fermer);
+  chargerEchangesProbleme(fond);
   fond.onclick = e => { if (e.target === fond) fermer(); };
   setTimeout(() => fond.querySelector('.pb-texte').focus(), 100);
 }
@@ -4376,7 +4453,7 @@ async function rafraichirPageAffichee() {
   if (!currentRole || !navigator.onLine || saisieEnCours()) return;
   _dernierRafraichissementPage = Date.now();
   try {
-    if (currentPage === 'legumes') { loadCatalogue(); loadVeggies(); }
+    if (currentPage === 'legumes') { loadCatalogue(); loadVeggies(); initEncadreProbleme(); }
     else if (currentPage === 'clients') { await loadClients(); renderClients2(); majBanniereInscriptions(); }
     else if (currentPage === 'tarifs') loadTarifs();
   } catch(e) { console.error('rafraichirPageAffichee', e); }
