@@ -12,3 +12,4 @@ Une ligne par intervention, la plus récente en bas. Format :
 2026-11-20 | Élodie | construire le bouton « Déclarer un problème » décidé le 19/11 | — | bouton 🛟 + table signalements + e-mail à Élodie (fonction signalement-recu) ; test d'envoi réussi
 2026-11-20 | Élodie | encadré « Déclarer un problème » sous « Prévenir Boutique / Labo », tutoiement, Vocal / Envoyer / Annuler | — | encadré sur la page Légumes des encadrantes (bouton flottant gardé pour livreur, Boutique, Labo)
 2026-11-22 | Élodie | brancher l'encadré sur Claude (chat Atika/Amélie ↔ Claude, abonnement Pro) | — | fonction signalement-github + table signalement_messages + workflow claude-signalement.yml + conversation affichée dans l'encadré
+2026-11-22 | Élodie | l'accès à Claude doit être réservé à Atika et Amélie | le bouton flottant l'ouvrait aussi au livreur (ajout de ma part, jamais demandé) | bouton retiré + verrou en base (RLS) : seules les encadrantes Atika/Amélie peuvent écrire

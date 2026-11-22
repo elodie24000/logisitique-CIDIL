@@ -1726,7 +1726,7 @@ async function etiqueterAbonnementEquipe_() {
 
 // ══════ DÉCLARER UN PROBLÈME (équipe → Élodie) ══════
 // Encadrantes : encadré « 🛟 Déclarer un problème » sur la page Légumes, juste sous « Prévenir Boutique / Labo ».
-// Livreur, Boutique, Labo : petit bouton « 🛟 Un problème ? » qui ouvre le même encadré dans une fenêtre.
+// Réservé à Atika et Amélie (rôle encadrant) : ni livreur, ni Boutique, ni Labo, ni gestionnaire.
 // Pas chez la gestionnaire. Le message (vocal ou écrit) va dans la table signalements avec le prénom,
 // la page et quelques détails techniques ; la fonction Edge signalement-recu prévient Élodie par e-mail.
 // Canal séparé des alertes équipe.
@@ -1901,30 +1901,11 @@ async function chargerEchangesProbleme(boite) {
   }, 30000);
 }
 
-// Livreur, Boutique, Labo : petit bouton qui ouvre l'encadré dans une fenêtre.
+// Encadré réservé aux deux encadrantes (Atika, Amélie) : décision d'Élodie du 22/11. Ni livreur, ni Boutique,
+// ni Labo, ni gestionnaire. La base refuse de toute façon les signalements et messages des autres rôles.
 function afficherBoutonProbleme() {
   document.getElementById('btn-probleme')?.remove();
-  if (!currentRole || currentRole === 'gestionnaire') return;
-  if (currentRole === 'encadrant') { initEncadreProbleme(); return; }
-  const b = document.createElement('button');
-  b.id = 'btn-probleme';
-  b.textContent = '🛟 Un problème ?';
-  b.style.cssText = 'position:fixed;right:14px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:900;background:#fff;color:#2d6a4f;border:2px solid #40916c;border-radius:999px;padding:10px 16px;font:500 14px "DM Sans",sans-serif;box-shadow:0 4px 14px rgba(13,40,24,.18);cursor:pointer;';
-  b.onclick = ouvrirProbleme;
-  document.body.appendChild(b);
-}
-function ouvrirProbleme() {
-  if (document.getElementById('fenetre-probleme')) return;
-  const fond = document.createElement('div');
-  fond.id = 'fenetre-probleme';
-  fond.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(13,40,24,.55);display:flex;align-items:flex-end;justify-content:center;';
-  fond.innerHTML = `<div class="add-form" style="margin:0;width:100%;max-width:520px;border-radius:18px 18px 0 0;padding-bottom:calc(20px + env(safe-area-inset-bottom));">${htmlProbleme()}</div>`;
-  document.body.appendChild(fond);
-  const fermer = () => { try { _dictee && _dictee.stop(); } catch(e) {} fond.remove(); };
-  brancherProbleme(fond, fermer);
-  chargerEchangesProbleme(fond);
-  fond.onclick = e => { if (e.target === fond) fermer(); };
-  setTimeout(() => fond.querySelector('.pb-texte').focus(), 100);
+  if (currentRole === 'encadrant') initEncadreProbleme();
 }
 
 function logout() {

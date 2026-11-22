@@ -52,8 +52,9 @@ Tables Supabase utilisées par la page : `clients`, `catalogue`, `legumes` (lég
 `commandes_clients`, `activity_log`, `annonces_stock`, `annonces_stock_reponses`, `push_subscriptions`, `signalements`.
 
 **Déclarer un problème** (section `DÉCLARER UN PROBLÈME`) : encadré sur la page Légumes des encadrantes, sous
-« Prévenir Boutique / Labo » (« Atika, décris le bug… », boutons Vocal / Envoyer / Annuler = effacer) ; petit bouton
-« 🛟 Un problème ? » pour livreur, Boutique, Labo ; rien chez la gestionnaire.
+« Prévenir Boutique / Labo » (« Atika, décris le bug… », boutons Vocal / Envoyer / Annuler = effacer).
+**Réservé à Atika et Amélie** (décision d'Élodie du 22/11) : rien pour livreur, Boutique, Labo, gestionnaire ;
+la base (RLS) refuse tout signalement ou message dont le rôle n'est pas `encadrant` avec `qui` = Atika ou Amélie.
 le message (dicté ou écrit) va dans `signalements` (qui, rôle, page, texte, contexte technique, statut
 `nouveau` → `transmis`) ; la fonction Edge `signalement-recu` prévient Élodie par e-mail. Canal séparé des alertes équipe.
 
