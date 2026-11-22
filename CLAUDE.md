@@ -23,10 +23,13 @@ Tout est en **français** : textes de l'appli, commentaires, messages de commit.
 | Rôle | Onglets | Qui |
 |---|---|---|
 | `encadrant` | Légumes, Commandes, Clients | Les deux encadrantes techniques, **Atika** et **Amélie** (même PIN ; « Qui êtes-vous ? » à la 1re connexion, prénom gardé par le téléphone et enregistré dans la colonne `qui` de `activity_log` et `push_subscriptions`) |
-| `gestionnaire` | Récap, Clients, Tarifs, Commandes, Bilan | Élodie (propriétaire du projet) |
+| `gestionnaire` | Récap, Clients, Tarifs, Commandes, Bilan | Le comptable du CIDIL |
 | `livreur` | Tournée (signature, souci, mode hors réseau) | Le livreur |
 | `boutique`, `labo` | Commande interne + annonces de stock | Clients internes |
 | `client` (sans PIN) | Écran « Commander mes légumes » (`?commande`) | Clients externes |
+
+**Élodie** a conçu l'application et la fait évoluer : elle n'a **aucun rôle** dedans (ni gestionnaire, ni encadrante,
+ni livreur). Ne déduis jamais qui fait quoi au CIDIL : en cas de doute sur une personne ou un rôle, demande à Élodie.
 
 ## Carte des fichiers
 

@@ -92,13 +92,13 @@ new vm.Script(fs.readFileSync('sw.js', 'utf8'), { filename: 'sw.js' });
 
 
 def destinataire_elodie():
-    """Adresse d'Élodie, reprise de la liste déjà utilisée pour le récap du vendredi."""
+    """Adresse d'Élodie (conceptrice de l'appli), reprise de la liste du récap du vendredi."""
     src = open('scripts/send_email_gestionnaire_vendredi.py', encoding='utf-8').read()
     arbre = ast.parse(src)
     for n in arbre.body:
         if isinstance(n, ast.Assign) and getattr(n.targets[0], 'id', '') == 'DESTINATAIRES':
             for d in ast.literal_eval(n.value):
-                if 'gestionnaire' in d.get('name', '').lower():
+                if 'elodie' in d.get('name', '').lower():
                     return d
         if isinstance(n, ast.Assign) and getattr(n.targets[0], 'id', '') == 'EXPEDITEUR_EMAIL':
             EXPEDITEUR['email'] = ast.literal_eval(n.value)
