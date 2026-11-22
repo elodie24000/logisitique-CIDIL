@@ -44,6 +44,10 @@ Les dates renvoient à l'historique git (`git log --since=AAAA-MM-JJ`).
 
 ## Sécurité
 
+- **Claude de dépannage réservé à Atika et Amélie** (22/11/2026) : seules les deux encadrantes peuvent écrire à Claude
+  (encadré de la page Légumes). Pas le livreur, ni Boutique, ni Labo, ni la gestionnaire. Verrou en base (RLS sur
+  `signalements` et `signalement_messages`), pas seulement dans l'écran. Ne jamais élargir sans l'accord d'Élodie.
+
 - **Atika / Amélie** (19/11/2026) : même rôle `encadrant` et même PIN ; à la 1re connexion sur un téléphone l'appli
   demande « Qui êtes-vous ? » et s'en souvient (toucher le badge en haut pour changer). C'est déclaratif, pas une
   sécurité : suffisant pour savoir qui a fait quoi en interne.
