@@ -1072,6 +1072,12 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
         <div style="font-size:12px;color:var(--tl);margin-bottom:8px;" id="mo-jour-titre">Jour de livraison</div>
         <div id="mo-jour-options" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
       </div>
+      <div id="mo-commentaire-wrap" style="display:none;margin-top:16px;">
+        <div class="cmd-select-label">💬 Commentaire du client</div>
+        <textarea id="mo-commentaire" class="finput" rows="3" placeholder="Ex. : poireaux en bottes de 500 g, courgettes en filets de 500 g…" style="width:100%;margin-top:8px;font-family:'DM Sans',sans-serif;font-size:16px;"></textarea>
+        <button type="button" id="mo-commentaire-vocal" style="margin-top:6px;padding:8px 14px;border:1px solid var(--g5);border-radius:9px;background:var(--g7);color:var(--g1);font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;">🎤 <span>Dicter</span></button>
+        <div id="mo-commentaire-err" style="font-size:12px;color:#b54708;margin-top:4px;"></div>
+      </div>
     </div>
     <div class="modal-foot">
       <button class="btn-cancel" onclick="closeModal()">Annuler</button>
@@ -1292,6 +1298,12 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;font-size:15px;background
       <div id="cmd-livraison-wrap" style="margin-top:16px;">
         <div class="cmd-select-label" id="cmd-jour-titre">Jour de livraison souhaité</div>
         <div id="cmd-jour-options" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"></div>
+      </div>
+      <div id="cmd-commentaire-wrap" style="display:none;margin-top:16px;">
+        <div class="cmd-select-label">💬 Commentaire (conditionnement, précisions…)</div>
+        <textarea id="cmd-commentaire" class="finput" rows="3" placeholder="Ex. : poireaux en bottes de 500 g, courgettes en filets de 500 g…" style="width:100%;margin-top:8px;font-family:'DM Sans',sans-serif;font-size:16px;"></textarea>
+        <button type="button" id="cmd-commentaire-vocal" style="margin-top:6px;padding:8px 14px;border:1px solid var(--g5);border-radius:9px;background:var(--g7);color:var(--g1);font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;">🎤 <span>Dicter</span></button>
+        <div id="cmd-commentaire-err" style="font-size:12px;color:#b54708;margin-top:4px;"></div>
       </div>
     </div>
     <div class="cmd-success" id="cmd-success">
@@ -2645,6 +2657,7 @@ function commandeDepuisLigne(r) {
   od._mode = r.mode_livraison || 'livraison';
   od._signe = !!r.signature_data;
   od._forceLivreur = !!r.force_livreur;
+  od._commentaire = r.commentaire || '';
   return od;
 }
 
@@ -2735,6 +2748,7 @@ function openOrderModal(idxOverride) {
     if (orig) joursDispo = [...joursDispo, orig];
   }
   renderJourOptions('mo-jour-options', 'mo-livraison', joursDispo, 'moJourChange', jour);
+  preparerCommentaire('mo', cli, (commandesSemaineSaisie()[idx]||{})._commentaire);
   if (!joursDispo.length) {
     // La semaine affichée dans le tableau de bord (state.semaine) est fermée aux commandes pour ce
     // client (ex : jeudi après-midi, une fois les créneaux mardi/jeudi passés) : sans action, l'encadrant
@@ -2786,10 +2800,11 @@ async function saveOrder() {
     const q=parseFloat(document.getElementById('oq-'+v.id)?.value);
     if(!isNaN(q)&&q>0) od[v.id]=q;
   });
+  const commentaire = lireCommentaire('mo');
   const cloture = _annonceCloture; _annonceCloture = null;
   if (cloture && !Object.keys(od).length) { showToast('Ajoutez au moins un légume avant de clôturer'); _annonceCloture = cloture; return; }
   const sbId = cmds[modalClientIdx]?._sbId;
-  if(Object.keys(od).length) { cmds[modalClientIdx]=od; od._jour=jour; od._semaine=state.semaine; if(sbId) od._sbId=sbId; }
+  if(Object.keys(od).length) { cmds[modalClientIdx]=od; od._jour=jour; od._semaine=state.semaine; if(sbId) od._sbId=sbId; od._commentaire = commentaire === undefined ? (ancienOd._commentaire||'') : (commentaire||''); }
   else delete cmds[modalClientIdx];
   closeModal();
   renderOrders();
@@ -2809,6 +2824,7 @@ async function saveOrder() {
       client_nom: c.nom, client_idx: modalClientIdx,
       semaine: state.semaine, jour_livraison: jour, items: JSON.stringify(items), total
     };
+    if (commentaire !== undefined) payload.commentaire = commentaire;
     let newId = sbId;
     if (sbId) {
       await sbPatch('commandes_clients', sbId, payload);
@@ -2929,6 +2945,50 @@ function necessiteLivreur(client, od) {
   return client && client.cat !== 'Interne' && od._mode !== 'retrait';
 }
 
+// Commentaire libre sur la commande (conditionnement…) : seulement pour Intermarché
+// (décision d'Élodie du 26/11), visible uniquement des encadrantes, pas du livreur.
+function clientAvecCommentaire(c) { return !!(c && /intermarch/i.test(c.nom || '')); }
+
+// Prépare l'encadré commentaire (page client 'cmd' ou fiche encadrante 'mo') : visible ou
+// non selon le client, prérempli, bouton de dictée (ou micro du clavier si non disponible).
+let _dicteeCommentaire = null;
+function preparerCommentaire(prefix, client, texte) {
+  const wrap = document.getElementById(prefix + '-commentaire-wrap');
+  const zone = document.getElementById(prefix + '-commentaire');
+  const vocal = document.getElementById(prefix + '-commentaire-vocal');
+  const err = document.getElementById(prefix + '-commentaire-err');
+  if (!wrap) return;
+  try { _dicteeCommentaire && _dicteeCommentaire.stop(); } catch(e) {}
+  wrap.style.display = clientAvecCommentaire(client) ? 'block' : 'none';
+  zone.value = texte || '';
+  err.textContent = '';
+  vocal.onclick = () => {
+    err.textContent = '';
+    const Reco = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!Reco) { err.textContent = 'Sur ce téléphone, touchez le micro 🎤 du clavier pour dicter.'; zone.focus(); return; }
+    if (_dicteeCommentaire) { try { _dicteeCommentaire.stop(); } catch(e) {} return; }
+    const r = new Reco();
+    r.lang = 'fr-FR'; r.continuous = true; r.interimResults = false;
+    const debut = zone.value ? zone.value.replace(/\s*$/, ' ') : '';
+    let dicte = '';
+    r.onresult = ev => {
+      for (let i = ev.resultIndex; i < ev.results.length; i++) if (ev.results[i].isFinal) dicte += ev.results[i][0].transcript + ' ';
+      zone.value = debut + dicte.trim();
+    };
+    r.onend = () => { _dicteeCommentaire = null; vocal.querySelector('span').textContent = 'Dicter'; };
+    r.onerror = ev => { if (ev.error === 'not-allowed') err.textContent = 'Le micro est refusé : autorisez-le, ou utilisez le micro du clavier.'; };
+    _dicteeCommentaire = r;
+    r.start();
+    vocal.querySelector('span').textContent = 'Arrêter la dictée';
+  };
+}
+function lireCommentaire(prefix) {
+  try { _dicteeCommentaire && _dicteeCommentaire.stop(); } catch(e) {}
+  const wrap = document.getElementById(prefix + '-commentaire-wrap');
+  if (!wrap || wrap.style.display === 'none') return undefined;
+  return document.getElementById(prefix + '-commentaire').value.trim() || null;
+}
+
 function carteCommande(idx) {
   const c=getClient(idx); if(!c||!c.nom) return '';
   const od=state.orders[idx];
@@ -2952,7 +3012,7 @@ function carteCommande(idx) {
   const datesBloc = blocDates(c, od._createdAt, od._semaine || state.semaineEquipe, od._jour);
   return `<div class="co-card ${od._livre?'co-livre':''}">
     <div class="co-head"><span class="co-name">${c.nom}</span>${statut}</div>
-    <div class="co-body">${modeBadge}${datesBloc}${lines}${totalBloc}
+    <div class="co-body">${modeBadge}${datesBloc}${od._commentaire?`<div style="background:#fff7e6;border-left:3px solid #e0a800;border-radius:8px;padding:8px 10px;margin:0 0 8px;font-size:14px;white-space:pre-line;"><strong>💬 Commentaire du client :</strong>\n${escapeHtml(od._commentaire)}</div>`:''}${lines}${totalBloc}
       <button class="co-adjust-btn" onclick="openAjusterModal('${idx}')">✎ Ajuster la commande</button>
       ${preteBtn}
     </div>
@@ -3884,6 +3944,7 @@ function cmdSelectClient(idx) {
   document.getElementById('cmd-footer').style.display = 'block';
   document.getElementById('cmd-jour-titre').textContent = cli.cat === 'Interne' ? 'Jour de réassort souhaité' : 'Jour de livraison souhaité';
   proposerRepriseCommande(idx);
+  preparerCommentaire('cmd', cli, '');
   const joursDispo = joursDisponiblesPourClient(cli);
   afficherJourImpose(cli);
   renderJourOptions('cmd-jour-options', 'livraison', joursDispo, 'cmdJourChange', null);
@@ -3921,6 +3982,7 @@ function cmdResetClient() {
   document.getElementById('cmd-client-search').value = '';
   document.getElementById('cmd-legumes-wrap').style.display = 'none';
   document.getElementById('cmd-footer').style.display = 'none';
+  preparerCommentaire('cmd', null, '');
   const opts = document.getElementById('cmd-jour-options'); if (opts) opts.innerHTML = '';
 }
 
@@ -4254,7 +4316,8 @@ async function envoyerCommandeClient() {
       jour_livraison: jour,
       mode_livraison: _cmdMode,
       items: JSON.stringify(items),
-      total: items.reduce((s,i) => s + (i.prix_kg||0)*i.quantite, 0)
+      total: items.reduce((s,i) => s + (i.prix_kg||0)*i.quantite, 0),
+      ...(lireCommentaire('cmd') ? { commentaire: lireCommentaire('cmd') } : {})
     });
     // Déduit la quantité commandée du stock disponible
     for (const it of items) await adjustStock(it.legume_id, it.quantite);
