@@ -3034,6 +3034,7 @@ function renderTournee() {
         ${c.km!=null?`<span class="km-tag">${c.km}km</span>`:''}
       </div>
       <div class="tour-body">
+        ${jourLivraisonTournee(c, od)}
         ${souci?`<div class="tour-souci-tag">⚠️ Souci signalé à ${souci.heure} : ${escapeHtml(souci.motif)}</div>`:''}
         ${c.adresse?`<div class="tour-addr">📍 ${c.adresse}</div>`:'<div class="tour-addr">Adresse à compléter</div>'}
         ${c.tel?`<div class="tour-addr">📞 ${c.tel}</div>`:''}
@@ -3051,6 +3052,15 @@ function renderTournee() {
       <button onclick="tourneeDeplacer(-1)" ${_tourneePos===0?'disabled':''}>‹ Précédente</button>
       <button onclick="tourneeDeplacer(1)" ${_tourneePos>=idxs.length-1?'disabled':''}>Suivante ›</button>
     </div>` : '');
+}
+
+// Jour où la commande doit partir, bien visible en haut de chaque fiche du livreur.
+function jourLivraisonTournee(c, od) {
+  let txt = '';
+  if (od._jour in JOUR_OFFSET) txt = `${JOURS_LABELS[od._jour]||od._jour} ${dateLivraisonPrevue(od._semaine, od._jour)}`;
+  else if (sansJourFixe(c)) txt = od._createdAt ? `jour libre (commandée le ${fmtDate(od._createdAt)})` : 'jour libre';
+  if (!txt) return '';
+  return `<div style="font-size:15px;font-weight:600;color:var(--g1,#2d5a27);margin-bottom:6px;">🚚 À livrer : ${txt}</div>`;
 }
 
 function openItineraire(adr) {
