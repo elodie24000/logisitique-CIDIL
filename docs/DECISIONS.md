@@ -44,6 +44,12 @@ Les dates renvoient à l'historique git (`git log --since=AAAA-MM-JJ`).
 
 ## Sécurité
 
+- **Plus d'autonomie pour Atika et Amélie** (27/11/2026) : via le Claude de dépannage, elles ont plein pouvoir sur
+  les bugs, l'affichage, l'interface du livreur, les encadrés commentaire par client et l'ouverture d'un jour de
+  livraison pour un client, sans attendre Élodie. Restent à Élodie : incidents sur les données (ex. fiche client
+  supprimée avec sa commande, 27/11), base de données, prix/tarifs/stock, heures de clôture, e-mails et
+  notifications, PIN et droits. Détail dans CLAUDE.md, « Qui demande quoi ».
+
 - **Claude de dépannage réservé à Atika et Amélie** (22/11/2026) : seules les deux encadrantes peuvent écrire à Claude
   (encadré de la page Légumes). Pas le livreur, ni Boutique, ni Labo, ni la gestionnaire. Verrou en base (RLS sur
   `signalements` et `signalement_messages`), pas seulement dans l'écran. Ne jamais élargir sans l'accord d'Élodie.

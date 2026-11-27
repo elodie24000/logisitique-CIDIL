@@ -71,7 +71,8 @@ le workflow `.github/workflows/claude-signalement.yml` lance Claude (abonnement 
 - Clôture des commandes à **9h** : lundi pour mardi, mardi pour mercredi, mercredi pour jeudi
   (`joursDisponiblesPourClient`). Pas de délai pour Boutique/Labo ni pour les clients `sans_delai`.
 - Jours de livraison externes : mardi et jeudi ; jours imposés par client via `clients.jours_livraison`
-  (Le Patio = mardi, ferme charentaise = mercredi).
+  (Le Patio = mardi, ferme charentaise = mercredi). Exception : ouvrir un jour de livraison pour **un** client
+  est permis aux encadrantes (voir plus bas).
 - Bascule de semaine : écran client = à la clôture du mercredi 9h ; écrans équipe = vendredi 14h.
 - Prix, tarifs, stock (`kg_dispo`), destinataires des e-mails, contenu des bons de livraison.
 - Droits des rôles, codes PIN, tri alphabétique des légumes (demandé par les encadrants).
@@ -80,15 +81,28 @@ le workflow `.github/workflows/claude-signalement.yml` lance Claude (abonnement 
 
 Chaque demande précise qui l'envoie. **En cas de doute sur l'auteur, applique les règles « encadrantes ».**
 
-**Demande d'Atika ou d'Amélie, les encadrantes techniques** (ou d'un autre membre de l'équipe) — tu corriges toi-même :
+**Demande d'Atika ou d'Amélie, les encadrantes techniques** — elles ont **plein pouvoir** (décision d'Élodie du 27/11),
+tu fais toi-même, sans attendre Élodie :
 - un bug (bouton qui ne marche pas, blocage, écran vide, erreur affichée, donnée qui n'apparaît pas) ;
-- un petit ajustement d'affichage ou de texte (libellé, taille, faute, ordre d'un bouton).
+- tout ajustement d'affichage ou de texte (libellé, taille, faute, ordre d'un bouton) ;
+- **améliorer l'interface du livreur** (Tournée, fiches, signature, informations affichées) ;
+- **une case ou un encadré commentaire pour un client** (ex. étendre à un autre client l'encadré créé pour
+  Intermarché : `clientAvecCommentaire`, la colonne `commandes_clients.commentaire` existe déjà) ;
+- **ouvrir un nouveau jour de livraison pour un client** donné (sans toucher aux jours ni aux heures de clôture
+  des autres clients) ;
+- plus largement, une petite amélioration pratique de leurs écrans ou de celui du livreur, dans le même esprit.
+Élodie reste informée de tout : le récap de chaque intervention lui est envoyé par e-mail.
 
-Tu **ne fais pas**, et tu transmets à Élodie avec ton analyse :
-- toute modification d'une règle métier listée plus haut ;
+Tu **ne fais pas**, et tu transmets à Élodie avec ton analyse (elle veut le savoir) :
+- un incident sur les données : client ou commande supprimé(e) ou disparu(e), commande perdue, doublons de fiches ;
 - toute suppression ou modification de données en base, tout changement de structure (tables, colonnes, RLS) ;
-- toute nouvelle fonctionnalité, tout changement des e-mails, notifications, workflows ou fonctions Edge ;
-- tout ce qui touche aux secrets, aux PIN ou aux droits.
+- les autres règles métier listées plus haut : heures de clôture, bascule de semaine, prix, tarifs, stock,
+  bons de livraison, destinataires des e-mails, tri des légumes ;
+- tout changement des e-mails, notifications, workflows ou fonctions Edge ;
+- tout ce qui touche aux secrets, aux PIN ou aux droits ;
+- une grosse nouveauté qui change la façon de travailler de toute l'équipe ou des clients.
+Si une demande permise demande aussi un changement en base (nouvelle colonne, donnée à modifier), fais la partie
+écran si elle tient seule, sinon transmets à Élodie en expliquant ce qui manque.
 Si la demande ressemble à un bug mais que la cause est un choix voulu (voir `docs/DECISIONS.md`), ne le défais pas :
 explique-le simplement et transmets.
 
