@@ -3633,7 +3633,24 @@ async function deleteClient() {
   const id = document.getElementById('cl-id').value;
   if (!id) return;
   const c = getClient(id);
-  if (!confirm('Supprimer définitivement le client « ' + (c.nom||'') + ' » ?\n\nSes commandes non encore livrées seront aussi retirées.')) return;
+  // Commandes pas encore livrées de ce client : elles partent avec la fiche. Message explicite
+  // (le 27/11, une commande de la Cuisine centrale a été effacée ainsi sans que personne le voie).
+  let enCours = [];
+  try { enCours = await sbGet('commandes_clients', `client_idx=eq.${id}&livre=eq.false&select=semaine,jour_livraison,items`); }
+  catch(e) { return showToast('Vérification des commandes impossible, réessayez'); }
+  let msg = 'Supprimer définitivement le client « ' + (c.nom||'') + ' » ?';
+  if (enCours.length) {
+    const lignes = enCours.map(r => {
+      const items = typeof r.items === 'string' ? JSON.parse(r.items) : (r.items||[]);
+      const quand = (r.jour_livraison in JOUR_OFFSET) ? `${JOURS_LABELS[r.jour_livraison]||r.jour_livraison} ${dateLivraisonPrevue(r.semaine, r.jour_livraison)}` : `semaine du ${fmtDate(r.semaine + 'T00:00:00')}`;
+      return `• Livraison ${quand} : ` + items.map(i => `${i.nom} ${i.quantite} ${i.unite||'kg'}`).join(', ');
+    }).join('\n');
+    msg = `⚠️ ATTENTION : vous êtes en train de supprimer un client qui a ${enCours.length > 1 ? enCours.length + ' commandes' : 'une commande'} en cours !\n\n`
+      + `Client : ${c.nom||''}\n${lignes}\n\n`
+      + `Si vous continuez, ${enCours.length > 1 ? 'ces commandes seront définitivement effacées' : 'cette commande sera définitivement effacée'}.\n`
+      + `S'il s'agit d'un doublon, vérifiez d'abord que vous supprimez la bonne fiche.\n\nSupprimer quand même ?`;
+  }
+  if (!confirm(msg)) return;
   try {
     await fetch(`${SUPA_URL}/rest/v1/commandes_clients?client_idx=eq.${id}&livre=eq.false`, {
       method: 'DELETE',
